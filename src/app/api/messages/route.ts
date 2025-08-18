@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { verifyJWT } from '@/lib/jwt';
 import { APIError } from '@/lib/errors';
-import type { CreateMessageData, MessageWithSender } from '@/types/database';
+import type { CreateMessageData, MessageWithSender } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

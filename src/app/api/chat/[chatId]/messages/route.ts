@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
-import { CreateMessageData, MessageType } from '@/types/database';
+import { CreateMessageData, MessageType } from "@prisma/client";
 import { z } from 'zod';
 
 const prisma = new PrismaClient();

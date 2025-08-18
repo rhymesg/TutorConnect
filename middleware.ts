@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { 
-  securityMiddleware, 
   corsMiddleware, 
   requestValidationMiddleware,
   securityLoggingMiddleware,
@@ -138,7 +137,7 @@ function applySecurityHeaders(response: NextResponse, pathname: string) {
   const nonce = generateNonce();
 
   // Base security headers
-  const headers = {
+  const headers: Record<string, string> = {
     'X-Content-Type-Options': 'nosniff',
     'X-Frame-Options': 'DENY',
     'X-XSS-Protection': '1; mode=block',
@@ -180,8 +179,8 @@ function applySecurityHeaders(response: NextResponse, pathname: string) {
 /**
  * Generate Content Security Policy based on route
  */
-function generateCSP(pathname: string, nonce: string): string {
-  const baseCSP = {
+function generateCSP(_pathname: string, nonce: string): string {
+  const baseCSP: Record<string, string[]> = {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",

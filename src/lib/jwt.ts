@@ -439,3 +439,5 @@ export function getTokenExpiration(token: string): Date | null {
     return null;
   }
 }
+// Alias for compatibility
+export const verifyJWT = verifyAccessToken;

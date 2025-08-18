@@ -28,3 +28,5 @@ export function LoadingSpinner({ size = 'md', className = '', color = 'blue' }: 
     />
   );
 }
+
+export default LoadingSpinner;

@@ -458,3 +458,5 @@ export function addNoCacheHeaders(response: NextResponse): NextResponse {
   response.headers.set('Expires', '0');
   return response;
 }
+// Simple API handler alias
+export const apiHandler = createAPIHandler;

@@ -9,7 +9,7 @@ interface FormErrorProps {
   onDismiss?: () => void;
 }
 
-export default function FormError({ 
+export function FormError({ 
   error, 
   className = '', 
   variant = 'inline',
@@ -106,3 +106,5 @@ export default function FormError({
     </div>
   );
 }
+
+export default FormError;

@@ -185,7 +185,7 @@ async function handleAdvancedSearch(
       // Special needs support
       ...(searchParams.specialNeedsSupport && {
         OR: [
-          { description: { contains: 'special', mode: insensitive' } },
+          { description: { contains: 'special', mode: 'insensitive' } },
           { description: { contains: 'særskilte', mode: 'insensitive' } },
           { description: { contains: 'tilpasset', mode: 'insensitive' } },
           { user: {

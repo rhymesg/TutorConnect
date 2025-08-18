@@ -54,7 +54,7 @@ const regionOptions: RegionOption[] = [
   { value: 'FINNMARK', label: 'Finnmark', shortName: 'Finnmark' },
 ] as const;
 
-export default function RegionSelector({
+export function RegionSelector({
   label,
   name,
   value,
@@ -311,3 +311,5 @@ export default function RegionSelector({
     </div>
   );
 }
+
+export default RegionSelector;
