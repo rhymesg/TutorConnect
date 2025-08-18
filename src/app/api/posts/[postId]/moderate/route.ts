@@ -92,8 +92,8 @@ async function handleModeratePost(
       throw new APIError('Not authorized to moderate this post', 403, 'FORBIDDEN');
     }
 
-    let updateData: any = { updatedAt: new Date() };
-    let moderationLog: any = {
+    const updateData: any = { updatedAt: new Date() };
+    const moderationLog: any = {
       postId,
       userId: user.id,
       action,

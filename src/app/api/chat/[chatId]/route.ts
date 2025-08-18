@@ -134,7 +134,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
   }
 
   // Build message query based on pagination parameters
-  let messageWhere: any = { chatId };
+  const messageWhere: any = { chatId };
   
   if (before) {
     const beforeMessage = await prisma.message.findUnique({

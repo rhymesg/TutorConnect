@@ -412,7 +412,7 @@ export function useMessages({
           if (userId !== user.id) {
             setTypingState(prev => {
               const existingUserIndex = prev.users.findIndex(u => u.userId === userId);
-              let updatedUsers = [...prev.users];
+              const updatedUsers = [...prev.users];
 
               if (isTyping) {
                 if (existingUserIndex >= 0) {

@@ -85,7 +85,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
   });
 
   // Build message query
-  let messageWhere: any = { chatId };
+  const messageWhere: any = { chatId };
 
   // Add type filter
   if (type) {
