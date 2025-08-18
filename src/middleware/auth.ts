@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyAccessToken, extractTokenFromHeader } from '@/lib/jwt';
+import { verifyAccessToken, extractTokenFromHeader, validateTokenStructure, generateTokenFingerprint } from '@/lib/jwt';
 import { UnauthorizedError, TokenExpiredError, InvalidTokenError, ForbiddenError } from '@/lib/errors';
 import { PrismaClient } from '@prisma/client';
+import { securityLogger } from './security';
+import { extractClientIP } from './security';
 
 const prisma = new PrismaClient();
 
@@ -20,16 +22,44 @@ export interface AuthenticatedRequest extends NextRequest {
 }
 
 /**
- * Authentication middleware for protecting API routes
+ * Enhanced authentication middleware for protecting API routes
  */
 export async function authMiddleware(request: NextRequest): Promise<NextResponse | null> {
+  const ip = extractClientIP(request);
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  let tokenFingerprint: string | undefined;
+
   try {
     const authHeader = request.headers.get('authorization');
     const token = extractTokenFromHeader(authHeader);
 
     if (!token) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        details: { reason: 'No token provided' },
+      });
       throw new UnauthorizedError('Authentication token required');
     }
+
+    // Validate token structure first (fast check)
+    const structureValidation = validateTokenStructure(token);
+    if (!structureValidation.isValid) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        details: { reason: 'Invalid token structure', error: structureValidation.error },
+      });
+      throw new InvalidTokenError();
+    }
+
+    tokenFingerprint = generateTokenFingerprint(token);
 
     // Verify the token
     const payload = await verifyAccessToken(token);
@@ -44,24 +74,88 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
         isActive: true,
         region: true,
         emailVerified: true,
+        lastActive: true,
+        failedLoginAttempts: true,
+        lockedUntil: true,
       },
     });
 
     if (!user) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        details: { reason: 'User not found', tokenFingerprint },
+      });
       throw new UnauthorizedError('User not found');
     }
 
     if (!user.isActive) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        userId: user.id,
+        details: { reason: 'Account deactivated', tokenFingerprint },
+      });
       throw new ForbiddenError('Account has been deactivated');
     }
 
-    // Update last active timestamp
+    // Check if account is temporarily locked
+    if (user.lockedUntil && user.lockedUntil > new Date()) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        userId: user.id,
+        details: { reason: 'Account temporarily locked', lockedUntil: user.lockedUntil, tokenFingerprint },
+      });
+      throw new ForbiddenError(`Account is temporarily locked until ${user.lockedUntil.toISOString()}`);
+    }
+
+    // Detect suspicious activity (rapid requests from different IPs)
+    const timeSinceLastActive = user.lastActive ? Date.now() - user.lastActive.getTime() : Infinity;
+    if (user.lastActive && timeSinceLastActive < 1000) { // Less than 1 second
+      // This could indicate token sharing or brute force
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'SUSPICIOUS_ACTIVITY',
+        userId: user.id,
+        details: { reason: 'Rapid consecutive requests', timeSinceLastActive, tokenFingerprint },
+      });
+    }
+
+    // Update last active timestamp and reset failed attempts
     await prisma.user.update({
       where: { id: user.id },
-      data: { lastActive: new Date() },
+      data: { 
+        lastActive: new Date(),
+        failedLoginAttempts: 0,
+        lockedUntil: null,
+      },
     });
 
-    // Attach user to request (we need to clone the request to add custom properties)
+    // Log successful authentication
+    securityLogger.log({
+      ip,
+      userAgent,
+      method: request.method,
+      path: request.nextUrl.pathname,
+      eventType: 'AUTH_SUCCESS',
+      userId: user.id,
+      details: { tokenFingerprint },
+    });
+
+    // Attach user to request
     const authenticatedRequest = request as AuthenticatedRequest;
     authenticatedRequest.user = {
       id: user.id,
@@ -74,6 +168,20 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
 
     return null; // Continue to next middleware/handler
   } catch (error) {
+    // Log authentication failure
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    
+    if (!(error instanceof UnauthorizedError || error instanceof ForbiddenError || error instanceof InvalidTokenError || error instanceof TokenExpiredError)) {
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'AUTH_FAILURE',
+        details: { reason: 'Authentication error', error: errorMessage, tokenFingerprint },
+      });
+    }
+
     if (error instanceof Error) {
       if (error.message === 'TOKEN_EXPIRED') {
         throw new TokenExpiredError();
@@ -84,7 +192,7 @@ export async function authMiddleware(request: NextRequest): Promise<NextResponse
     }
     
     // Re-throw known errors
-    if (error instanceof UnauthorizedError || error instanceof ForbiddenError) {
+    if (error instanceof UnauthorizedError || error instanceof ForbiddenError || error instanceof TokenExpiredError || error instanceof InvalidTokenError) {
       throw error;
     }
 
@@ -155,22 +263,49 @@ export function requireRole(roles: string[] = ['user']) {
 export const requireAdmin = requireRole(['admin']);
 
 /**
- * Helper function to get user role (simplified for now)
+ * Helper function to get user role (enhanced security)
  */
 async function getUserRole(userId: string): Promise<string> {
-  // For now, we'll check if the user is an admin based on email domain or a flag
-  // This can be expanded with a proper role system later
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true },
-  });
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { 
+        email: true,
+        isActive: true,
+        emailVerified: true,
+        // Add role field when implementing proper RBAC
+        // role: true,
+      },
+    });
 
-  // Simple admin check - in production, this should be a proper role system
-  if (user?.email.includes('@tutorconnect.no') || user?.email.includes('@admin.')) {
-    return 'admin';
+    if (!user || !user.isActive || !user.emailVerified) {
+      return 'none';
+    }
+
+    // Enhanced admin check with multiple criteria
+    const adminDomains = ['@tutorconnect.no', '@admin.tutorconnect.no'];
+    const isAdminEmail = adminDomains.some(domain => user.email.includes(domain));
+    
+    // In production, replace with proper role-based access control
+    if (isAdminEmail) {
+      // Additional security check for admin users
+      const adminUser = await prisma.user.findFirst({
+        where: {
+          id: userId,
+          email: { in: process.env.ADMIN_EMAILS?.split(',') || [] },
+        },
+      });
+      
+      if (adminUser) {
+        return 'admin';
+      }
+    }
+
+    return 'user';
+  } catch (error) {
+    console.error('Error getting user role:', error);
+    return 'user'; // Default to user role on error
   }
-
-  return 'user';
 }
 
 /**
@@ -207,21 +342,39 @@ export async function requireResourceOwnership(
   resourceType: string = 'resource'
 ): Promise<void> {
   const user = getAuthenticatedUser(request);
+  const ip = extractClientIP(request);
+  const userAgent = request.headers.get('user-agent') || 'unknown';
   
   if (user.id !== resourceUserId) {
     // Check if user is admin
     const userRole = await getUserRole(user.id);
     if (userRole !== 'admin') {
+      // Log unauthorized access attempt
+      securityLogger.log({
+        ip,
+        userAgent,
+        method: request.method,
+        path: request.nextUrl.pathname,
+        eventType: 'SUSPICIOUS_ACTIVITY',
+        userId: user.id,
+        details: {
+          reason: 'Unauthorized resource access attempt',
+          resourceType,
+          targetUserId: resourceUserId,
+        },
+      });
+      
       throw new ForbiddenError(`You can only access your own ${resourceType}`);
     }
   }
 }
 
 /**
- * Rate limiting helper for authentication endpoints
+ * Enhanced rate limiting helper for authentication endpoints
  */
 export class AuthRateLimiter {
-  private static attempts = new Map<string, { count: number; resetTime: number }>();
+  private static attempts = new Map<string, { count: number; resetTime: number; suspiciousActivity?: boolean }>();
+  private static blacklistedIPs = new Set<string>();
 
   static getKey(ip: string, email?: string): string {
     return email ? `${ip}:${email}` : ip;
@@ -230,6 +383,12 @@ export class AuthRateLimiter {
   static isRateLimited(key: string, maxAttempts: number = 5, windowMs: number = 15 * 60 * 1000): boolean {
     const now = Date.now();
     const attempt = this.attempts.get(key);
+
+    // Check if IP is blacklisted
+    const ip = key.split(':')[0];
+    if (this.blacklistedIPs.has(ip)) {
+      return true;
+    }
 
     if (!attempt) {
       return false;
@@ -244,17 +403,33 @@ export class AuthRateLimiter {
     return attempt.count >= maxAttempts;
   }
 
-  static recordAttempt(key: string, windowMs: number = 15 * 60 * 1000): void {
+  static recordAttempt(key: string, windowMs: number = 15 * 60 * 1000, suspicious: boolean = false): void {
     const now = Date.now();
     const attempt = this.attempts.get(key);
+    const ip = key.split(':')[0];
 
     if (!attempt || now > attempt.resetTime) {
       this.attempts.set(key, {
         count: 1,
         resetTime: now + windowMs,
+        suspiciousActivity: suspicious,
       });
     } else {
       attempt.count++;
+      if (suspicious) {
+        attempt.suspiciousActivity = true;
+      }
+    }
+
+    // Blacklist IP if too many suspicious attempts
+    const currentAttempt = this.attempts.get(key);
+    if (currentAttempt && currentAttempt.count >= 20) {
+      this.blacklistedIPs.add(ip);
+      
+      // Remove from blacklist after 24 hours
+      setTimeout(() => {
+        this.blacklistedIPs.delete(ip);
+      }, 24 * 60 * 60 * 1000);
     }
   }
 
@@ -268,29 +443,117 @@ export class AuthRateLimiter {
   static clearAttempts(key: string): void {
     this.attempts.delete(key);
   }
+
+  static isBlacklisted(ip: string): boolean {
+    return this.blacklistedIPs.has(ip);
+  }
+
+  static getAttemptInfo(key: string): { count: number; suspicious: boolean } | null {
+    const attempt = this.attempts.get(key);
+    if (!attempt) return null;
+    
+    return {
+      count: attempt.count,
+      suspicious: attempt.suspiciousActivity || false,
+    };
+  }
 }
 
 /**
- * Get client IP address
+ * Get client IP address (deprecated - use extractClientIP from security middleware)
  */
 export function getClientIP(request: NextRequest): string {
-  // Check various headers for the real IP
-  const xForwardedFor = request.headers.get('x-forwarded-for');
-  const xRealIp = request.headers.get('x-real-ip');
-  const cfConnectingIp = request.headers.get('cf-connecting-ip');
+  return extractClientIP(request);
+}
 
-  if (xForwardedFor) {
-    return xForwardedFor.split(',')[0].trim();
+/**
+ * Validate session security
+ */
+export async function validateSessionSecurity(
+  request: NextRequest,
+  userId: string
+): Promise<{ valid: boolean; reason?: string }> {
+  const ip = extractClientIP(request);
+  const userAgent = request.headers.get('user-agent') || 'unknown';
+  const currentTime = new Date();
+
+  try {
+    // Get recent session data
+    const recentSessions = await prisma.userSession.findMany({
+      where: {
+        userId,
+        createdAt: {
+          gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 10,
+    });
+
+    // Check for suspicious patterns
+    if (recentSessions.length > 0) {
+      const latestSession = recentSessions[0];
+      
+      // Check for rapid IP changes
+      const uniqueIPs = new Set(recentSessions.map(s => s.ipAddress));
+      if (uniqueIPs.size > 5) {
+        return { valid: false, reason: 'Too many different IP addresses' };
+      }
+
+      // Check for unusual user agent changes
+      const uniqueUserAgents = new Set(recentSessions.map(s => s.userAgent));
+      if (uniqueUserAgents.size > 3) {
+        return { valid: false, reason: 'Too many different user agents' };
+      }
+
+      // Check for geographic anomalies (simplified)
+      // In production, you'd use a GeoIP service
+      if (latestSession.ipAddress !== ip) {
+        // Log IP change for monitoring
+        securityLogger.log({
+          ip,
+          userAgent,
+          method: request.method,
+          path: request.nextUrl.pathname,
+          eventType: 'SUSPICIOUS_ACTIVITY',
+          userId,
+          details: {
+            reason: 'IP address change',
+            previousIP: latestSession.ipAddress,
+            newIP: ip,
+          },
+        });
+      }
+    }
+
+    // Create/update session record
+    await prisma.userSession.upsert({
+      where: {
+        userId_ipAddress: {
+          userId,
+          ipAddress: ip,
+        },
+      },
+      update: {
+        userAgent,
+        lastActivity: currentTime,
+        requestCount: {
+          increment: 1,
+        },
+      },
+      create: {
+        userId,
+        ipAddress: ip,
+        userAgent,
+        createdAt: currentTime,
+        lastActivity: currentTime,
+        requestCount: 1,
+      },
+    });
+
+    return { valid: true };
+  } catch (error) {
+    console.error('Session validation error:', error);
+    return { valid: true }; // Default to allowing access to avoid breaking functionality
   }
-
-  if (xRealIp) {
-    return xRealIp;
-  }
-
-  if (cfConnectingIp) {
-    return cfConnectingIp;
-  }
-
-  // Fallback to request IP (may not be accurate behind proxies)
-  return request.ip || '127.0.0.1';
 }

@@ -9,6 +9,19 @@ if (!JWT_ACCESS_SECRET || !JWT_REFRESH_SECRET) {
   throw new Error('JWT secrets are not configured. Check JWT_ACCESS_SECRET and JWT_REFRESH_SECRET environment variables.');
 }
 
+// Security validation for JWT secrets
+if (JWT_ACCESS_SECRET.length < 32) {
+  throw new Error('JWT_ACCESS_SECRET must be at least 32 characters long for security.');
+}
+
+if (JWT_REFRESH_SECRET.length < 32) {
+  throw new Error('JWT_REFRESH_SECRET must be at least 32 characters long for security.');
+}
+
+if (JWT_ACCESS_SECRET === JWT_REFRESH_SECRET) {
+  throw new Error('JWT_ACCESS_SECRET and JWT_REFRESH_SECRET must be different.');
+}
+
 // Convert secrets to Uint8Array for jose library
 const accessSecretKey = new TextEncoder().encode(JWT_ACCESS_SECRET);
 const refreshSecretKey = new TextEncoder().encode(JWT_REFRESH_SECRET);
@@ -203,6 +216,7 @@ export function extractTokenFromHeader(authHeader: string | null): string | null
 export async function generateEmailVerificationToken(payload: {
   userId: string;
   email: string;
+  nonce?: string; // Optional nonce for single-use tokens
 }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const exp = now + (24 * 60 * 60); // 24 hours from now
@@ -213,6 +227,7 @@ export async function generateEmailVerificationToken(payload: {
     type: 'email_verification',
     iat: now,
     exp: exp,
+    nonce: payload.nonce || generateNonce(),
   };
 
   return await new SignJWT(tokenPayload)
@@ -263,6 +278,7 @@ export async function verifyEmailVerificationToken(token: string): Promise<{
 export async function generatePasswordResetToken(payload: {
   userId: string;
   email: string;
+  nonce?: string; // Optional nonce for single-use tokens
 }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
   const exp = now + (60 * 60); // 1 hour from now
@@ -273,6 +289,7 @@ export async function generatePasswordResetToken(payload: {
     type: 'password_reset',
     iat: now,
     exp: exp,
+    nonce: payload.nonce || generateNonce(),
   };
 
   return await new SignJWT(tokenPayload)
@@ -281,6 +298,14 @@ export async function generatePasswordResetToken(payload: {
     .setIssuedAt(now)
     .setExpirationTime(exp)
     .sign(accessSecretKey);
+}
+
+/**
+ * Generate cryptographically secure nonce
+ */
+function generateNonce(): string {
+  const crypto = require('crypto');
+  return crypto.randomBytes(16).toString('hex');
 }
 
 /**
@@ -322,7 +347,11 @@ export async function verifyPasswordResetToken(token: string): Promise<{
  */
 export function isTokenExpired(token: string): boolean {
   try {
-    const [, payloadBase64] = token.split('.');
+    // Validate token format
+    const parts = token.split('.');
+    if (parts.length !== 3) return true;
+
+    const [, payloadBase64] = parts;
     if (!payloadBase64) return true;
 
     const payload = JSON.parse(
@@ -333,6 +362,63 @@ export function isTokenExpired(token: string): boolean {
     return payload.exp < now;
   } catch {
     return true;
+  }
+}
+
+/**
+ * Validate JWT token structure without verification
+ */
+export function validateTokenStructure(token: string): { isValid: boolean; error?: string } {
+  try {
+    if (typeof token !== 'string' || !token) {
+      return { isValid: false, error: 'Token must be a non-empty string' };
+    }
+
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      return { isValid: false, error: 'Token must have 3 parts separated by dots' };
+    }
+
+    const [header, payload] = parts;
+    if (!header || !payload) {
+      return { isValid: false, error: 'Token header and payload cannot be empty' };
+    }
+
+    // Try to decode base64url parts
+    JSON.parse(Buffer.from(header, 'base64url').toString('utf-8'));
+    JSON.parse(Buffer.from(payload, 'base64url').toString('utf-8'));
+
+    return { isValid: true };
+  } catch (error) {
+    return { isValid: false, error: 'Invalid token structure' };
+  }
+}
+
+/**
+ * Extract token payload without verification (for debugging only)
+ */
+export function extractTokenPayload(token: string): any {
+  try {
+    const [, payloadBase64] = token.split('.');
+    if (!payloadBase64) return null;
+
+    return JSON.parse(
+      Buffer.from(payloadBase64, 'base64url').toString('utf-8')
+    );
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Generate secure token fingerprint for logging (non-reversible)
+ */
+export function generateTokenFingerprint(token: string): string {
+  try {
+    const crypto = require('crypto');
+    return crypto.createHash('sha256').update(token).digest('hex').substring(0, 16);
+  } catch {
+    return 'unknown';
   }
 }
 
