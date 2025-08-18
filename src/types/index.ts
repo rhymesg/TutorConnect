@@ -5,3 +5,4 @@ export * from './api';
 export * from './ui';
 export * from './supabase';
 export * from './norwegian';
+export * from './appointments';

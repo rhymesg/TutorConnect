@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { Search, Filter, MessageCircle, Clock, User } from 'lucide-react';
+import { useState, useMemo, useRef, useEffect } from 'react';
+import { Search, Filter, MessageCircle, Clock, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
 import { ChatListItem, ChatFilter } from '@/types/chat';
 import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { NoChatsEmptyState, NoSearchResultsEmptyState, ConnectionErrorEmptyState, ChatListLoadingState } from './EmptyStates';
 
 interface ChatRoomListProps {
   chats: ChatListItem[];
@@ -16,6 +17,11 @@ interface ChatRoomListProps {
   onFilter: (filter: ChatFilter) => void;
   hasMore?: boolean;
   onLoadMore?: () => void;
+  onArchiveChat?: (chatId: string) => void;
+  onDeleteChat?: (chatId: string) => void;
+  onPinChat?: (chatId: string) => void;
+  onRetry?: () => void;
+  onExploreContacts?: () => void;
 }
 
 export default function ChatRoomList({
@@ -28,6 +34,11 @@ export default function ChatRoomList({
   onFilter,
   hasMore = false,
   onLoadMore,
+  onArchiveChat,
+  onDeleteChat,
+  onPinChat,
+  onRetry,
+  onExploreContacts,
 }: ChatRoomListProps) {
   const language = useLanguage();
   const t = chatTranslations[language];
