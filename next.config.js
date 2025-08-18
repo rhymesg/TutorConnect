@@ -53,7 +53,7 @@ const nextConfig = {
 
   // Environment variables validation
   env: {
-    CUSTOM_KEY: process.env.CUSTOM_KEY,
+    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   },
 
   // Webpack configuration for better bundling
@@ -90,12 +90,8 @@ const nextConfig = {
   // Output configuration for deployment
   output: 'standalone',
 
-  // Internationalization ready (Norwegian/English)
-  i18n: {
-    locales: ['no', 'en'],
-    defaultLocale: 'no',
-    localeDetection: true,
-  },
+  // Note: i18n config removed - using App Router with built-in internationalization
+  // Internationalization will be handled via app/[locale] structure if needed
 
   // Compiler options
   compiler: {

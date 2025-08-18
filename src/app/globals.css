@@ -5,7 +5,7 @@
 /* Base styles for TutorConnect */
 @layer base {
   * {
-    @apply border-border;
+    border-color: hsl(var(--border));
   }
   
   html {
@@ -13,8 +13,12 @@
   }
   
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-white text-neutral-900 font-sans antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+  
+  .dark body {
+    @apply bg-neutral-900 text-neutral-100;
   }
 
   /* Custom scrollbar for better UX */
