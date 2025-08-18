@@ -1,7 +1,7 @@
 // Security Test Suite for TutorConnect
 // Tests authentication, authorization, and security measures
 
-import { describe, test, expect } from '@jest/globals';
+const { describe, test, expect } = require('@jest/globals');
 
 describe('Security Test Suite', () => {
   describe('Environment Security', () => {
