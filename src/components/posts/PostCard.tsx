@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Clock, MapPin, User, Star, MessageCircle, Calendar } from 'lucide-react';
 import { PostWithDetails, PostType } from '@/types/database';
 import { formatters, education } from '@/lib/translations';
+import { StartChatButton } from '@/components/chat';
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -165,17 +166,18 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
                 <MessageCircle className="w-4 h-4 mr-1" />
                 <span>{post._count.chats}</span>
               </div>
-              <button
-                onClick={handleContactClick}
+              <StartChatButton
+                postId={post.id}
+                postTitle={post.title}
+                postType={post.type === 'TUTOR_OFFERING' ? 'TEACHER' : 'STUDENT'}
+                authorId={post.userId}
+                authorName={post.user.name}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs sm:text-sm font-medium hover:bg-brand-700 transition-colors whitespace-nowrap"
-              >
-                <span className="hidden sm:inline">
-                  {isTutorPost ? 'Kontakt' : 'Tilby hjelp'}
-                </span>
-                <span className="sm:hidden">
-                  {isTutorPost ? 'Kontakt' : 'Tilby'}
-                </span>
-              </button>
+                onChatStarted={(chatId) => {
+                  // Optional: Handle chat started event
+                  console.log('Chat started:', chatId);
+                }}
+              />
             </div>
           </div>
         </div>

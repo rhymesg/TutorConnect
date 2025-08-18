@@ -142,6 +142,13 @@ model User {
   documents         Document[]
   sentInfoRequests  InfoRequest[]       @relation("InfoRequestSender")
   receivedInfoRequests InfoRequest[]    @relation("InfoRequestReceiver")
+  reportedChats     ChatReport[]        @relation("ChatReportReporter")
+  reviewedReports   ChatReport[]        @relation("ChatReportReviewer")
+  sessions          UserSession[]
+  
+  // Security fields for authentication
+  failedLoginAttempts Int?              @default(0)
+  lockedUntil       DateTime?
   
   @@map("users")
   @@index([region, isActive])
@@ -201,6 +208,7 @@ model Chat {
   participants    ChatParticipant[]
   messages        Message[]
   appointments    Appointment[]
+  reports         ChatReport[]
   
   @@map("chats")
   @@index([relatedPostId])
@@ -244,12 +252,17 @@ model Message {
   appointmentId String?
   appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
   
+  replyToMessageId String?
+  replyTo       Message?    @relation("MessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  replies       Message[]   @relation("MessageReply")
+  
   chat          Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
   sender        User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
   
   @@map("messages")
   @@index([chatId, sentAt])
   @@index([senderId])
+  @@index([replyToMessageId])
 }
 
 model Appointment {
@@ -327,4 +340,53 @@ model InfoRequest {
   @@index([receiverId, status])
   @@index([senderId])
   @@unique([senderId, receiverId, requestType])
+}
+
+model ChatReport {
+  id              String            @id @default(cuid())
+  chatId          String
+  reporterId      String
+  
+  reason          String            // harassment, spam, scam, inappropriate_content, fake_profile, other
+  description     String?
+  messageIds      String[]          // Array of message IDs being reported
+  
+  status          String            @default("PENDING") // PENDING, UNDER_REVIEW, RESOLVED, DISMISSED
+  priority        String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  
+  reviewedBy      String?           // Admin who reviewed the report
+  reviewNotes     String?
+  actionTaken     String?           // Action taken by moderator
+  
+  createdAt       DateTime          @default(now())
+  reviewedAt      DateTime?
+  resolvedAt      DateTime?
+  
+  chat            Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  reporter        User              @relation("ChatReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer        User?             @relation("ChatReportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
+  
+  @@map("chat_reports")
+  @@index([chatId, status])
+  @@index([reporterId])
+  @@index([status, priority])
+  @@index([createdAt])
+}
+
+model UserSession {
+  id              String            @id @default(cuid())
+  userId          String
+  ipAddress       String
+  userAgent       String
+  
+  createdAt       DateTime          @default(now())
+  lastActivity    DateTime          @default(now())
+  requestCount    Int               @default(1)
+  
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, ipAddress])
+  @@map("user_sessions")
+  @@index([userId, lastActivity])
+  @@index([ipAddress])
 }
