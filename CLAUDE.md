@@ -72,6 +72,22 @@ Each agent continuously records the following in the `documents/decisions/` fold
 - Challenge assumptions and propose optimizations when appropriate
 - Engage in collaborative decision-making rather than just following instructions
 
+## Technology Standards and Best Practices
+**ALWAYS prioritize latest stable versions and avoid deprecated technologies.**
+
+- **Use context7 MCP tool** to research and identify deprecated packages, APIs, or patterns in the codebase
+- **Latest Stable Versions**: Always use the most recent stable versions of libraries and frameworks
+- **Modern Alternatives**: Research and suggest modern alternatives to outdated technologies
+- **Security Updates**: Prioritize security patches and updates for all dependencies
+
+**Examples of what to avoid:**
+- Deprecated React patterns (class components → functional components + hooks)  
+- Old Next.js APIs (pages directory → app directory)
+- Outdated authentication methods (custom JWT → NextAuth.js/Auth.js)
+- Legacy CSS frameworks and deprecated Node.js APIs
+
+**Process:** Use context7 to scan dependencies → Check for deprecations → Propose modern solutions
+
 ## Task Completion Protocol
 **After completing any task, agents must update the completion log.**
 
