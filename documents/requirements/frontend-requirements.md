@@ -1,16 +1,20 @@
 # Frontend Agent Requirements
 
 ## Role and Responsibilities
-Next.js 14-based frontend development, PWA configuration, responsive UI/UX implementation
+Modern Next.js frontend development, PWA configuration, responsive UI/UX implementation
 
 ## Technology Stack
-- **Framework**: Next.js 14 (App Router)
+**Note: Always use latest stable versions**
+
+- **Framework**: Next.js (App Router) + React
 - **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **State Management**: React Context + useState/useReducer
-- **Data Fetching**: SWR or React Query
-- **Icons**: Lucide React or Heroicons
+- **Styling**: Tailwind CSS (modern configuration)
+- **UI Components**: Headless UI + Heroicons + Lucide React
+- **State Management**: React Context + modern React state hooks
+- **Data Fetching**: Server Components + Client Components hybrid approach
+- **Icons**: Lucide React + Heroicons
 - **Forms**: React Hook Form + Zod validation
+- **Testing**: Jest + React Testing Library + Playwright E2E
 
 ## UI/UX Requirements
 
@@ -150,19 +154,20 @@ Next.js 14-based frontend development, PWA configuration, responsive UI/UX imple
 ## Performance Optimization
 
 ### 1. Image Optimization
-- Use **Next.js Image component**
-- Apply **Lazy loading**
-- Prioritize **WebP format**
+- Use **latest Next.js Image component** with enhanced optimizations
+- Apply **Lazy loading** with modern React concurrent features
+- Prioritize **WebP/AVIF formats**
 
 ### 2. Code Splitting
-- Separate **page-level chunks**
-- Utilize **dynamic imports**
-- **Component lazy loading**
+- Leverage **Next.js app router** automatic code splitting
+- Utilize **dynamic imports** with latest React Suspense improvements
+- **Component lazy loading** with enhanced streaming
 
 ### 3. Data Optimization
-- Utilize **SWR caching**
-- Implement **infinite scroll**
-- Apply **optimistic updates**
+- Utilize **Server Components** for data fetching
+- Implement **streaming with Suspense**
+- Apply **optimistic updates** with latest React actions
+- **Client-side caching** for interactive components
 
 ## Accessibility
 

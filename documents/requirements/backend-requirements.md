@@ -4,10 +4,12 @@
 Next.js API Routes-based backend development, database integration, real-time chat, authentication/authorization system implementation
 
 ## Technology Stack
-- **Framework**: Next.js 14 API Routes
+**Note: Always use latest stable versions**
+
+- **Framework**: Next.js API Routes
 - **ORM**: Prisma
 - **Database**: Supabase (PostgreSQL)
-- **Authentication**: NextAuth.js + Supabase Auth
+- **Authentication**: JWT (jose library) + Supabase Auth
 - **File Storage**: Supabase Storage
 - **Real-time**: Supabase Realtime
 - **Email**: Resend or Supabase Auth
@@ -17,7 +19,7 @@ Next.js API Routes-based backend development, database integration, real-time ch
 
 ### 1. Authentication and User Management API
 
-#### `/api/auth/*` - NextAuth.js Based
+#### `/api/auth/*` - JWT Authentication Based
 - **POST /api/auth/register**
   ```typescript
   interface RegisterRequest {

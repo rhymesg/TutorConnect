@@ -27,7 +27,7 @@
 | **Integration Work** | Medium | 16% | Deployment, documentation |
 
 ### Technology Stack
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
+- **Frontend**: Latest stable Next.js + TypeScript + Tailwind CSS
 - **Backend**: Next.js API Routes + Prisma ORM
 - **Database**: Supabase (PostgreSQL + Realtime + Storage)
 - **Deployment**: Vercel + tutorconnect.no domain

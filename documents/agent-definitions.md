@@ -9,10 +9,10 @@ Defines the roles and responsibilities of specialized agents for developing the 
 **Role**: System architecture design and technology stack configuration
 
 **Description**: 
-A specialized agent that designs the system architecture and configures the technology stack for the TutorConnect platform. Responsible for Next.js 14 + Supabase-based full-stack architecture design, database schema design, API structure definition, PWA setup, security architecture, and performance optimization strategies. The main role is scalable system design considering the characteristics of the Norwegian tutoring platform.
+A specialized agent that designs the system architecture and configures the technology stack for the TutorConnect platform. Responsible for modern Next.js + Supabase-based full-stack architecture design, database schema design, API structure definition, PWA setup, security architecture, and performance optimization strategies. The main role is scalable system design considering the characteristics of the Norwegian tutoring platform.
 
 **Main Responsibilities**:
-- Next.js 14 + TypeScript project initial setup
+- Latest Next.js + TypeScript project initial setup
 - Supabase database integration and configuration
 - Folder structure and code architecture design
 - API endpoint structure definition
@@ -25,7 +25,7 @@ A specialized agent that designs the system architecture and configures the tech
 **Role**: Frontend UI/UX development
 
 **Description**:
-A specialized agent responsible for Next.js 14 + TypeScript + Tailwind CSS-based frontend development. Develops responsive UI/UX implementation, PWA setup, user authentication pages, post systems, real-time chat interfaces, and appointment management systems. Core focus is on mobile-first design, accessibility (WCAG 2.1 AA), and providing user experiences suitable for the Norwegian market.
+A specialized agent responsible for modern Next.js + TypeScript + Tailwind CSS-based frontend development. Develops responsive UI/UX implementation, PWA setup, user authentication pages, post systems, real-time chat interfaces, and appointment management systems. Core focus is on mobile-first design, accessibility (WCAG 2.1 AA), and providing user experiences suitable for the Norwegian market.
 
 **Main Responsibilities**:
 - React component design and implementation

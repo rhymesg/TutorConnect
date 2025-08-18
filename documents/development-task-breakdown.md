@@ -3,7 +3,7 @@
 ## Project Overview
 - **Project Name**: TutorConnect
 - **Goal**: Norwegian private tutoring connection platform
-- **Tech Stack**: Next.js 14 + TypeScript + Tailwind CSS + Supabase
+- **Tech Stack**: Latest stable Next.js + TypeScript + Tailwind CSS + Supabase
 - **Agents**: 5 specialized agents (Architect, Frontend, Backend, Security, QA)
 
 ## 1. Agent-wise Detailed Task Analysis
@@ -21,7 +21,7 @@ System architecture design, database schema, API structure, infrastructure setup
 | ARCH-002 | API architecture design | Critical | Medium | ARCH-001 | API documentation written, endpoints defined |
 | ARCH-003 | Project initial setup | Critical | Simple | None | Next.js project created, basic configuration |
 | ARCH-004 | Supabase setup | High | Simple | ARCH-001 | DB connection, RLS policies setup |
-| ARCH-005 | Authentication system design | High | Simple | ARCH-002 | NextAuth.js setup, JWT structure |
+| ARCH-005 | Authentication system design | High | Simple | ARCH-002 | JWT authentication setup, secure structure |
 | ARCH-006 | File upload system design | High | Simple | ARCH-004 | Supabase Storage setup |
 | ARCH-007 | Real-time chat architecture | High | Medium | ARCH-004 | Realtime setup, message schema |
 | ARCH-008 | PWA setup | Medium | Simple | ARCH-003 | Manifest, Service Worker |
