@@ -258,14 +258,14 @@ describe('Accessibility Tests', () => {
 **PRIORITY: Implement comprehensive test suite from scratch for TutorConnect platform**
 
 The current test infrastructure will be rebuilt to properly support:
-- Modern Next.js 15 + React 19 architecture
+- Latest stable Next.js + React architecture
 - TypeScript with strict type checking
-- Tailwind CSS v4 component testing
+- Modern Tailwind CSS component testing
 - Supabase real-time features testing
 - PWA functionality testing
 
 ### Implementation Steps:
-1. Design new Jest configuration for Next.js 15 compatibility
+1. Design new Jest configuration for latest Next.js compatibility
 2. Set up React Testing Library for component testing
 3. Configure Playwright for E2E testing with modern browsers
 4. Create test database setup scripts for integration tests
@@ -277,7 +277,7 @@ The current test infrastructure will be rebuilt to properly support:
 ### 1. CI/CD Pipeline (TO BE IMPLEMENTED)
 ```yaml
 # New GitHub Actions workflow will be created
-# Supporting Next.js 15, React 19, and modern testing stack
+# Supporting latest stable Next.js, React, and modern testing stack
 # Focus on reliable, fast, and comprehensive test execution
 ```
 

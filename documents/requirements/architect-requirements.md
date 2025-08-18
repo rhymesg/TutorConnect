@@ -4,10 +4,17 @@
 Overall system architecture design and technology stack configuration for the TutorConnect platform
 
 ## Technology Stack Decisions
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
+**Note: Always use latest stable versions of all technologies**
+
+- **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + React
 - **Backend**: Next.js API Routes + Prisma ORM
 - **Database**: Supabase (PostgreSQL + Real-time Chat + File Storage)
+- **UI Components**: Headless UI + Heroicons + Lucide React
+- **Form Handling**: React Hook Form + Zod validation
+- **Styling**: Tailwind CSS (CSS-first configuration when available)
+- **Authentication**: JWT (jose library) + Supabase Auth
 - **Deployment**: Vercel (Frontend) + Supabase (Backend/DB)
+- **Testing**: Jest + Testing Library + Playwright E2E
 - **Domain**: tutorconnect.no
 
 ## Main Design Requirements
@@ -99,10 +106,12 @@ Overall system architecture design and technology stack configuration for the Tu
 - **Offline functionality** considerations
 
 ## Performance Optimization Considerations
-- **Image optimization**: Utilize Next.js Image component
-- **Code splitting**: Utilize dynamic imports
-- **Caching strategy**: Utilize SWR/React Query
-- **SEO optimization**: Target Norwegian market
+- **Image optimization**: Utilize latest Next.js Image component with optimizations
+- **Code splitting**: Utilize dynamic imports and modern React concurrent features
+- **Caching strategy**: Server-side caching with Next.js app router
+- **SEO optimization**: Target Norwegian market with latest metadata API
+- **Tailwind CSS**: Modern CSS-first approach for better performance
+- **React**: Latest concurrent rendering and automatic batching features
 
 ## Deployment and Infrastructure
 - **Vercel** automatic deployment setup

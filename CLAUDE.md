@@ -8,12 +8,14 @@
 - **Approach**: Web-first development (PWA for app-like experience)
 
 ## Technology Stack
-- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS v4 + React 19
+**Always use latest stable versions of all technologies**
+
+- **Frontend**: Next.js (App Router) + TypeScript + Tailwind CSS + React
 - **Backend**: Next.js API Routes + Prisma ORM
 - **Database**: Supabase (PostgreSQL + Real-time Chat + File Storage)
 - **UI Components**: Headless UI + Heroicons + Lucide React
 - **Form Handling**: React Hook Form + Zod validation
-- **Styling**: Tailwind CSS v4 (CSS-first configuration)
+- **Styling**: Tailwind CSS (modern configuration)
 - **Authentication**: JWT (jose library) + Supabase Auth
 - **Deployment**: Vercel (Frontend) + Supabase (Backend/DB)
 - **Domain**: tutorconnect.no (purchased from Domene.no)
