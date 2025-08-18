@@ -39,16 +39,6 @@
 2. **Task Assignment**: Divide small tasks by agent
 3. **MVP Implementation**: Basic features (account creation, posts, chat, interactions)
 
-## Current Status
-- ✅ PDF plan analysis completed
-- ✅ Technology stack decision completed
-- ✅ tutorconnect.no domain purchase completed
-- ✅ MCP servers installation completed (Context7, Sequential, Magic, Playwright)
-- ✅ Agent-specific requirement documents completed
-- ✅ Agent creation completed (tutorconnect-architect, frontend-ui-developer, backend-api-developer, security-privacy-guardian, qa-test-engineer)
-- ✅ Development task analysis and 13-week roadmap establishment completed
-- 🔄 Currently in progress: ARCH-001 Database schema design
-
 ## Documentation Policy
 **ALL CODE COMMENTS AND DOCUMENTATION MUST BE WRITTEN IN ENGLISH.**
 
@@ -89,8 +79,8 @@ Each agent continuously records the following in the `documents/decisions/` fold
 **Examples of what to avoid:**
 - Deprecated React patterns (class components → functional components + hooks)  
 - Old Next.js APIs (pages directory → app directory)
-- Outdated authentication methods (custom JWT → NextAuth.js/Auth.js)
 - Legacy CSS frameworks and deprecated Node.js APIs
+- Outdated testing frameworks and configurations
 
 **Process:** Use context7 to scan dependencies → Check for deprecations → Propose modern solutions
 
