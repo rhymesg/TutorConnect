@@ -1,24 +1,32 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // App Router is enabled by default in Next.js 14
-  experimental: {
-    // Enable Server Components and App Directory features
-    serverComponentsExternalPackages: ['@prisma/client', 'bcryptjs'],
-  },
+  // Server external packages (moved from experimental)
+  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
 
-  // Performance optimizations
-  swcMinify: true,
+  // Performance optimizations (swcMinify is now default)
   poweredByHeader: false,
 
   // Image optimization for Norwegian regions
   images: {
-    domains: [
-      'localhost',
-      'supabase.co',
-      'tutorconnect.no',
-      // Supabase storage domains
-      process.env.NEXT_PUBLIC_SUPABASE_URL?.replace('https://', '')?.split('.')[0] + '.supabase.co',
-    ].filter(Boolean),
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.supabase.co',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'tutorconnect.no',
+        pathname: '/**',
+      },
+    ],
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -98,12 +106,11 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Temporarily disable TypeScript checking for build
+  // Temporarily disable TypeScript and ESLint errors during transition
   typescript: {
     ignoreBuildErrors: true,
   },
   
-  // Temporarily disable ESLint for build
   eslint: {
     ignoreDuringBuilds: true,
   },
