@@ -1,155 +1,41 @@
 {
   "compilerOptions": {
-    // Type Checking
-    "strict": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitAny": true,
-    "noImplicitReturns": true,
-    "noImplicitThis": true,
-    "noImplicitOverride": true,
-    "noPropertyAccessFromIndexSignature": false,
-    "noUncheckedIndexedAccess": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "useUnknownInCatchVariables": true,
-
-    // Modules
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "moduleSuffixes": [],
-    "allowImportingTsExtensions": false,
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-
-    // Emit
-    "declaration": false,
-    "declarationMap": false,
-    "emitDeclarationOnly": false,
-    "importHelpers": false,
-    "importsNotUsedAsValues": "remove",
-    "inlineSourceMap": false,
-    "inlineSources": false,
-    "mapRoot": "",
-    "newLine": "lf",
-    "noEmit": true,
-    "noEmitHelpers": false,
-    "noEmitOnError": false,
-    "outDir": "",
-    "outFile": "",
-    "preserveConstEnums": false,
-    "preserveValueImports": false,
-    "removeComments": false,
-    "sourceMap": false,
-    "sourceRoot": "",
-    "stripInternal": false,
-
-    // JavaScript Support
+    "target": "ES2022",
+    "lib": ["dom", "dom.iterable", "ES2022"],
     "allowJs": true,
-    "checkJs": false,
-    "maxNodeModuleJsDepth": 0,
-
-    // Editor Support
-    "disableSizeLimit": false,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
-
-    // Interop Constraints
-    "isolatedModules": true,
-    "verbatimModuleSyntax": false,
-
-    // Backwards Compatibility
-    "noStrictGenericChecks": false,
-    "suppressExcessPropertyErrors": false,
-    "suppressImplicitAnyIndexErrors": false,
-
-    // Language and Environment
-    "target": "ES2022",
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": false,
-    "jsx": "preserve",
-    "jsxFactory": "",
-    "jsxFragmentFactory": "",
-    "jsxImportSource": "",
-    "reactNamespace": "",
-    "noLib": false,
-    "useDefineForClassFields": true,
-
-    // Compiler Diagnostics
-    "diagnostics": false,
-    "explainFiles": false,
-    "extendedDiagnostics": false,
-    "generateCpuProfile": "",
-    "listEmittedFiles": false,
-    "listFiles": false,
-    "traceResolution": false,
-
-    // Projects
-    "composite": false,
-    "disableReferencedProjectLoad": false,
-    "disableSolutionSearching": false,
-    "disableSourceOfProjectReferenceRedirect": false,
-    "incremental": true,
-    "tsBuildInfoFile": ".tsbuildinfo",
-
-    // Output Formatting
-    "noErrorTruncation": false,
-    "preserveWatchOutput": false,
-    "pretty": true,
-
-    // Completeness
-    "skipDefaultLibCheck": false,
-    "skipLibCheck": true,
-
-    // Command Line
-    "preserveSymlinks": false,
-
-    // Watch Options
-    "assumeChangesOnlyAffectDirectDependencies": false,
-
-    // Type Acquisition
-    "enableAutoDiscovery": false,
-    "include": [],
-    "exclude": [],
-
-    // Next.js specific
-    "allowUmdGlobalAccess": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./src/*"
-      ],
-      "@/components/*": [
-        "./src/components/*"
-      ],
-      "@/lib/*": [
-        "./src/lib/*"
-      ],
-      "@/hooks/*": [
-        "./src/hooks/*"
-      ],
-      "@/types/*": [
-        "./src/types/*"
-      ],
-      "@/utils/*": [
-        "./src/utils/*"
-      ],
-      "@/styles/*": [
-        "./src/styles/*"
-      ],
-      "@/prisma/*": [
-        "./prisma/*"
-      ]
-    }
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/styles/*": ["./src/styles/*"],
+      "@/prisma/*": ["./prisma/*"]
+    },
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitReturns": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true
   },
   "include": [
     "next-env.d.ts",
@@ -168,9 +54,5 @@
     "**/*.test.tsx",
     "**/*.spec.ts",
     "**/*.spec.tsx"
-  ],
-  "ts-node": {
-    "esm": true,
-    "experimentalSpecifierResolution": "node"
-  }
+  ]
 }

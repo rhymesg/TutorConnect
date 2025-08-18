@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import MainLayout from '@/components/layout/MainLayout';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -116,17 +117,9 @@ export default function RootLayout({
         )}
       </head>
       <body className="min-h-screen bg-neutral-50 font-sans antialiased">
-        <div id="root" className="relative flex min-h-screen flex-col">
+        <MainLayout>
           {children}
-        </div>
-        
-        {/* Skip to main content for accessibility */}
-        <a
-          href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 z-50 rounded-md bg-brand-500 px-4 py-2 text-white focus:ring-2 focus:ring-brand-600"
-        >
-          Hopp til hovedinnhold
-        </a>
+        </MainLayout>
         
         {/* Service Worker registration script will be added by PWA configuration */}
         <script

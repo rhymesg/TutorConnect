@@ -1,0 +1,28 @@
+[run]
+source = src/
+omit = 
+    */node_modules/*
+    */tests/*
+    */coverage/*
+    */.next/*
+    */dist/*
+    */build/*
+    */public/*
+    *.config.js
+    *.config.ts
+    */types/*
+    *.d.ts
+    *.stories.*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    if self.debug:
+    if settings.DEBUG
+    raise AssertionError
+    raise NotImplementedError
+    if 0:
+    if __name__ == .__main__.:
+    class .*\bProtocol\):
+    @(abc\.)?abstractmethod
