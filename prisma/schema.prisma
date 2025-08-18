@@ -1,0 +1,330 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  PREFER_NOT_TO_SAY
+}
+
+enum PrivacySetting {
+  PUBLIC
+  ON_REQUEST
+  PRIVATE
+}
+
+enum PostType {
+  TEACHER
+  STUDENT
+}
+
+enum Subject {
+  MATHEMATICS
+  ENGLISH
+  NORWEGIAN
+  SCIENCE
+  PHYSICS
+  CHEMISTRY
+  BIOLOGY
+  HISTORY
+  GEOGRAPHY
+  PROGRAMMING
+  SPORTS
+  MUSIC
+  ART
+  OTHER
+}
+
+enum AgeGroup {
+  CHILDREN_7_12
+  TEENAGERS_13_15
+  YOUTH_16_18
+  ADULTS_19_PLUS
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum DocumentType {
+  PROFILE_IMAGE
+  EDUCATION_CERTIFICATE
+  ID_VERIFICATION
+  TEACHING_CERTIFICATE
+  OTHER_DOCUMENT
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum MessageType {
+  TEXT
+  APPOINTMENT_REQUEST
+  APPOINTMENT_RESPONSE
+  SYSTEM_MESSAGE
+}
+
+enum NorwegianRegion {
+  OSLO
+  BERGEN
+  TRONDHEIM
+  STAVANGER
+  KRISTIANSAND
+  FREDRIKSTAD
+  SANDNES
+  TROMSOE
+  DRAMMEN
+  ASKER
+  BAERUM
+  AKERSHUS
+  OESTFOLD
+  BUSKERUD
+  VESTFOLD
+  TELEMARK
+  AUST_AGDER
+  VEST_AGDER
+  ROGALAND
+  HORDALAND
+  SOGN_OG_FJORDANE
+  MOERE_OG_ROMSDAL
+  SOER_TROENDELAG
+  NORD_TROENDELAG
+  NORDLAND
+  TROMS
+  FINNMARK
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  password          String
+  emailVerified     DateTime?
+  verificationToken String?
+  
+  name              String
+  region            NorwegianRegion
+  postalCode        String?
+  gender            Gender              @default(PREFER_NOT_TO_SAY)
+  birthYear         Int?
+  
+  profileImage      String?
+  school            String?
+  degree            String?
+  certifications    String?
+  bio               String?
+  
+  privacyGender     PrivacySetting      @default(PUBLIC)
+  privacyAge        PrivacySetting      @default(PUBLIC)
+  privacyDocuments  PrivacySetting      @default(ON_REQUEST)
+  privacyContact    PrivacySetting      @default(ON_REQUEST)
+  
+  isActive          Boolean             @default(true)
+  lastActive        DateTime?
+  
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  posts             Post[]
+  sentMessages      Message[]
+  chatParticipants  ChatParticipant[]
+  documents         Document[]
+  sentInfoRequests  InfoRequest[]       @relation("InfoRequestSender")
+  receivedInfoRequests InfoRequest[]    @relation("InfoRequestReceiver")
+  
+  @@map("users")
+  @@index([region, isActive])
+  @@index([email])
+  @@index([lastActive])
+}
+
+model Post {
+  id                String      @id @default(cuid())
+  type              PostType
+  subject           Subject
+  ageGroups         AgeGroup[]
+  
+  title             String
+  description       String
+  
+  availableDays     String[]
+  availableTimes    String[]
+  preferredSchedule String?
+  
+  location          NorwegianRegion
+  specificLocation  String?
+  
+  hourlyRate        Decimal?    @db.Decimal(8,2)
+  hourlyRateMin     Decimal?    @db.Decimal(8,2)
+  hourlyRateMax     Decimal?    @db.Decimal(8,2)
+  currency          String      @default("NOK")
+  
+  isActive          Boolean     @default(true)
+  
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  userId            String
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  chats             Chat[]
+  
+  @@map("posts")
+  @@index([type, subject, location, isActive])
+  @@index([userId, isActive])
+  @@index([createdAt])
+  @@index([location, subject])
+}
+
+model Chat {
+  id              String            @id @default(cuid())
+  relatedPostId   String?
+  relatedPost     Post?             @relation(fields: [relatedPostId], references: [id], onDelete: SetNull)
+  
+  isActive        Boolean           @default(true)
+  lastMessageAt   DateTime?
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  participants    ChatParticipant[]
+  messages        Message[]
+  appointments    Appointment[]
+  
+  @@map("chats")
+  @@index([relatedPostId])
+  @@index([lastMessageAt])
+}
+
+model ChatParticipant {
+  id            String    @id @default(cuid())
+  chatId        String
+  userId        String
+  
+  joinedAt      DateTime  @default(now())
+  leftAt        DateTime?
+  isActive      Boolean   @default(true)
+  
+  unreadCount   Int       @default(0)
+  lastReadAt    DateTime?
+  
+  chat          Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([chatId, userId])
+  @@map("chat_participants")
+  @@index([userId, isActive])
+  @@index([chatId, isActive])
+}
+
+model Message {
+  id            String      @id @default(cuid())
+  content       String
+  type          MessageType @default(TEXT)
+  
+  chatId        String
+  senderId      String
+  
+  isEdited      Boolean     @default(false)
+  editedAt      DateTime?
+  
+  sentAt        DateTime    @default(now())
+  
+  appointmentId String?
+  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  chat          Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  sender        User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  
+  @@map("messages")
+  @@index([chatId, sentAt])
+  @@index([senderId])
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  chatId          String
+  
+  dateTime        DateTime
+  location        String
+  specificLocation String?
+  duration        Int               @default(60) // minutes
+  
+  status          AppointmentStatus @default(PENDING)
+  teacherReady    Boolean           @default(false)
+  studentReady    Boolean           @default(false)
+  bothCompleted   Boolean           @default(false)
+  
+  reminderTime    Int?              // minutes before appointment
+  
+  notes           String?
+  cancellationReason String?
+  
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  chat            Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  messages        Message[]
+  
+  @@map("appointments")
+  @@index([chatId, status])
+  @@index([dateTime, status])
+}
+
+model Document {
+  id              String            @id @default(cuid())
+  userId          String
+  
+  documentType    DocumentType
+  fileName        String
+  fileUrl         String
+  fileSize        Int?
+  mimeType        String?
+  
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt      DateTime?
+  verificationNotes String?
+  
+  uploadedAt      DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("documents")
+  @@index([userId, documentType])
+  @@index([verificationStatus])
+}
+
+model InfoRequest {
+  id              String            @id @default(cuid())
+  senderId        String
+  receiverId      String
+  
+  requestType     String            // "contact", "documents", "detailed_profile"
+  message         String?
+  
+  status          String            @default("PENDING") // PENDING, APPROVED, REJECTED
+  responseMessage String?
+  
+  requestedAt     DateTime          @default(now())
+  respondedAt     DateTime?
+  
+  sender          User              @relation("InfoRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver        User              @relation("InfoRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@map("info_requests")
+  @@index([receiverId, status])
+  @@index([senderId])
+  @@unique([senderId, receiverId, requestType])
+}
