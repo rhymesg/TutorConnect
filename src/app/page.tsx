@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <main id="main-content" className="flex-1">
+    <div className="flex-1">
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 py-16 sm:py-24 lg:py-32">
         <div className="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10" />
@@ -148,6 +148,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -65,7 +65,7 @@ export const createMockAppointment = (overrides = {}) => ({
 })
 
 // API response mocks
-export const mockApiResponse = <T>(data: T, success = true) => ({
+export const mockApiResponse = <T,>(data: T, success = true) => ({
   data: success ? data : null,
   error: success ? null : 'API Error',
   status: success ? 200 : 400,

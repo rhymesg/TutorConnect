@@ -1,54 +1,140 @@
-@import 'tailwindcss/base';
-@import 'tailwindcss/components';
-@import 'tailwindcss/utilities';
+@import 'tailwindcss';
+
+/* Tailwind v4 CSS-based Configuration */
+@theme {
+  /* Norwegian-inspired color palette */
+  --color-brand-50: #f0f9ff;
+  --color-brand-100: #e0f2fe;
+  --color-brand-200: #bae6fd;
+  --color-brand-300: #7dd3fc;
+  --color-brand-400: #38bdf8;
+  --color-brand-500: #0ea5e9; /* Main brand color (Norwegian sky blue) */
+  --color-brand-600: #0284c7;
+  --color-brand-700: #0369a1;
+  --color-brand-800: #075985;
+  --color-brand-900: #0c4a6e;
+  --color-brand-950: #082f49;
+
+  /* Secondary colors (Norwegian flag inspired) */
+  --color-secondary-50: #fef2f2;
+  --color-secondary-100: #fee2e2;
+  --color-secondary-200: #fecaca;
+  --color-secondary-300: #fca5a5;
+  --color-secondary-400: #f87171;
+  --color-secondary-500: #ef4444; /* Norwegian red */
+  --color-secondary-600: #dc2626;
+  --color-secondary-700: #b91c1c;
+  --color-secondary-800: #991b1b;
+  --color-secondary-900: #7f1d1d;
+  --color-secondary-950: #450a0a;
+
+  /* Success, warning, error states */
+  --color-success-50: #f0fdf4;
+  --color-success-100: #dcfce7;
+  --color-success-200: #bbf7d0;
+  --color-success-300: #86efac;
+  --color-success-400: #4ade80;
+  --color-success-500: #22c55e;
+  --color-success-600: #16a34a;
+  --color-success-700: #15803d;
+  --color-success-800: #166534;
+  --color-success-900: #14532d;
+  --color-success-950: #052e16;
+
+  --color-warning-50: #fffbeb;
+  --color-warning-100: #fef3c7;
+  --color-warning-200: #fde68a;
+  --color-warning-300: #fcd34d;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+  --color-warning-700: #b45309;
+  --color-warning-800: #92400e;
+  --color-warning-900: #78350f;
+  --color-warning-950: #451a03;
+
+  --color-error-50: #fef2f2;
+  --color-error-100: #fee2e2;
+  --color-error-200: #fecaca;
+  --color-error-300: #fca5a5;
+  --color-error-400: #f87171;
+  --color-error-500: #ef4444;
+  --color-error-600: #dc2626;
+  --color-error-700: #b91c1c;
+  --color-error-800: #991b1b;
+  --color-error-900: #7f1d1d;
+  --color-error-950: #450a0a;
+
+  /* Typography for Norwegian content */
+  --font-family-sans: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-mono: 'JetBrains Mono', Monaco, 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', monospace;
+
+  /* Spacing for Norwegian mobile-first design */
+  --spacing-18: 4.5rem;
+  --spacing-88: 22rem;
+  --spacing-120: 30rem;
+
+  /* Border radius for modern Norwegian design */
+  --border-radius-xl: 1rem;
+  --border-radius-2xl: 1.5rem;
+  --border-radius-3xl: 2rem;
+
+  /* Box shadows for depth */
+  --box-shadow-soft: 0 2px 15px -3px rgba(0, 0, 0, 0.07), 0 10px 20px -2px rgba(0, 0, 0, 0.04);
+  --box-shadow-medium: 0 4px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 30px -5px rgba(0, 0, 0, 0.04);
+  --box-shadow-strong: 0 10px 40px -10px rgba(0, 0, 0, 0.15), 0 20px 50px -10px rgba(0, 0, 0, 0.1);
+
+  /* Animation for smooth interactions */
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-slide-in: slideIn 0.3s ease-out;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+
+  /* Screen sizes for Norwegian mobile usage patterns */
+  --breakpoint-xs: 475px;
+  --breakpoint-3xl: 1680px;
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes slideIn {
+  0% { transform: translateY(10px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
 
 /* Base styles for TutorConnect */
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
-  
   html {
-    @apply scroll-smooth;
+    scroll-behavior: smooth;
   }
   
   body {
-    @apply bg-white text-neutral-900 font-sans antialiased;
+    font-family: var(--font-family-sans);
+    background-color: white;
+    color: rgb(23 23 23);
     font-feature-settings: 'rlig' 1, 'calt' 1;
-  }
-  
-  .dark body {
-    @apply bg-neutral-900 text-neutral-100;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* Custom scrollbar for better UX */
   ::-webkit-scrollbar {
-    @apply w-2;
+    width: 0.5rem;
   }
   
   ::-webkit-scrollbar-track {
-    @apply bg-neutral-100;
+    background-color: rgb(245 245 245);
   }
   
   ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-300 rounded-full;
+    background-color: rgb(212 212 212);
+    border-radius: 9999px;
   }
   
   ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-400;
-  }
-
-  /* Dark mode scrollbar */
-  .dark ::-webkit-scrollbar-track {
-    @apply bg-neutral-800;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    @apply bg-neutral-600;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb:hover {
-    @apply bg-neutral-500;
+    background-color: rgb(163 163 163);
   }
 }
 
@@ -56,50 +142,92 @@
 @layer components {
   /* Button variants */
   .btn-primary {
-    @apply inline-flex items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: var(--color-brand-500);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: white;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    transition: background-color 0.15s ease-in-out;
+  }
+  
+  .btn-primary:hover {
+    background-color: var(--color-brand-600);
   }
   
   .btn-secondary {
-    @apply inline-flex items-center justify-center rounded-lg bg-neutral-100 px-4 py-2 text-sm font-medium text-neutral-900 shadow-sm transition-colors hover:bg-neutral-200 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    background-color: rgb(245 245 245);
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(23 23 23);
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    transition: background-color 0.15s ease-in-out;
+  }
+  
+  .btn-secondary:hover {
+    background-color: rgb(229 229 229);
   }
   
   .btn-ghost {
-    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgb(64 64 64);
+    transition: background-color 0.15s ease-in-out;
+  }
+  
+  .btn-ghost:hover {
+    background-color: rgb(245 245 245);
   }
 
   /* Card components */
   .card {
-    @apply rounded-xl border border-neutral-200 bg-white p-6 shadow-soft;
+    border-radius: 0.75rem;
+    border: 1px solid rgb(229 229 229);
+    background-color: white;
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow-soft);
   }
   
   .card-compact {
-    @apply rounded-lg border border-neutral-200 bg-white p-4 shadow-sm;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(229 229 229);
+    background-color: white;
+    padding: 1rem;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   }
 
   /* Input styles */
   .input-primary {
-    @apply block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-white disabled:cursor-not-allowed disabled:bg-neutral-50 disabled:opacity-50;
-  }
-
-  /* Dark mode card styles */
-  .dark .card {
-    @apply border-neutral-700 bg-neutral-800;
-  }
-  
-  .dark .card-compact {
-    @apply border-neutral-700 bg-neutral-800;
+    display: block;
+    width: 100%;
+    border-radius: 0.5rem;
+    border: 1px solid rgb(212 212 212);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
   }
   
-  .dark .input-primary {
-    @apply border-neutral-600 bg-neutral-800 text-neutral-100 placeholder:text-neutral-400 focus:border-brand-400 focus:ring-brand-400 focus:ring-offset-neutral-800;
+  .input-primary::placeholder {
+    color: rgb(115 115 115);
   }
   
-  .dark .btn-secondary {
-    @apply bg-neutral-800 text-neutral-100 hover:bg-neutral-700 focus:ring-neutral-400;
-  }
-  
-  .dark .btn-ghost {
-    @apply text-neutral-300 hover:bg-neutral-800 focus:ring-neutral-400;
+  .input-primary:focus {
+    outline: none;
+    border-color: var(--color-brand-500);
+    box-shadow: 0 0 0 2px var(--color-brand-500), 0 0 0 4px rgb(14 165 233 / 0.1);
   }
 }
 
@@ -113,7 +241,6 @@
     text-wrap: pretty;
   }
   
-  /* Norwegian-specific utilities */
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
@@ -122,95 +249,11 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
-  
-  /* Animation utilities */
-  .animate-in {
-    @apply transition-all duration-300 ease-out;
-  }
-  
-  .animate-out {
-    @apply transition-all duration-200 ease-in;
-  }
 }
 
-/* Custom properties for theming */
-:root {
-  --background: 0 0% 100%;
-  --foreground: 0 0% 3.9%;
-  --border: 0 0% 89.8%;
-  --input: 0 0% 89.8%;
-  --ring: 0 0% 3.9%;
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: 0 0% 3.9%;
-  --foreground: 0 0% 98%;
-  --border: 0 0% 14.9%;
-  --input: 0 0% 14.9%;
-  --ring: 0 0% 83.1%;
-}
-
-/* Accessibility improvements */
-@layer base {
-  /* Focus styles for better keyboard navigation */
-  *:focus-visible {
-    @apply outline-2 outline-offset-2 outline-brand-500;
-  }
-
-  /* Reduce motion for users with motion sensitivity */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    ::before,
-    ::after {
-      animation-delay: -1ms !important;
-      animation-duration: 1ms !important;
-      animation-iteration-count: 1 !important;
-      background-attachment: initial !important;
-      scroll-behavior: auto !important;
-      transition-duration: 0s !important;
-      transition-delay: 0s !important;
-    }
-  }
-
-  /* High contrast mode support */
-  @media (prefers-contrast: high) {
-    .btn-primary {
-      @apply border-2 border-current;
-    }
-    
-    .card {
-      @apply border-2 border-neutral-900;
-    }
-  }
-
-  /* Large text support for accessibility */
-  @media (min-resolution: 2dppx) {
-    body {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-    }
-  }
-}
-
-/* Print styles for Norwegian documents */
+/* Print styles */
 @media print {
   .no-print {
     display: none !important;
-  }
-  
-  body {
-    @apply text-black bg-white;
-  }
-  
-  .card {
-    @apply shadow-none border-neutral-300;
-  }
-  
-  /* Print-specific accessibility */
-  a[href^="http"]:after {
-    content: " (" attr(href) ")";
-    font-size: 0.8em;
-    color: #666;
   }
 }
