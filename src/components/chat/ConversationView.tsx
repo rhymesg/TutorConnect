@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, MoreVertical, Phone, Video, User, ExternalLink, Calendar, MapPin, Clock } from 'lucide-react';
-import { Chat, Message, TypingIndicator } from '@/types/chat';
+import { ArrowLeft, MoreVertical, Phone, Video, User, ExternalLink, Wifi, WifiOff, Activity } from 'lucide-react';
+import { useRealtimeChat } from '@/hooks/useRealtimeChat';
+import { useUserPresence } from '@/hooks/useUserPresence';
 import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import MessageBubble from './MessageBubble';
 import MessageComposer from './MessageComposer';
@@ -10,49 +11,78 @@ import TypingIndicators from './TypingIndicators';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface ConversationViewProps {
-  chat: Chat | null;
-  messages: Message[];
-  isLoading: boolean;
-  error: string | null;
+  chatId: string;
   currentUserId: string;
-  typingUsers: TypingIndicator[];
   onBack?: () => void;
-  onSendMessage: (content: string, type?: Message['type']) => Promise<void>;
-  onLoadMore?: () => void;
-  onMarkAsRead?: () => void;
-  onStartTyping?: () => void;
-  onStopTyping?: () => void;
-  hasMore?: boolean;
   isMobile?: boolean;
+  enablePresence?: boolean;
+  enableTyping?: boolean;
+  enableOptimistic?: boolean;
 }
 
 export default function ConversationView({
-  chat,
-  messages,
-  isLoading,
-  error,
+  chatId,
   currentUserId,
-  typingUsers,
   onBack,
-  onSendMessage,
-  onLoadMore,
-  onMarkAsRead,
-  onStartTyping,
-  onStopTyping,
-  hasMore = false,
   isMobile = false,
+  enablePresence = true,
+  enableTyping = true,
+  enableOptimistic = true,
 }: ConversationViewProps) {
   const language = useLanguage();
   const t = chatTranslations[language];
+  
+  // Real-time chat hook
+  const {
+    chat,
+    participants,
+    loading: chatLoading,
+    error: chatError,
+    isConnected,
+    messages,
+    messagesLoading,
+    messagesError,
+    sendMessage,
+    loadMoreMessages,
+    markAsRead,
+    startTyping,
+    stopTyping,
+    typingUsers,
+    onlineUsers,
+    statistics,
+    addEventListener,
+    formatTime,
+    formatLastSeen,
+  } = useRealtimeChat({
+    chatId,
+    enablePresence,
+    enableTyping,
+    autoSubscribe: true,
+  });
+
+  // User presence hook for global presence tracking
+  const {
+    getUserPresence,
+    isUserOnline,
+    formatLastSeen: formatUserLastSeen,
+    getStatusColor,
+  } = useUserPresence({ globalPresence: true });
   
   const [showMenu, setShowMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
 
-  const otherParticipant = chat?.participants?.find(
+  // Error state (combine chat and message errors)
+  const error = chatError || messagesError;
+  const isLoading = chatLoading || messagesLoading;
+
+  const otherParticipant = participants.find(
     p => p.userId !== currentUserId && p.isActive
   );
+
+  // Get detailed presence info for the other participant
+  const otherUserPresence = otherParticipant ? getUserPresence(otherParticipant.userId) : null;
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -63,10 +93,29 @@ export default function ConversationView({
 
   // Mark as read when component mounts or chat changes
   useEffect(() => {
-    if (chat && onMarkAsRead) {
-      onMarkAsRead();
+    if (chatId) {
+      markAsRead();
     }
-  }, [chat?.id, onMarkAsRead]);
+  }, [chatId, markAsRead]);
+
+  // Setup chat event listeners
+  useEffect(() => {
+    const removeListener = addEventListener((event) => {
+      switch (event.type) {
+        case 'participant_joined':
+          console.log(`${event.participant.name} joined the chat`);
+          break;
+        case 'participant_left':
+          console.log('Participant left the chat');
+          break;
+        case 'appointment_created':
+          // Handle appointment notifications
+          break;
+      }
+    });
+
+    return removeListener;
+  }, [addEventListener]);
 
   // Handle scroll to check if user is at bottom
   const handleScroll = () => {
@@ -77,34 +126,61 @@ export default function ConversationView({
     setShouldAutoScroll(isAtBottom);
     
     // Load more messages if near top
-    if (scrollTop < 100 && hasMore && onLoadMore && !isLoading) {
-      onLoadMore();
+    if (scrollTop < 100 && !isLoading) {
+      loadMoreMessages();
+    }
+  };
+
+  // Handle message sending
+  const handleSendMessage = async (content: string, type: 'TEXT' | 'APPOINTMENT_REQUEST' | 'APPOINTMENT_RESPONSE' | 'SYSTEM_MESSAGE' = 'TEXT') => {
+    try {
+      await sendMessage(content, type);
+    } catch (error) {
+      console.error('Failed to send message:', error);
     }
   };
 
   const getOnlineStatus = () => {
     if (!otherParticipant) return null;
     
-    const user = otherParticipant.user;
-    if (!user.lastActive) return t.status.offline;
-    
-    const now = new Date();
-    const lastActive = new Date(user.lastActive);
-    const diffMs = now.getTime() - lastActive.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    
-    if (diffMinutes < 5) return t.status.activeNow;
-    if (diffMinutes < 60) {
-      return t.status.lastSeen.replace('{time}', `${diffMinutes}m`);
+    // Use real-time presence data if available
+    if (otherUserPresence) {
+      if (otherUserPresence.status === 'online') {
+        return t.status.activeNow;
+      } else if (otherUserPresence.status === 'away') {
+        return language === 'no' ? 'Borte' : 'Away';
+      } else if (otherUserPresence.status === 'busy') {
+        return language === 'no' ? 'Opptatt' : 'Busy';
+      }
+      
+      return formatUserLastSeen(otherUserPresence.lastSeen);
     }
     
-    const diffHours = Math.floor(diffMinutes / 60);
-    if (diffHours < 24) {
-      return t.status.lastSeen.replace('{time}', `${diffHours}h`);
+    // Fallback to participant data
+    if (otherParticipant.isOnline) {
+      return t.status.activeNow;
     }
     
-    const diffDays = Math.floor(diffHours / 24);
-    return t.status.lastSeen.replace('{time}', `${diffDays}d`);
+    if (otherParticipant.lastSeen) {
+      return formatLastSeen(otherParticipant.lastSeen);
+    }
+    
+    return t.status.offline;
+  };
+
+  const getStatusIndicator = () => {
+    if (!otherParticipant) return null;
+    
+    if (otherUserPresence) {
+      const colorClass = getStatusColor(otherUserPresence.status);
+      return <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 ${colorClass} border-2 border-white rounded-full`} />;
+    }
+    
+    if (otherParticipant.isOnline) {
+      return <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full" />;
+    }
+    
+    return null;
   };
 
   if (!chat) {
@@ -164,10 +240,10 @@ export default function ConversationView({
             
             {/* Avatar */}
             <div className="relative">
-              {otherParticipant?.user.profileImage ? (
+              {otherParticipant?.profileImage ? (
                 <img
-                  src={otherParticipant.user.profileImage}
-                  alt={otherParticipant.user.name}
+                  src={otherParticipant.profileImage}
+                  alt={otherParticipant.name}
                   className="w-10 h-10 rounded-full object-cover"
                 />
               ) : (
@@ -176,18 +252,39 @@ export default function ConversationView({
                 </div>
               )}
               
-              {otherParticipant?.user.isActive && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 border-2 border-white rounded-full"></div>
-              )}
+              {getStatusIndicator()}
             </div>
             
             <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-semibold text-gray-900 truncate">
-                {otherParticipant?.user.name || 'Unknown User'}
-              </h2>
-              <p className="text-sm text-gray-500 truncate">
-                {getOnlineStatus()}
-              </p>
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">
+                  {otherParticipant?.name || 'Unknown User'}
+                </h2>
+                {otherParticipant?.isTyping && (
+                  <div className="flex items-center gap-1 text-blue-600">
+                    <Activity className="h-3 w-3 animate-pulse" />
+                    <span className="text-xs font-medium">
+                      {language === 'no' ? 'skriver...' : 'typing...'}
+                    </span>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm text-gray-500 truncate">
+                  {getOnlineStatus()}
+                </p>
+                {!isConnected && (
+                  <div className="flex items-center gap-1 text-red-500">
+                    <WifiOff className="h-3 w-3" />
+                    <span className="text-xs">
+                      {language === 'no' ? 'Frakoblet' : 'Disconnected'}
+                    </span>
+                  </div>
+                )}
+                {isConnected && (
+                  <Wifi className="h-3 w-3 text-green-500" />
+                )}
+              </div>
             </div>
           </div>
           
@@ -225,7 +322,7 @@ export default function ConversationView({
         </div>
         
         {/* Related Post Info */}
-        {chat.relatedPost && (
+        {chat?.relatedPost && (
           <div className="mt-3 p-3 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <div className={`px-2 py-1 rounded-full text-xs font-medium ${
@@ -261,6 +358,19 @@ export default function ConversationView({
             </div>
           </div>
         )}
+        
+        {/* Chat Statistics */}
+        {statistics && (
+          <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+            <span>{statistics.totalMessages} {language === 'no' ? 'meldinger' : 'messages'}</span>
+            <span>{statistics.activeParticipants} {language === 'no' ? 'aktive' : 'active'}</span>
+            {statistics.lastActivity && (
+              <span>
+                {language === 'no' ? 'Sist aktiv' : 'Last active'}: {formatTime(statistics.lastActivity)}
+              </span>
+            )}
+          </div>
+        )}
       </div>
       
       {/* Messages */}
@@ -270,20 +380,18 @@ export default function ConversationView({
         className="flex-1 overflow-y-auto p-4 space-y-4"
       >
         {/* Load more indicator */}
-        {hasMore && (
-          <div className="text-center py-2">
-            {isLoading ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <button
-                onClick={onLoadMore}
-                className="text-sm text-blue-600 hover:text-blue-700"
-              >
-                {language === 'no' ? 'Last flere meldinger' : 'Load more messages'}
-              </button>
-            )}
-          </div>
-        )}
+        <div className="text-center py-2">
+          {isLoading ? (
+            <LoadingSpinner size="sm" />
+          ) : (
+            <button
+              onClick={loadMoreMessages}
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              {language === 'no' ? 'Last flere meldinger' : 'Load more messages'}
+            </button>
+          )}
+        </div>
         
         {/* Messages */}
         {messages.map((message, index) => {
@@ -301,20 +409,28 @@ export default function ConversationView({
 
           return (
             <MessageBubble
-              key={message.id}
+              key={message.id || message.tempId}
               message={message}
               isOwn={isOwn}
               showAvatar={showAvatar}
               showTimestamp={showTimestamp}
               language={language}
+              status={message.status}
+              isOptimistic={message.isOptimistic}
+              error={message.error}
+              onRetry={() => retryMessage(message.id || message.tempId!)}
             />
           );
-        })}
+        })}        
         
         {/* Typing indicators */}
         {typingUsers.length > 0 && (
           <TypingIndicators 
-            typingUsers={typingUsers} 
+            typingUsers={typingUsers.map(user => ({
+              userId: user.userId,
+              userName: user.name,
+              timestamp: Date.now(),
+            }))} 
             currentUserId={currentUserId}
             language={language}
           />
@@ -325,11 +441,15 @@ export default function ConversationView({
       
       {/* Message Composer */}
       <MessageComposer
-        onSendMessage={onSendMessage}
-        onStartTyping={onStartTyping}
-        onStopTyping={onStopTyping}
+        onSendMessage={handleSendMessage}
+        onStartTyping={startTyping}
+        onStopTyping={stopTyping}
         language={language}
-        disabled={!otherParticipant?.isActive}
+        disabled={!otherParticipant?.isActive || !isConnected}
+        placeholder={!isConnected 
+          ? (language === 'no' ? 'Kobler til...' : 'Connecting...')
+          : undefined
+        }
       />
     </div>
   );

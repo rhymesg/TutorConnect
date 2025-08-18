@@ -271,6 +271,87 @@ export default function ChatLayout({ initialChatId }: ChatLayoutProps) {
     }
   };
 
+  const handleArchiveChat = async (chatId: string) => {
+    try {
+      const response = await fetch(`/api/chat/${chatId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+        body: JSON.stringify({ status: 'archived' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to archive chat');
+      }
+
+      // Update chat in local state
+      setChats(prev => prev.map(chat => 
+        chat.id === chatId 
+          ? { ...chat, isActive: false }
+          : chat
+      ));
+
+      // If this was the selected chat, go back to list
+      if (selectedChatId === chatId) {
+        handleBackToList();
+      }
+      
+    } catch (error) {
+      console.error('Failed to archive chat:', error);
+    }
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    if (!confirm(language === 'no' ? 'Er du sikker på at du vil slette denne samtalen?' : 'Are you sure you want to delete this conversation?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/chat/${chatId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete chat');
+      }
+
+      // Remove chat from local state
+      setChats(prev => prev.filter(chat => chat.id !== chatId));
+
+      // If this was the selected chat, go back to list
+      if (selectedChatId === chatId) {
+        handleBackToList();
+      }
+      
+    } catch (error) {
+      console.error('Failed to delete chat:', error);
+    }
+  };
+
+  const handlePinChat = async (chatId: string) => {
+    try {
+      // This would pin/unpin the chat - implementation depends on your backend
+      console.log('Pin/unpin chat:', chatId);
+      
+    } catch (error) {
+      console.error('Failed to pin chat:', error);
+    }
+  };
+
+  const handleRetry = () => {
+    loadChats();
+  };
+
+  const handleExploreContacts = () => {
+    // Navigate to posts page
+    window.location.href = '/posts';
+  };
+
   if (!isAuthenticated) {
     return (
       <div className="flex items-center justify-center h-full bg-gray-50">
@@ -314,6 +395,11 @@ export default function ChatLayout({ initialChatId }: ChatLayoutProps) {
           onFilter={handleFilterChats}
           hasMore={hasMoreChats}
           onLoadMore={loadChats}
+          onArchiveChat={handleArchiveChat}
+          onDeleteChat={handleDeleteChat}
+          onPinChat={handlePinChat}
+          onRetry={handleRetry}
+          onExploreContacts={handleExploreContacts}
         />
       </div>
 

@@ -315,7 +315,7 @@ export default function MessageComposer({
         className="hidden"
       />
       
-      {/* Disabled state message */}
+      {/* Status messages */}
       {disabled && (
         <p className="text-center text-sm text-gray-500 mt-2">
           {language === 'no' 
@@ -324,6 +324,14 @@ export default function MessageComposer({
           }
         </p>
       )}
+      
+      {isUploading && (
+        <div className="flex items-center justify-center gap-2 text-sm text-blue-600 mt-2">
+          <Upload className="h-4 w-4 animate-bounce" />
+          <span>{t.composer.uploading}</span>
+        </div>
+      )}
+    </div>
     </div>
   );
 }
