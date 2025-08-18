@@ -8,10 +8,15 @@ TutorConnect is a web-based platform designed for the Norwegian market, enabling
 
 ## Technology Stack
 
-- **Frontend**: Next.js 14 + TypeScript + Tailwind CSS
-- **Backend**: Next.js API Routes + Prisma ORM  
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: Vercel
+- **Frontend**: Next.js 15 + TypeScript + Tailwind CSS v4 + React 19
+- **Backend**: Next.js API Routes + Prisma ORM
+- **Database**: Supabase (PostgreSQL + Real-time Chat + File Storage)
+- **UI Components**: Headless UI + Heroicons + Lucide React
+- **Form Handling**: React Hook Form + Zod validation
+- **Styling**: Tailwind CSS v4 (CSS-first configuration)
+- **Authentication**: JWT (jose library) + Supabase Auth
+- **Deployment**: Vercel (Frontend) + Supabase (Backend/DB)
+- **Testing**: Jest + Testing Library + Playwright E2E
 
 ## Development
 
