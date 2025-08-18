@@ -157,10 +157,17 @@ export class TestDataSeeder {
     // Delete in order to respect foreign key constraints
     await this.prisma.appointment.deleteMany({
       where: {
-        OR: [
-          { teacher: { email: { endsWith: '@test.com' } } },
-          { student: { email: { endsWith: '@test.com' } } },
-        ]
+        chat: {
+          participants: {
+            some: {
+              user: {
+                email: {
+                  endsWith: '@test.com'
+                }
+              }
+            }
+          }
+        }
       }
     })
 
