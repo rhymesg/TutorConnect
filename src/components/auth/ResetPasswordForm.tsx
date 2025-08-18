@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
+import { useState, FormEvent, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AuthForm from './AuthForm';
 import FormField from './FormField';
@@ -19,7 +19,7 @@ interface ResetPasswordFormProps {
   className?: string;
 }
 
-export default function ResetPasswordForm({ 
+function ResetPasswordFormInner({ 
   token: propToken, 
   onSuccess, 
   className 
@@ -302,5 +302,24 @@ export default function ResetPasswordForm({
         </ul>
       </div>
     </AuthForm>
+  );
+}
+
+export default function ResetPasswordForm(props: ResetPasswordFormProps) {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-md mx-auto">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded mb-4"></div>
+          <div className="space-y-4">
+            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+            <div className="h-12 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    }>
+      <ResetPasswordFormInner {...props} />
+    </Suspense>
   );
 }

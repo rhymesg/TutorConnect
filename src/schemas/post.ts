@@ -125,7 +125,53 @@ export const CreatePostSchema = z.object({
 });
 
 // Update post schema (all fields optional except validation rules)
-export const UpdatePostSchema = CreatePostSchema.partial().superRefine((data, ctx) => {
+export const UpdatePostSchema = z.object({
+  type: PostTypeSchema.optional(),
+  subject: SubjectSchema.optional(),
+  ageGroups: z.array(AgeGroupSchema)
+    .min(1, 'At least one age group must be selected')
+    .max(4, 'Maximum 4 age groups allowed')
+    .optional(),
+  
+  title: z.string()
+    .min(5, 'Title must be at least 5 characters')
+    .max(100, 'Title cannot exceed 100 characters')
+    .trim()
+    .optional(),
+  
+  description: z.string()
+    .min(20, 'Description must be at least 20 characters')
+    .max(2000, 'Description cannot exceed 2000 characters')
+    .trim()
+    .optional(),
+  
+  availableDays: z.array(WeekdaySchema)
+    .min(1, 'At least one day must be selected')
+    .max(7, 'Cannot select more than 7 days')
+    .optional(),
+  
+  availableTimes: z.array(TimeSlotSchema)
+    .min(1, 'At least one time slot must be provided')
+    .max(10, 'Maximum 10 time slots allowed')
+    .optional(),
+  
+  preferredSchedule: z.string()
+    .max(500, 'Preferred schedule cannot exceed 500 characters')
+    .trim()
+    .optional(),
+  
+  location: NorwegianRegionSchema.optional(),
+  
+  specificLocation: z.string()
+    .max(200, 'Specific location cannot exceed 200 characters')
+    .trim()
+    .optional(),
+  
+  // Pricing options for Norwegian market
+  hourlyRate: PriceSchema,
+  hourlyRateMin: PriceSchema,
+  hourlyRateMax: PriceSchema,
+}).superRefine((data, ctx) => {
   // Apply same pricing validation if any pricing field is provided
   const hasPricing = data.hourlyRate !== undefined || data.hourlyRateMin !== undefined || data.hourlyRateMax !== undefined;
   

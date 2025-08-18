@@ -17,7 +17,33 @@ import { calculatePagination } from '@/lib/api-handler';
 const prisma = new PrismaClient();
 
 // Enhanced search schema with Norwegian-specific features
-const AdvancedSearchSchema = PostSearchSchema.extend({
+const AdvancedSearchSchema = z.object({
+  // Basic search fields from PostSearchSchema
+  q: z.string().trim().optional(),
+  type: z.enum(['TUTOR_OFFER', 'STUDENT_REQUEST']).optional(),
+  subject: z.enum(['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'HISTORY', 'GEOGRAPHY', 'ART', 'MUSIC', 'SPORTS', 'PROGRAMMING', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'OTHER']).optional(),
+  ageGroups: z.union([
+    z.enum(['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS']),
+    z.array(z.enum(['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS']))
+  ]).optional().transform(val => Array.isArray(val) ? val : val ? [val] : undefined),
+  location: z.enum(['OSLO', 'BERGEN', 'TRONDHEIM', 'STAVANGER', 'KRISTIANSAND', 'FREDRIKSTAD', 'SANDNES', 'TROMSOE', 'DRAMMEN', 'ASKER', 'BAERUM', 'AKERSHUS', 'OESTFOLD', 'BUSKERUD', 'VESTFOLD', 'TELEMARK', 'AUST_AGDER', 'VEST_AGDER', 'ROGALAND', 'HORDALAND', 'SOGN_OG_FJORDANE', 'MOERE_OG_ROMSDAL', 'SOER_TROENDELAG', 'NORD_TROENDELAG', 'NORDLAND', 'TROMS', 'FINNMARK']).optional(),
+  minRate: z.coerce.number().min(0).optional(),
+  maxRate: z.coerce.number().min(0).optional(),
+  availableDays: z.union([
+    z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']),
+    z.array(z.enum(['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY']))
+  ]).optional().transform(val => Array.isArray(val) ? val : val ? [val] : undefined),
+  createdAfter: z.coerce.date().optional(),
+  createdBefore: z.coerce.date().optional(),
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(100).default(20),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'hourlyRate', 'title']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  hasActiveChats: z.coerce.boolean().optional(),
+  userRegion: z.enum(['OSLO', 'BERGEN', 'TRONDHEIM', 'STAVANGER', 'KRISTIANSAND', 'FREDRIKSTAD', 'SANDNES', 'TROMSOE', 'DRAMMEN', 'ASKER', 'BAERUM', 'AKERSHUS', 'OESTFOLD', 'BUSKERUD', 'VESTFOLD', 'TELEMARK', 'AUST_AGDER', 'VEST_AGDER', 'ROGALAND', 'HORDALAND', 'SOGN_OG_FJORDANE', 'MOERE_OG_ROMSDAL', 'SOER_TROENDELAG', 'NORD_TROENDELAG', 'NORDLAND', 'TROMS', 'FINNMARK']).optional(),
+  includeNearbyRegions: z.coerce.boolean().default(false),
+  onlyVerifiedUsers: z.coerce.boolean().default(false),
+
   // Subject category filtering
   subjectCategory: z.enum([
     'CORE_SUBJECTS',
@@ -64,6 +90,28 @@ const AdvancedSearchSchema = PostSearchSchema.extend({
     z.enum(['INDIVIDUAL', 'GROUP', 'ONLINE', 'HOME_VISIT', 'LIBRARY', 'SCHOOL', 'CAFE']),
     z.array(z.enum(['INDIVIDUAL', 'GROUP', 'ONLINE', 'HOME_VISIT', 'LIBRARY', 'SCHOOL', 'CAFE']))
   ]).optional().transform(val => Array.isArray(val) ? val : val ? [val] : undefined),
+}).superRefine((data, ctx) => {
+  // Validate price range
+  if (data.minRate !== undefined && data.maxRate !== undefined) {
+    if (data.minRate >= data.maxRate) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Minimum rate must be less than maximum rate',
+        path: ['minRate']
+      });
+    }
+  }
+  
+  // Validate date range
+  if (data.createdAfter && data.createdBefore) {
+    if (data.createdAfter >= data.createdBefore) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Created after date must be before created before date',
+        path: ['createdAfter']
+      });
+    }
+  }
 });
 
 /**
