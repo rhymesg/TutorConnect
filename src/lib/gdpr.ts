@@ -12,8 +12,9 @@ const prisma = new PrismaClient();
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+let supabase: any = null;
 if (supabaseUrl && supabaseKey) {
-  var supabase = createClient(supabaseUrl, supabaseKey);
+  supabase = createClient(supabaseUrl, supabaseKey);
 }
 
 /**
