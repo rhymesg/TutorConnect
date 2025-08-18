@@ -28,7 +28,15 @@
     "test:db:setup": "tsx scripts/setup-test-db.ts setup",
     "test:db:clean": "tsx scripts/setup-test-db.ts clean",
     "test:db:reset": "tsx scripts/setup-test-db.ts reset",
-    "analyze": "cross-env ANALYZE=true next build"
+    "analyze": "cross-env ANALYZE=true next build",
+    "encryption:setup": "node scripts/encryption-setup.js setup",
+    "encryption:generate-key": "node scripts/encryption-setup.js generate-key",
+    "encryption:validate": "node scripts/encryption-setup.js validate-key",
+    "encryption:status": "node scripts/encryption-setup.js status",
+    "encryption:rotate": "node scripts/encryption-setup.js rotate",
+    "encryption:migrate": "node scripts/encryption-setup.js migrate",
+    "encryption:cleanup": "node scripts/encryption-setup.js cleanup",
+    "test:encryption": "jest tests/encryption.test.js"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.7",

@@ -361,8 +361,13 @@ export interface SecurityLogEntry {
   path: string;
   statusCode?: number;
   userId?: string;
-  eventType: 'AUTH_SUCCESS' | 'AUTH_FAILURE' | 'RATE_LIMIT' | 'SUSPICIOUS_ACTIVITY' | 'API_ACCESS';
+  eventType: 'AUTH_SUCCESS' | 'AUTH_FAILURE' | 'RATE_LIMIT' | 'SUSPICIOUS_ACTIVITY' | 'API_ACCESS' | 'ENCRYPTION_ACCESS' | 'KEY_ROTATION' | 'DATA_BREACH_ATTEMPT';
   details?: Record<string, any>;
+  encryptionMetadata?: {
+    fieldsAccessed?: string[];
+    encryptionStatus?: 'encrypted' | 'decrypted' | 'failed';
+    keyVersion?: number;
+  };
 }
 
 class SecurityLogger {

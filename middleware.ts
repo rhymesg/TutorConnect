@@ -7,6 +7,11 @@ import {
   SlidingWindowRateLimit,
   securityLogger
 } from './src/middleware/security';
+import {
+  encryptionSecurityMiddleware,
+  keyRotationMiddleware,
+  validateEncryptedPayload
+} from './src/middleware/encryptionSecurity';
 
 // Rate limiters for different endpoints
 const globalRateLimit = new SlidingWindowRateLimit(60 * 1000, 100); // 100 requests per minute
@@ -25,6 +30,13 @@ export function middleware(request: NextRequest) {
     // Apply security logging first
     securityLoggingMiddleware(request);
 
+    // Apply encryption security monitoring
+    const encryptionResponse = encryptionSecurityMiddleware(request);
+    if (encryptionResponse) return encryptionResponse;
+
+    // Check key rotation status
+    keyRotationMiddleware(request);
+
     // Apply CORS for API routes
     if (pathname.startsWith('/api/')) {
       const corsResponse = corsMiddleware(request);
@@ -39,6 +51,10 @@ export function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/')) {
       const validationResponse = requestValidationMiddleware(request);
       if (validationResponse) return validationResponse;
+
+      // Validate encrypted payloads
+      const encryptedPayloadResponse = validateEncryptedPayload(request);
+      if (encryptedPayloadResponse) return encryptedPayloadResponse;
     }
 
     // Apply security headers
