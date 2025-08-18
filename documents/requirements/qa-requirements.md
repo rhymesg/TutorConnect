@@ -253,6 +253,29 @@ describe('Accessibility Tests', () => {
 - **Wave**: Web accessibility evaluation
 - **Color Contrast**: Color contrast inspection
 
+## Bug-Driven Test Development (BDTD) Protocol
+
+**MANDATORY: Every bug fix must include regression test**
+
+### Test-First Workflow
+1. **Bug Found** → Write failing test that reproduces it (Test First)
+2. **Fix Bug** → Implement fix to make test pass
+3. **Verify** → Ensure both fix works and test prevents regression
+4. **Add to Suite** → Include in appropriate test category
+
+### Test Strategy by Bug Severity
+- **Critical/Security** → Unit + Integration + E2E tests
+- **Major** → Unit + Integration tests  
+- **Minor** → Unit test minimum
+
+### Naming Convention
+```typescript
+// Format: should[Behavior]When[Condition]For[BugId]
+it('shouldRejectLoginWhenPasswordIncorrectForBUG001', () => {
+  // Prevents password bypass regression
+});
+```
+
 ## Test Implementation Task
 
 **PRIORITY: Implement comprehensive test suite from scratch for TutorConnect platform**
@@ -263,6 +286,7 @@ The current test infrastructure will be rebuilt to properly support:
 - Modern Tailwind CSS component testing
 - Supabase real-time features testing
 - PWA functionality testing
+- **Bug-Driven Test Development (BDTD) Protocol**
 
 ### Implementation Steps:
 1. Design new Jest configuration for latest Next.js compatibility
@@ -271,6 +295,7 @@ The current test infrastructure will be rebuilt to properly support:
 4. Create test database setup scripts for integration tests
 5. Build CI/CD pipeline with GitHub Actions for automated testing
 6. Establish test coverage targets and quality gates
+7. **Implement BDTD automation tools and workflows**
 
 ## Test Automation
 
