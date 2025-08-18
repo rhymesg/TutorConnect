@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { PostList } from '@/components/posts';
+import PostListEnhanced from '@/components/posts/PostListEnhanced';
 import { PaginatedPosts, PostFilters } from '@/types/database';
 
 interface PostsPageClientProps {
@@ -144,9 +144,11 @@ export default function PostsPageClient({
   };
 
   return (
-    <PostList
+    <PostListEnhanced
       initialPosts={initialPosts}
       onPostContact={handlePostContact}
+      showSearchHistory={true}
+      enableOfflineMode={true}
       className="min-h-screen"
     />
   );

@@ -15,11 +15,16 @@ const createChatSchema = z.object({
   initialMessage: z.string().min(1).max(1000).optional(),
 });
 
-// Chat listing schema
+// Chat listing schema - Enhanced with more filters
 const listChatsSchema = z.object({
   page: z.string().optional().transform(val => val ? parseInt(val) : 1),
   limit: z.string().optional().transform(val => val ? Math.min(parseInt(val), 50) : 20),
-  status: z.enum(['active', 'inactive', 'all']).optional().default('active'),
+  status: z.enum(['active', 'inactive', 'archived', 'blocked', 'all']).optional().default('active'),
+  hasUnread: z.string().optional().transform(val => val === 'true'),
+  postType: z.enum(['TEACHER', 'STUDENT', 'all']).optional().default('all'),
+  subject: z.string().optional(),
+  sortBy: z.enum(['lastMessageAt', 'createdAt', 'unreadCount']).optional().default('lastMessageAt'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
 /**
@@ -30,15 +35,20 @@ async function handleGET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   
   // Validate query parameters
-  const { page, limit, status } = listChatsSchema.parse({
+  const { page, limit, status, hasUnread, postType, subject, sortBy, sortOrder } = listChatsSchema.parse({
     page: searchParams.get('page'),
     limit: searchParams.get('limit'),
     status: searchParams.get('status'),
+    hasUnread: searchParams.get('hasUnread'),
+    postType: searchParams.get('postType'),
+    subject: searchParams.get('subject'),
+    sortBy: searchParams.get('sortBy'),
+    sortOrder: searchParams.get('sortOrder'),
   });
 
   const skip = (page - 1) * limit;
 
-  // Build where clause based on status filter
+  // Build enhanced where clause based on filters
   const whereClause: any = {
     participants: {
       some: {
@@ -48,10 +58,32 @@ async function handleGET(request: NextRequest) {
     },
   };
 
+  // Apply status filter
   if (status === 'active') {
     whereClause.isActive = true;
   } else if (status === 'inactive') {
     whereClause.isActive = false;
+  } else if (status === 'archived') {
+    // For archived, we'd check user-specific archival status
+    whereClause.participants.some.isActive = false;
+  } else if (status === 'blocked') {
+    // For blocked chats, you'd have a separate blocking mechanism
+    whereClause.isActive = false;
+  }
+
+  // Apply post type filter
+  if (postType !== 'all') {
+    whereClause.relatedPost = {
+      type: postType,
+    };
+  }
+
+  // Apply subject filter
+  if (subject) {
+    whereClause.relatedPost = {
+      ...whereClause.relatedPost,
+      subject: subject,
+    };
   }
 
   // Get chats with participants, latest message, and unread count
@@ -102,8 +134,13 @@ async function handleGET(request: NextRequest) {
           },
         },
       },
-      orderBy: [
-        { lastMessageAt: 'desc' },
+      orderBy: sortBy === 'lastMessageAt' ? [
+        { lastMessageAt: sortOrder },
+        { createdAt: sortOrder },
+      ] : sortBy === 'createdAt' ? [
+        { createdAt: sortOrder },
+      ] : [
+        { lastMessageAt: 'desc' }, // Default fallback for unreadCount
         { createdAt: 'desc' },
       ],
       skip,
@@ -136,16 +173,35 @@ async function handleGET(request: NextRequest) {
         lastMessage: chat.messages[0] || null,
         isOwner: chat.participants.some(p => p.userId === user.id),
         otherParticipants: chat.participants.filter(p => p.userId !== user.id),
+        chatType: chat.participants.length > 2 ? 'group' : 'direct',
+        hasRecentActivity: chat.lastMessageAt && 
+          (Date.now() - chat.lastMessageAt.getTime()) < 24 * 60 * 60 * 1000,
+        isPostOwnerChat: chat.relatedPost?.userId === user.id,
       };
     })
   );
+
+  // Apply unread filter if requested (post-processing since it's complex to do in query)
+  let filteredChats = chatsWithUnreadCounts;
+  if (hasUnread !== undefined) {
+    filteredChats = chatsWithUnreadCounts.filter(chat => 
+      hasUnread ? chat.unreadCount > 0 : chat.unreadCount === 0
+    );
+  }
+
+  // Apply unread count sorting if requested
+  if (sortBy === 'unreadCount') {
+    filteredChats.sort((a, b) => 
+      sortOrder === 'desc' ? b.unreadCount - a.unreadCount : a.unreadCount - b.unreadCount
+    );
+  }
 
   const totalPages = Math.ceil(totalCount / limit);
 
   return {
     success: true,
     data: {
-      chats: chatsWithUnreadCounts,
+      chats: filteredChats,
       pagination: {
         page,
         limit,

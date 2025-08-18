@@ -120,6 +120,12 @@ model User {
   gender            Gender              @default(PREFER_NOT_TO_SAY)
   birthYear         Int?
   
+  // Encrypted sensitive fields
+  phoneNumber       String?             // Encrypted JSON string
+  phoneNumber_search String?            // Search hash for encrypted phone number
+  nationalIdNumber  String?             // Encrypted JSON string (for future ID verification)
+  nationalIdNumber_search String?       // Search hash for encrypted national ID
+  
   profileImage      String?
   school            String?
   degree            String?
@@ -155,6 +161,8 @@ model User {
   @@index([region, isActive])
   @@index([email])
   @@index([lastActive])
+  @@index([phoneNumber_search])
+  @@index([nationalIdNumber_search])
 }
 
 model Post {
@@ -239,7 +247,8 @@ model ChatParticipant {
 
 model Message {
   id            String      @id @default(cuid())
-  content       String
+  content       String                  // Will be encrypted for sensitive messages
+  content_search String?                // Search hash for encrypted content
   type          MessageType @default(TEXT)
   
   chatId        String
@@ -264,6 +273,7 @@ model Message {
   @@index([chatId, sentAt])
   @@index([senderId])
   @@index([replyToMessageId])
+  @@index([content_search])
 }
 
 model Appointment {
@@ -305,6 +315,10 @@ model Document {
   fileUrl         String
   fileSize        Int?
   mimeType        String?
+  
+  // Encrypted document metadata
+  documentContent String?                    // Encrypted document content/metadata
+  encryptionMetadata String?                // JSON string of encryption parameters
   
   verificationStatus VerificationStatus @default(PENDING)
   verifiedAt      DateTime?
