@@ -1,5 +1,5 @@
 import { createBrowserClient, createServerClient as createSupabaseServerClient } from '@supabase/ssr';
-import { createClient } from '@supabase/supabase-js';
+import { createClient as createSupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 
 import type { Database } from '@/types/supabase';
@@ -95,7 +95,7 @@ export const createAdminClient = () => {
     throw new Error('Missing Supabase environment variables');
   }
 
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+  return createSupabaseClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
