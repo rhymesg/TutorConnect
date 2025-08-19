@@ -24,6 +24,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
       
     - name: Setup Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
@@ -60,14 +62,22 @@ jobs:
         
         # Fallback to main branch comparison if PR context is not available
         if [ -z "$BASE_SHA" ] || [ -z "$HEAD_SHA" ]; then
-          git fetch origin main:main 2>/dev/null || true
           BASE_SHA="origin/main"
           HEAD_SHA="HEAD"
         fi
         
-        CHANGED_FILES=$(git diff --name-only ${BASE_SHA}..${HEAD_SHA} | grep -E '\.(ts|tsx|js|jsx)$' | grep '^src/' | tr '\n' ',' | sed 's/,$//')
-        
         echo "Debug: BASE_SHA=$BASE_SHA, HEAD_SHA=$HEAD_SHA"
+        
+        # Try to get changed files, with fallback if git diff fails
+        CHANGED_FILES=$(git diff --name-only ${BASE_SHA}..${HEAD_SHA} 2>/dev/null | grep -E '\.(ts|tsx|js|jsx)$' | grep '^src/' | tr '\n' ',' | sed 's/,$//' || echo "")
+        
+        # If git diff failed, try alternative approach
+        if [ -z "$CHANGED_FILES" ]; then
+          echo "Git diff failed, trying alternative approach..."
+          # Get all source files in current branch (fallback)
+          CHANGED_FILES=$(find src -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | head -10 | tr '\n' ',' | sed 's/,$//')
+        fi
+        
         echo "Debug: Changed files: $CHANGED_FILES"
         
         if [ -n "$CHANGED_FILES" ]; then
