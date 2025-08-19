@@ -3,6 +3,7 @@ export { default as PostCard, PostCardSkeleton } from './PostCard';
 export { default as PostList } from './PostList';
 export { default as PostListEnhanced } from './PostListEnhanced';
 export { default as PostForm } from './PostForm';
+export { default as PostFormFields } from './PostFormFields';
 export { default as SearchAndFilters, ActiveFilters } from './SearchAndFilters';
 export { default as SearchAndFiltersEnhanced } from './SearchAndFiltersEnhanced';
 export { default as ActiveFiltersEnhanced } from './ActiveFiltersEnhanced';
