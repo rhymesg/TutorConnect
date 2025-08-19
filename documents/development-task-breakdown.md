@@ -111,18 +111,20 @@ Test strategy development, automated testing, performance verification, quality 
 
 | Task ID | Task Name | Priority | Complexity | Dependencies | Completion Criteria |
 |---------|-----------|----------|----------|---------|----------|
-| QA-001 | Test environment setup | Critical | Medium | ARCH-003 | Jest, Playwright setup |
-| QA-002 | Unit test writing | High | Complex | FE-002~004, BE-001~003 | 70% coverage |
-| QA-003 | Integration test writing | High | Complex | BE-001~007 | API integration testing |
-| QA-004 | E2E test writing | High | Complex | FE-002~009 | Core flow testing |
-| QA-005 | Performance test setup | Medium | Complex | All | Lighthouse, load testing |
-| QA-006 | Security testing | Medium | Complex | SEC-001~006 | Security vulnerability testing |
-| QA-007 | Accessibility testing | Medium | Medium | FE-013 | WCAG compliance testing |
-| QA-008 | CI/CD pipeline | Medium | Medium | QA-001~004 | GitHub Actions setup |
-| QA-009 | Cross-browser testing | Low | Medium | FE-011 | Multi-browser testing |
-| QA-010 | Test documentation | Low | Simple | All QA | Test guide creation |
+| QA-001 | Test environment setup | Critical | Medium | ARCH-003 | Jest setup, CI/CD workflow |
+| QA-002 | Post system validation tests | Medium | Medium | After FE-003~004, BE-003 | Validate post creation/editing |
+| QA-003 | Search/filter validation tests | Medium | Medium | After FE-005, BE-003 ext | Validate search functionality |
+| QA-004 | Chat system validation tests | Medium | Medium | After FE-006~007, BE-004~005 | Validate chat functionality |
+| QA-005 | Appointment system tests | Medium | Medium | After FE-009, BE-006 | Validate appointment management |
+| QA-006 | File upload validation tests | Medium | Medium | After FE-010, BE-007 | Validate file upload security |
+| QA-007 | Profile system validation tests | Medium | Medium | After FE-008, BE-002 | Validate profile management |
+| QA-008 | PWA validation tests | Medium | Medium | After FE-011~014 | Validate PWA functionality |
+| QA-009 | Cross-browser compatibility | Medium | Medium | After PWA complete | Multi-browser testing |
+| QA-010 | Security & performance tests | Medium | Medium | After SEC/BE optimization | Final validation |
+| QA-011 | CI/CD pipeline setup | Medium | Medium | After QA-001 | GitHub Actions stability |
+| QA-012 | E2E integration tests | Medium | Medium | After all features | Final integration testing |
 
-**Total Complexity**: Large effort
+**Total Complexity**: Medium effort (testing after implementation)
 
 ## 2. Development Phases and Milestones
 
@@ -143,12 +145,12 @@ Test strategy development, automated testing, performance verification, quality 
 #### Stage 3: Post System
 - BE-003: Post management API
 - FE-003~004: Post list/creation UI
-- QA-002: Unit test start
+- QA-002: Post system validation tests (after implementation complete)
 
 #### Stage 4: Search and Filtering
 - FE-005: Search/filtering UI
 - BE-003 extension: Search API optimization
-- QA-003: Integration test start
+- QA-003: Search/filter validation tests (after implementation complete)
 
 **Milestone 1**: User registration, login, post creation/retrieval functionality complete
 
@@ -219,13 +221,13 @@ Test strategy development, automated testing, performance verification, quality 
 
 ## 3. Task Dependency Matrix
 
-### 3.1 Critical Path (Critical Path)
+### 3.1 Critical Path (Sequential Implementation)
 ```
-ARCH-001 → ARCH-002 → BE-001 → FE-002 → QA-002
+ARCH-001 → ARCH-002 → BE-001 → FE-002 → QA-002 (after FE-002 complete)
        ↓              ↓         ↓
-   ARCH-004 → BE-003 → FE-003 → QA-003
+   ARCH-004 → BE-003 → FE-003 → QA-003 (after FE-003 complete)
        ↓
-   ARCH-007 → BE-004 → BE-005 → FE-006 → FE-007
+   ARCH-007 → BE-004 → BE-005 → FE-006 → FE-007 → QA-004 (after chat complete)
 ```
 
 ### 3.2 Dependency Diagram
@@ -245,8 +247,8 @@ ARCH-001 → ARCH-002 → BE-001 → FE-002 → QA-002
 | FE-010 | BE-007 | File upload API needed |
 | SEC-001 | BE-001 | Authentication system foundation |
 | SEC-005 | BE-009 | Input validation foundation |
-| QA-002 | FE-002~004, BE-001~003 | Test targets needed |
-| QA-004 | FE-002~009 | UI completion needed |
+| QA-002 | After FE-003~004, BE-003 | Implementation completion needed |
+| QA-004 | After FE-006~007, BE-004~005 | Chat system implementation needed |
 
 ## 4. Risk Analysis and Mitigation
 
