@@ -25,9 +25,14 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   
-  // Basic coverage
+  // Coverage configuration
+  collectCoverage: true,
+  coverageDirectory: 'coverage',
+  coverageReporters: ['text', 'lcov', 'json', 'json-summary'],
   collectCoverageFrom: [
-    'src/lib/*.ts',
+    'src/**/*.{ts,tsx}', // Include all source files
     '!src/**/*.d.ts',
+    '!src/**/*.test.ts',
+    '!src/types/**', // Exclude type definitions
   ],
 };
