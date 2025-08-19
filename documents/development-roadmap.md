@@ -80,11 +80,11 @@ Phase 5: Launch         │                                            ███
 │ FE-004 Post creation/edit form    │Complex           │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-002 Unit test writing          │Complex           │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-002 Post system validation tests│Medium           │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 3 Milestone**: Post creation/retrieval/editing functionality complete
+**Stage 3 Milestone**: Post creation/retrieval/editing functionality complete with tests
 
 #### Stage 4: Search and Filtering
 ```
@@ -96,11 +96,11 @@ Phase 5: Launch         │                                            ███
 │ FE-005 Search and filtering UI    │Complex           │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-003 Integration test writing   │Complex           │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-003 Search/filter validation tests│Medium         │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 4 Milestone**: Post search/filtering functionality complete
+**Stage 4 Milestone**: Post search/filtering functionality complete with tests
 
 **Phase 1 Total Milestone**: ✅ User registration, login, post creation/retrieval/search functionality complete
 
@@ -147,11 +147,11 @@ Phase 5: Launch         │                                            ███
 │ SEC-007 GDPR compliance           │Medium            │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Medium) ────────────────────────────────────────┐
-│ QA-004 E2E test start             │Complex           │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-004 Chat system validation tests│Medium           │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 6 Milestone**: Real-time chat functionality complete
+**Stage 6 Milestone**: Real-time chat functionality complete with tests
 
 #### Stage 7: Appointment Management System
 ```
@@ -163,15 +163,15 @@ Phase 5: Launch         │                                            ███
 │ FE-009 Appointment management UI  │Complex           │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-004 E2E test expansion         │Complex           │
-└──────────────────────────────────────────────────────┘
-
 ┌─ Security (Medium) ──────────────────────────────────┐
 │ SEC-008 Security monitoring basic │Medium            │
 └──────────────────────────────────────────────────────┘
+
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-005 Appointment system tests   │Medium            │
+└──────────────────────────────────────────────────────┘
 ```
-**Stage 7 Milestone**: Appointment creation/management/completion functionality complete
+**Stage 7 Milestone**: Appointment creation/management/completion functionality complete with tests
 
 **Phase 2 Total Milestone**: ✅ Real-time chat, appointment scheduling functionality complete
 
@@ -201,12 +201,11 @@ Phase 5: Launch         │                                            ███
 │ SEC-006 File security completion  │Medium            │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-005 Performance test setup     │Complex           │
-│ QA-006 Security testing           │Complex           │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-006 File upload validation tests│Medium           │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 8 Milestone**: File upload/management functionality complete
+**Stage 8 Milestone**: File upload/management functionality complete with tests
 
 #### Stage 9: Profile System Enhancement
 ```
@@ -223,12 +222,11 @@ Phase 5: Launch         │                                            ███
 │ SEC-007 GDPR full implementation  │Complex           │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Medium) ────────────────────────────────────────┐
-│ QA-007 Accessibility testing      │Medium            │
-│ QA-004 E2E test completion        │Medium            │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-007 Profile system validation tests│Medium        │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 9 Milestone**: Advanced profile management functionality complete
+**Stage 9 Milestone**: Advanced profile management functionality complete with tests
 
 #### Stage 10: PWA and Optimization
 ```
@@ -247,12 +245,12 @@ Phase 5: Launch         │                                            ███
 │ BE-011 Performance optimization   │Medium            │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Medium) ────────────────────────────────────────┐
-│ QA-009 Cross-browser testing      │Medium            │
-│ QA-008 CI/CD pipeline start       │Simple            │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-008 PWA validation tests       │Medium            │
+│ QA-009 Cross-browser compatibility│Medium            │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 10 Milestone**: PWA features, responsive design complete
+**Stage 10 Milestone**: PWA features, responsive design complete with tests
 
 **Phase 3 Total Milestone**: ✅ File upload, advanced profiles, PWA complete
 
@@ -280,13 +278,12 @@ Phase 5: Launch         │                                            ███
 │ SEC-010 Incident response plan    │Simple            │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-005 Performance test completion│Complex           │
-│ QA-006 Security test completion   │Complex           │
-│ QA-008 CI/CD pipeline build       │Simple            │
+┌─ QA (After Implementation) ──────────────────────────┐
+│ QA-010 Security & performance tests│Medium           │
+│ QA-011 CI/CD pipeline setup       │Medium            │
 └──────────────────────────────────────────────────────┘
 ```
-**Stage 11 Milestone**: Security verification, performance optimization complete
+**Stage 11 Milestone**: Security verification, performance optimization complete with tests
 
 #### Stage 12: Integration Testing and Deployment Preparation
 ```
@@ -294,20 +291,19 @@ Phase 5: Launch         │                                            ███
 │ ARCH-010 Deployment env setup     │Simple            │
 └──────────────────────────────────────────────────────┘
 
-┌─ QA (Large) ─────────────────────────────────────────┐
-│ QA-008 CI/CD pipeline completion  │Medium            │
-│ QA-004 E2E test final verification│Complex           │
-│ QA-010 Test documentation         │Simple            │
-│ Integration test & bug fixes       │Simple            │
-└──────────────────────────────────────────────────────┘
-
 ┌─ All Team (Large) ───────────────────────────────────┐
 │ Final integration testing         │Complex           │
 │ Production deployment preparation  │Medium            │
 │ Documentation and cleanup          │Medium            │
 └──────────────────────────────────────────────────────┘
+
+┌─ QA (Final Validation) ──────────────────────────────┐
+│ QA-012 E2E integration tests      │Medium            │
+│ QA-013 CI/CD pipeline validation  │Medium            │
+│ QA-014 Bug fix validation tests   │Medium            │
+└──────────────────────────────────────────────────────┘
 ```
-**Stage 12 Milestone**: Deployment preparation complete
+**Stage 12 Milestone**: Deployment preparation complete with final validation
 
 **Phase 4 Total Milestone**: ✅ Security verification, performance optimization, deployment ready
 

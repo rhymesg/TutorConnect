@@ -1,0 +1,152 @@
+name: Unit Tests
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_ENV: test
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  unit-tests:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        node-version: [20]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Setup test environment variables
+      run: |
+        echo "NODE_ENV=test" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_URL=https://test.supabase.co" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=test-key" >> $GITHUB_ENV
+        echo "SUPABASE_SERVICE_ROLE_KEY=test-service-key" >> $GITHUB_ENV
+        echo "JWT_ACCESS_SECRET=test-access-secret-that-is-at-least-32-characters-long" >> $GITHUB_ENV
+        echo "JWT_REFRESH_SECRET=test-refresh-secret-that-is-at-least-32-characters-long-and-different" >> $GITHUB_ENV
+      
+    - name: Run unit tests with coverage
+      run: npm test -- --passWithNoTests --verbose --coverage
+      
+    - name: Generate coverage report
+      run: |
+        # Get base coverage (main branch)
+        git fetch origin main:main
+        git checkout main
+        npm test -- --coverage --silent > /dev/null 2>&1 || echo "No tests on base branch"
+        if [ -f coverage/coverage-summary.json ]; then
+          BASE_COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+        else
+          BASE_COVERAGE=0
+        fi
+        echo "BASE_COVERAGE=$BASE_COVERAGE" >> $GITHUB_ENV
+        
+        # Get current coverage (PR branch - already checked out)
+        git checkout $GITHUB_SHA
+        npm test -- --coverage --silent > /dev/null 2>&1
+        CURRENT_COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+        echo "CURRENT_COVERAGE=$CURRENT_COVERAGE" >> $GITHUB_ENV
+        
+        # Calculate difference
+        DIFF=$(echo "$CURRENT_COVERAGE - $BASE_COVERAGE" | bc -l)
+        echo "COVERAGE_DIFF=$DIFF" >> $GITHUB_ENV
+        
+        # Get base coverage metrics
+        if [ -f coverage/coverage-summary.json ]; then
+          BASE_STMTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct // 0')
+          BASE_BRANCHES=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct // 0')
+          BASE_FUNCS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct // 0')
+          BASE_LINES=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+        else
+          BASE_STMTS=0
+          BASE_BRANCHES=0
+          BASE_FUNCS=0
+          BASE_LINES=0
+        fi
+        
+        # Switch back to current branch and get current coverage metrics
+        git checkout $GITHUB_SHA
+        npm test -- --coverage --silent > /dev/null 2>&1
+        CURRENT_STMTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct // 0')
+        CURRENT_BRANCHES=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct // 0')
+        CURRENT_FUNCS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct // 0')
+        CURRENT_LINES=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+        
+        # Get changed files coverage
+        CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -E '\.(ts|tsx|js|jsx)$' | grep '^src/' | tr '\n' ',' | sed 's/,$//')
+        
+        if [ -n "$CHANGED_FILES" ]; then
+          # Calculate coverage for changed files only
+          DIFF_STMTS=$(cat coverage/coverage-summary.json | jq -r --arg files "$CHANGED_FILES" '
+            [$files | split(",")[] | select(. != "")] as $fileList |
+            [.[] | select(.file as $f | $fileList | any(. == $f)) | .statements.pct] as $pcts |
+            if ($pcts | length) > 0 then ($pcts | add / length) else 0 end
+          ')
+          DIFF_BRANCHES=$(cat coverage/coverage-summary.json | jq -r --arg files "$CHANGED_FILES" '
+            [$files | split(",")[] | select(. != "")] as $fileList |
+            [.[] | select(.file as $f | $fileList | any(. == $f)) | .branches.pct] as $pcts |
+            if ($pcts | length) > 0 then ($pcts | add / length) else 0 end
+          ')
+          DIFF_FUNCS=$(cat coverage/coverage-summary.json | jq -r --arg files "$CHANGED_FILES" '
+            [$files | split(",")[] | select(. != "")] as $fileList |
+            [.[] | select(.file as $f | $fileList | any(. == $f)) | .functions.pct] as $pcts |
+            if ($pcts | length) > 0 then ($pcts | add / length) else 0 end
+          ')
+          DIFF_LINES=$(cat coverage/coverage-summary.json | jq -r --arg files "$CHANGED_FILES" '
+            [$files | split(",")[] | select(. != "")] as $fileList |
+            [.[] | select(.file as $f | $fileList | any(. == $f)) | .lines.pct] as $pcts |
+            if ($pcts | length) > 0 then ($pcts | add / length) else 0 end
+          ')
+        else
+          DIFF_STMTS="N/A"
+          DIFF_BRANCHES="N/A"
+          DIFF_FUNCS="N/A"
+          DIFF_LINES="N/A"
+        fi
+        
+        # Create coverage report
+        cat > coverage-report.md << EOF
+        ## 📊 Test Coverage Report
+        
+        | Metric | Before | After | Diff |
+        |--------|--------|-------|------|
+        | Statements | ${BASE_STMTS}% | ${CURRENT_STMTS}% | ${DIFF_STMTS}$([ "$DIFF_STMTS" != "N/A" ] && echo "%") |
+        | Branches | ${BASE_BRANCHES}% | ${CURRENT_BRANCHES}% | ${DIFF_BRANCHES}$([ "$DIFF_BRANCHES" != "N/A" ] && echo "%") |
+        | Functions | ${BASE_FUNCS}% | ${CURRENT_FUNCS}% | ${DIFF_FUNCS}$([ "$DIFF_FUNCS" != "N/A" ] && echo "%") |
+        | Lines | ${BASE_LINES}% | ${CURRENT_LINES}% | ${DIFF_LINES}$([ "$DIFF_LINES" != "N/A" ] && echo "%") |
+        
+        **Diff**: Coverage of files changed in this PR
+        $(if [ "$DIFF_LINES" = "N/A" ]; then echo "📝 **No source files changed**"; else echo "📊 **Changed files coverage**: ${DIFF_LINES}%"; fi)
+        EOF
+        
+    - name: Comment PR with coverage
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const coverageReport = fs.readFileSync('coverage-report.md', 'utf8');
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: coverageReport
+          });
