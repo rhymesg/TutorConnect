@@ -40,7 +40,7 @@ export function AppointmentManager({
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showFilters, setShowFiltersPanel] = useState(false);
+  const [showFiltersPanel, setShowFiltersPanel] = useState(false);
   const [filters, setFilters] = useState<AppointmentFilters>({});
 
   // Use calendar hook for calendar view
@@ -230,7 +230,7 @@ export function AppointmentManager({
           {/* Filters */}
           {showFilters && (
             <button
-              onClick={() => setShowFiltersPanel(!showFilters)}
+              onClick={() => setShowFiltersPanel(!showFiltersPanel)}
               className="flex items-center px-3 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50"
             >
               <FunnelIcon className="h-4 w-4 sm:mr-2" />

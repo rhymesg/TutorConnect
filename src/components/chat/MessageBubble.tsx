@@ -233,6 +233,13 @@ export default function MessageBubble({
                 <span>{appointment.location}</span>
               </div>
               
+              {appointment.hourlyRate && (
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-3 w-3" />
+                  <span>{formatters.currency(appointment.hourlyRate)}/time</span>
+                </div>
+              )}
+              
               {message.content && (
                 <div className="pt-2 border-t border-white/20">
                   <p>{message.content}</p>
@@ -242,10 +249,22 @@ export default function MessageBubble({
 
             {isRequest && !isOwn && (
               <div className="flex gap-2 mt-3">
-                <button className="flex-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors">
+                <button 
+                  onClick={() => {
+                    // TODO: Handle appointment acceptance
+                    console.log('Accept appointment:', message.appointment);
+                  }}
+                  className="flex-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors font-medium"
+                >
                   {t.appointment.accept}
                 </button>
-                <button className="flex-1 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors">
+                <button 
+                  onClick={() => {
+                    // TODO: Handle appointment decline
+                    console.log('Decline appointment:', message.appointment);
+                  }}
+                  className="flex-1 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
+                >
                   {t.appointment.decline}
                 </button>
               </div>

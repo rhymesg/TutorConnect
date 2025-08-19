@@ -3,7 +3,7 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MainLayout from '@/components/layout/MainLayout';
-import { ChatLayout } from '@/components/chat';
+import { ChatInterface } from '@/components/chat';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { chat as chatTranslations, useLanguage } from '@/lib/translations';
 
@@ -23,9 +23,9 @@ function ChatPageContent() {
           </h1>
         </div>
 
-        {/* Chat Interface */}
-        <div className="flex-1 flex overflow-hidden">
-          <ChatLayout initialChatId={initialChatId} />
+        {/* Enhanced Chat Interface */}
+        <div className="flex-1 overflow-hidden">
+          <ChatInterface initialChatId={initialChatId} />
         </div>
       </div>
     </MainLayout>

@@ -2,7 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { useRealtimeConnection } from './useRealtimeConnection';
 import { useRealtimeMessages } from './useRealtimeMessages';
+import { usePresence } from './usePresence';
+import { getRealtimeManager } from '@/lib/realtime';
 import type { ChatWithParticipants, MessageWithSender } from '@/types/database';
+import type { RealtimeManager, MessageEvent } from '@/lib/realtime';
 
 // Chat participant with real-time status
 export interface RealtimeParticipant {
@@ -82,6 +85,14 @@ export function useRealtimeChat({
 }: UseRealtimeChatOptions) {
   const { user, token } = useAuth();
   const { isConnected, getChannel, removeChannel, formatNorwegianDateTime } = useRealtimeConnection();
+  const realtimeManager = getRealtimeManager();
+  
+  // Use presence hook for enhanced user status tracking
+  const presence = usePresence({
+    chatId,
+    enableAutoAway: true,
+    enableAnalytics: true,
+  });
   
   // Use the messages hook for message-specific functionality
   const messagesHook = useRealtimeMessages({ 
@@ -216,7 +227,7 @@ export function useRealtimeChat({
     }
   }, []);
 
-  // Start typing indicator
+  // Start typing indicator with Norwegian text
   const startTyping = useCallback(async () => {
     if (!enableTyping || !user || !isConnected) return;
 
@@ -228,7 +239,15 @@ export function useRealtimeChat({
     lastTypingTimeRef.current = now;
 
     try {
-      // Update via API
+      // Use the enhanced realtime manager for typing
+      await realtimeManager.broadcastTyping(
+        chatId,
+        user.id,
+        user.name || user.email || 'Bruker',
+        true
+      );
+
+      // Also update via API for persistence
       await fetch('/api/messages/typing', {
         method: 'POST',
         headers: {
@@ -241,32 +260,25 @@ export function useRealtimeChat({
         }),
       });
 
-      // Broadcast via real-time channel
-      const channel = getChannel(`typing:${chatId}`);
-      if (channel) {
-        await channel.send({
-          type: 'broadcast',
-          event: 'typing',
-          payload: {
-            userId: user.id,
-            userName: user.name,
-            isTyping: true,
-            timestamp: now,
-          },
-        });
-      }
-
     } catch (error) {
       console.warn('Failed to start typing:', error);
     }
-  }, [enableTyping, user, isConnected, chatId, token, getChannel]);
+  }, [enableTyping, user, isConnected, chatId, token, realtimeManager]);
 
   // Stop typing indicator
   const stopTyping = useCallback(async () => {
     if (!enableTyping || !user || !isConnected) return;
 
     try {
-      // Update via API
+      // Use the enhanced realtime manager for typing
+      await realtimeManager.broadcastTyping(
+        chatId,
+        user.id,
+        user.name || user.email || 'Bruker',
+        false
+      );
+
+      // Also update via API for persistence
       await fetch('/api/messages/typing', {
         method: 'POST',
         headers: {
@@ -279,25 +291,10 @@ export function useRealtimeChat({
         }),
       });
 
-      // Broadcast via real-time channel
-      const channel = getChannel(`typing:${chatId}`);
-      if (channel) {
-        await channel.send({
-          type: 'broadcast',
-          event: 'typing',
-          payload: {
-            userId: user.id,
-            userName: user.name,
-            isTyping: false,
-            timestamp: Date.now(),
-          },
-        });
-      }
-
     } catch (error) {
       console.warn('Failed to stop typing:', error);
     }
-  }, [enableTyping, user, isConnected, chatId, token, getChannel]);
+  }, [enableTyping, user, isConnected, chatId, token, realtimeManager]);
 
   // Join chat (subscribe to real-time updates)
   const joinChat = useCallback(async () => {
@@ -618,6 +615,11 @@ export function useRealtimeChat({
     isActive: chatState.isActive,
     isConnected,
     
+    // Enhanced presence integration
+    currentUserStatus: presence.currentUserStatus,
+    isUserOnline: presence.isOnline,
+    presenceStats: presence.stats,
+    
     // Statistics
     statistics,
     
@@ -632,15 +634,25 @@ export function useRealtimeChat({
     loadMoreMessages: messagesHook.loadMore,
     markAsRead: messagesHook.markAsRead,
     
-    // Typing functionality
+    // Enhanced typing functionality with Norwegian text
     startTyping,
     stopTyping,
     typingUsers: chatState.participants.filter(p => p.isTyping),
+    formatTypingText: (users: RealtimeParticipant[]) => {
+      const typingUsers = users.filter(u => u.isTyping);
+      if (typingUsers.length === 0) return '';
+      if (typingUsers.length === 1) return `${typingUsers[0].name} skriver...`;
+      if (typingUsers.length === 2) {
+        return `${typingUsers[0].name} og ${typingUsers[1].name} skriver...`;
+      }
+      return `${typingUsers[0].name} og ${typingUsers.length - 1} andre skriver...`;
+    },
     
-    // Presence functionality
+    // Presence functionality with enhanced features
     updatePresence,
     onlineUsers: chatState.participants.filter(p => p.isOnline),
     onlineCount: chatState.participants.filter(p => p.isOnline).length,
+    setUserStatus: presence.setStatus,
     
     // Chat actions
     joinChat,
@@ -650,27 +662,26 @@ export function useRealtimeChat({
     // Event system
     addEventListener,
     
+    // Connection management
+    connectionStats: realtimeManager.getConnectionStats(),
+    
     // Utility functions
     clearError: () => setChatState(prev => ({ ...prev, error: null })),
     
-    // Norwegian formatting helpers
+    // Enhanced Norwegian formatting helpers
     formatTime: formatNorwegianDateTime,
     formatLastSeen: (date: Date | null) => {
       if (!date) return 'Aldri sett';
-      
-      const now = new Date();
-      const diff = now.getTime() - date.getTime();
-      const minutes = Math.floor(diff / (1000 * 60));
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      
-      if (minutes < 1) return 'Nettopp';
-      if (minutes < 60) return `${minutes} min siden`;
-      if (hours < 24) return `${hours} timer siden`;
-      if (days === 1) return 'I går';
-      if (days < 7) return `${days} dager siden`;
-      
-      return formatNorwegianDateTime(date);
+      return realtimeManager.formatLastSeen(date.toISOString());
+    },
+    formatNorwegianTime: (date: Date) => realtimeManager.formatNorwegianTime(date),
+    
+    // Norwegian status text
+    statusText: {
+      online: 'På nett',
+      away: 'Borte',
+      offline: 'Frakoblet',
+      unknown: 'Ukjent',
     },
   };
 }
