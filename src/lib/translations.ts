@@ -38,6 +38,80 @@ export const forms = {
     cancel: 'Avbryt',
     submit: 'Send inn',
     required: 'Påkrevd',
+    searchPlaceholder: 'Søk etter fag, lærer eller område...',
+    subject: 'Fag',
+    location: 'Sted',
+    selectSubject: 'Velg fag',
+    selectLocation: 'Velg sted',
+    priceRange: 'Prisområde',
+    ageGroups: 'Aldersgrupper',
+    availability: 'Tilgjengelighet',
+    
+    // Post form specific fields
+    title: 'Tittel',
+    description: 'Beskrivelse',
+    specificLocation: 'Spesifikt sted',
+    preferredSchedule: 'Foretrukket timeplan',
+    hourlyRate: 'Timelønn',
+    hourlyRateFixed: 'Fast pris per time',
+    hourlyRateMin: 'Minimum pris per time',
+    hourlyRateMax: 'Maksimum pris per time',
+    availableDays: 'Tilgjengelige dager',
+    availableTimes: 'Tilgjengelige tider',
+    postType: 'Type annonse',
+    
+    // Form labels and help text
+    titleLabel: 'Tittel på annonsen',
+    titlePlaceholder: 'F.eks. Matematikk for videregående skole',
+    titleHelp: 'Skriv en tydelig og beskrivende tittel',
+    
+    descriptionLabel: 'Detaljert beskrivelse',
+    descriptionPlaceholder: 'Beskriv hva du tilbyr eller søker etter. Inkluder erfaring, undervisningsmetoder, og andre relevante detaljer...',
+    descriptionHelp: 'Jo mer informasjon du gir, desto lettere er det å finne den rette matchen',
+    
+    locationLabel: 'Fylke/Region',
+    locationPlaceholder: 'Velg fylke',
+    locationHelp: 'Velg området hvor du kan undervise eller ønsker undervisning',
+    
+    specificLocationLabel: 'Spesifikt sted (valgfritt)',
+    specificLocationPlaceholder: 'F.eks. Oslo sentrum, hjemme hos meg, online',
+    specificLocationHelp: 'Spesifiser hvor undervisningen kan foregå',
+    
+    subjectLabel: 'Fagområde',
+    subjectHelp: 'Velg det fagområdet du kan undervise i eller trenger hjelp med',
+    
+    ageGroupsLabel: 'Aldersgrupper',
+    ageGroupsHelp: 'Velg hvilke aldersgrupper du kan undervise eller trenger hjelp for',
+    
+    availabilityLabel: 'Tilgjengelighet',
+    availableDaysLabel: 'Tilgjengelige dager',
+    availableDaysHelp: 'Velg hvilke dager du er tilgjengelig',
+    
+    availableTimesLabel: 'Tilgjengelige tider',
+    availableTimesHelp: 'Legg til tidspunkter når du er tilgjengelig',
+    
+    scheduleLabel: 'Foretrukket timeplan (valgfritt)',
+    schedulePlaceholder: 'Beskriv din foretrukne timeplan eller spesielle ønsker...',
+    scheduleHelp: 'Gi mer informasjon om din tilgjengelighet',
+    
+    pricingLabel: 'Prising',
+    pricingHelp: 'Angi enten en fast pris eller et prisområde. La stå tomt for "pris etter avtale"',
+    fixedRateLabel: 'Fast pris (NOK/time)',
+    minRateLabel: 'Min pris (NOK/time)',
+    maxRateLabel: 'Maks pris (NOK/time)',
+    
+    // Validation messages
+    validation: {
+      required: 'Dette feltet er påkrevd',
+      minLength: 'Minimum {min} tegn påkrevd',
+      maxLength: 'Maksimum {max} tegn tillatt',
+      email: 'Ugyldig e-postadresse',
+      phone: 'Ugyldig telefonnummer',
+      price: 'Prisen må være et gyldig tall',
+      time: 'Tid må være i format TT:MM',
+      atLeastOne: 'Du må velge minst ett alternativ',
+      maxSelections: 'Du kan velge maksimum {max} alternativer',
+    },
   },
   en: {
     email: 'Email',
@@ -55,6 +129,14 @@ export const forms = {
     cancel: 'Cancel',
     submit: 'Submit',
     required: 'Required',
+    searchPlaceholder: 'Search for subjects, teachers or locations...',
+    subject: 'Subject',
+    location: 'Location',
+    selectSubject: 'Select subject',
+    selectLocation: 'Select location',
+    priceRange: 'Price range',
+    ageGroups: 'Age groups',
+    availability: 'Availability',
   }
 };
 
@@ -69,6 +151,22 @@ export const actions = {
     sort: 'Sorter',
     upload: 'Last opp',
     download: 'Last ned',
+    retry: 'Prøv igjen',
+    refresh: 'Oppdater',
+    loadMore: 'Last flere',
+    contact: 'Ta kontakt',
+    showMore: 'Vis mer',
+    showLess: 'Vis mindre',
+    clear: 'Tøm',
+    apply: 'Bruk',
+    reset: 'Tilbakestill',
+    cancel: 'Avbryt',
+    save: 'Lagre',
+    publish: 'Publiser',
+    publishPost: 'Publiser annonse',
+    saveChanges: 'Lagre endringer',
+    preview: 'Forhåndsvisning',
+    hidePreview: 'Skjul forhåndsvisning',
   },
   en: {
     create: 'Create',
@@ -80,6 +178,15 @@ export const actions = {
     sort: 'Sort',
     upload: 'Upload',
     download: 'Download',
+    retry: 'Retry',
+    refresh: 'Refresh',
+    loadMore: 'Load more',
+    contact: 'Contact',
+    showMore: 'Show more',
+    showLess: 'Show less',
+    clear: 'Clear',
+    apply: 'Apply',
+    reset: 'Reset',
   }
 };
 
@@ -91,7 +198,17 @@ export const messages = {
     info: 'Informasjon',
     loading: 'Laster...',
     noData: 'Ingen data funnet',
+    noResults: 'Ingen resultater funnet',
     tryAgain: 'Prøv igjen',
+    loadingMore: 'Laster flere...',
+    offline: 'Du er offline',
+    connectionError: 'Tilkoblingsfeil',
+    serverError: 'Serverfeil',
+    notFound: 'Ikke funnet',
+    unauthorized: 'Ikke autorisert',
+    forbidden: 'Ikke tillatt',
+    validation: 'Valideringsfeil',
+    timeout: 'Forespørsel tidsavbrudd',
   },
   en: {
     success: 'Success',
@@ -100,7 +217,17 @@ export const messages = {
     info: 'Information',
     loading: 'Loading...',
     noData: 'No data found',
+    noResults: 'No results found',
     tryAgain: 'Try again',
+    loadingMore: 'Loading more...',
+    offline: 'You are offline',
+    connectionError: 'Connection error',
+    serverError: 'Server error',
+    notFound: 'Not found',
+    unauthorized: 'Unauthorized',
+    forbidden: 'Forbidden',
+    validation: 'Validation error',
+    timeout: 'Request timeout',
   }
 };
 
@@ -435,6 +562,30 @@ export const formatters = {
     } else {
       return formatters.date(date);
     }
+  },
+
+  currency: (amount: number | string, currency: string = 'NOK'): string => {
+    const numAmount = typeof amount === 'string' ? parseFloat(amount) : amount;
+    const language = useLanguage();
+    
+    if (isNaN(numAmount)) return '';
+    
+    try {
+      return new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(numAmount);
+    } catch (error) {
+      // Fallback formatting
+      return `${numAmount.toLocaleString()} ${currency}`;
+    }
+  },
+
+  number: (num: number): string => {
+    const language = useLanguage();
+    return num.toLocaleString(language === 'no' ? 'nb-NO' : 'en-US');
   }
 };
 
@@ -443,6 +594,10 @@ export const education = {
   no: {
     levels: {
       'elementary': 'Grunnskole',
+      'middleSchool': 'Ungdomsskole',
+      'highSchool': 'Videregående',
+      'university': 'Universitet',
+      'adult': 'Voksenopplæring',
       'high_school': 'Videregående',
       'bachelor': 'Bachelor',
       'master': 'Master',
@@ -540,10 +695,140 @@ export const posts = {
     title: 'Innlegg',
     create: 'Opprett innlegg',
     edit: 'Rediger innlegg',
+    types: {
+      tutorOffering: 'Tilbyr undervisning',
+      studentSeeking: 'Søker lærer',
+    },
+    pricing: {
+      perHour: 'per time',
+      negotiable: 'Pris etter avtale',
+      budgetRange: 'Budsjett etter avtale',
+      upTo: 'Opptil',
+      from: 'Fra',
+      to: 'til',
+    },
+    availability: {
+      flexible: 'Fleksibel tid',
+      weekdays: {
+        MONDAY: 'Mandag',
+        TUESDAY: 'Tirsdag',
+        WEDNESDAY: 'Onsdag',
+        THURSDAY: 'Torsdag',
+        FRIDAY: 'Fredag',
+        SATURDAY: 'Lørdag',
+        SUNDAY: 'Søndag',
+      }
+    },
+    filters: {
+      allFilters: 'alle filtre',
+      activeFilters: 'Aktive filtre:',
+      typeLabel: 'Type annonse',
+      ageGroupsCount: 'aldersgrupper',
+      priceFormat: '{min}-{max} NOK',
+      priceFromFormat: 'Fra {min} NOK',
+      priceToFormat: 'Opptil {max} NOK',
+    },
+    sorting: {
+      newest: 'Nyeste først',
+      price: 'Pris',
+      rating: 'Vurdering',
+      created: 'Dato opprettet',
+      highest: 'høyest først',
+      lowest: 'lavest først',
+    },
+    viewModes: {
+      grid: 'Rutenettvisning',
+      list: 'Listevisning',
+      compact: 'Kompakt visning',
+      normal: 'Normal visning',
+    },
+    results: {
+      found: '{count} resultater funnet',
+      endOfResults: 'Du har sett alle {count} annonser',
+      adjustFilters: 'Prøv å justere søkekriteriene eller fjerne noen filtre.',
+    },
+    errors: {
+      loadingFailed: 'Feil ved lasting av annonser',
+      offline: 'Ingen nettverkstilkobling',
+      offlineMessage: 'Sjekk internettforbindelsen din og prøv igjen.',
+      loadingMessage: 'Kunne ikke laste inn annonser. Prøv igjen senere.',
+      retryButton: 'Prøv igjen',
+    },
+    status: {
+      online: 'På nett',
+      offline: 'Du er offline. Noen funksjoner kan være begrenset.',
+      loadingMore: 'Laster flere annonser...',
+      errorLoading: 'Feil ved lasting',
+    }
   },
   en: {
     title: 'Posts',
     create: 'Create post',
     edit: 'Edit post',
+    types: {
+      tutorOffering: 'Offers tutoring',
+      studentSeeking: 'Seeking tutor',
+    },
+    pricing: {
+      perHour: 'per hour',
+      negotiable: 'Price negotiable',
+      budgetRange: 'Budget negotiable',
+      upTo: 'Up to',
+      from: 'From',
+      to: 'to',
+    },
+    availability: {
+      flexible: 'Flexible time',
+      weekdays: {
+        MONDAY: 'Monday',
+        TUESDAY: 'Tuesday',
+        WEDNESDAY: 'Wednesday',
+        THURSDAY: 'Thursday',
+        FRIDAY: 'Friday',
+        SATURDAY: 'Saturday',
+        SUNDAY: 'Sunday',
+      }
+    },
+    filters: {
+      allFilters: 'all filters',
+      activeFilters: 'Active filters:',
+      typeLabel: 'Post type',
+      ageGroupsCount: 'age groups',
+      priceFormat: '{min}-{max} NOK',
+      priceFromFormat: 'From {min} NOK',
+      priceToFormat: 'Up to {max} NOK',
+    },
+    sorting: {
+      newest: 'Newest first',
+      price: 'Price',
+      rating: 'Rating',
+      created: 'Date created',
+      highest: 'highest first',
+      lowest: 'lowest first',
+    },
+    viewModes: {
+      grid: 'Grid view',
+      list: 'List view',
+      compact: 'Compact view',
+      normal: 'Normal view',
+    },
+    results: {
+      found: '{count} results found',
+      endOfResults: 'You have seen all {count} posts',
+      adjustFilters: 'Try adjusting search criteria or removing some filters.',
+    },
+    errors: {
+      loadingFailed: 'Error loading posts',
+      offline: 'No network connection',
+      offlineMessage: 'Check your internet connection and try again.',
+      loadingMessage: 'Could not load posts. Please try again later.',
+      retryButton: 'Try again',
+    },
+    status: {
+      online: 'Online',
+      offline: 'You are offline. Some features may be limited.',
+      loadingMore: 'Loading more posts...',
+      errorLoading: 'Error loading',
+    }
   }
 };

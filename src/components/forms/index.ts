@@ -3,6 +3,7 @@ export { default as FormField } from '../auth/FormField';
 export { default as FormSelect } from './FormSelect';
 export { default as FormTextarea } from './FormTextarea';
 export { default as FormCheckboxGroup } from './FormCheckboxGroup';
+export { default as LocationAutocomplete } from './LocationAutocomplete';
 
 // Types
 export type { FormFieldProps } from '../auth/FormField';

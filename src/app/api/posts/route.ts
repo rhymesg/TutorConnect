@@ -1,6 +1,7 @@
 /**
  * Posts API endpoints - Main posts collection operations
  * Handles POST (create) and GET (search/list) operations
+ * Enhanced with comprehensive security validation and content filtering
  */
 
 import { NextRequest } from 'next/server';
@@ -14,46 +15,111 @@ import {
 } from '@/lib/api-handler';
 import { CreatePostSchema, PostSearchSchema, RegionProximity } from '@/schemas/post';
 import { APIContext } from '@/lib/api-handler';
+import { PostSecurityMiddleware, logPostOperation } from '@/middleware/post-security';
+import { filterContent, generateContentSafetyReport } from '@/lib/content-filter';
+import { checkPostRateLimit, recordFailedAttempt } from '@/lib/rate-limiter';
+import { securityLogger } from '@/middleware/security';
+import { APIError } from '@/lib/errors';
 
 const prisma = new PrismaClient();
 
 /**
- * POST /api/posts - Create a new tutoring post
+ * POST /api/posts - Create a new tutoring post with enhanced security
  */
 async function handleCreatePost(
   request: NextRequest, 
   context: APIContext
 ) {
-  const { user, validatedData } = context;
+  const { user, validatedData, ip } = context;
   
   if (!user) {
     throw new Error('Authentication required');
   }
 
   const postData = validatedData!.body;
+  const startTime = Date.now();
   
   try {
-    // Convert pricing data to Decimal for Prisma
+    // Step 1: Security validation
+    const securityContext = {
+      userId: user.id,
+      ip,
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      operation: 'CREATE' as const,
+      postData,
+      isAuthenticated: true
+    };
+
+    const securityValidation = await PostSecurityMiddleware.validatePostOperation(securityContext);
+    
+    if (!securityValidation.allowed) {
+      // Log failed attempt
+      logPostOperation('POST_CREATE', false, user.id, ip, undefined, {
+        reason: securityValidation.reason,
+        warnings: securityValidation.warnings
+      });
+      
+      throw new APIError(
+        securityValidation.reason || 'Security validation failed',
+        403,
+        'SECURITY_VALIDATION_FAILED'
+      );
+    }
+
+    // Use sanitized data from security validation
+    const sanitizedPostData = securityValidation.sanitizedData || postData;
+
+    // Step 2: Rate limiting check (additional to middleware)
+    const rateLimitResult = await checkPostRateLimit('CREATE', user.id, true);
+    if (!rateLimitResult.allowed) {
+      recordFailedAttempt('CREATE', user.id, true, 'rate_limit_exceeded');
+      throw new APIError(
+        `Rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        429,
+        'RATE_LIMIT_EXCEEDED'
+      );
+    }
+
+    // Step 3: Additional content safety check
+    if (sanitizedPostData.description) {
+      const safetyReport = generateContentSafetyReport(sanitizedPostData.description, 'description');
+      if (!safetyReport.safe) {
+        logPostOperation('POST_CREATE', false, user.id, ip, undefined, {
+          reason: 'Content safety check failed',
+          safetyScore: safetyReport.score,
+          warnings: safetyReport.warnings
+        });
+        
+        throw new APIError(
+          'Content does not meet safety requirements',
+          400,
+          'CONTENT_SAFETY_VIOLATION'
+        );
+      }
+    }
+
+    // Step 4: Convert pricing data to Decimal for Prisma
     const createData: Prisma.PostCreateInput = {
-      type: postData.type,
-      subject: postData.subject,
-      ageGroups: postData.ageGroups,
-      title: postData.title,
-      description: postData.description,
-      availableDays: postData.availableDays,
-      availableTimes: postData.availableTimes,
-      preferredSchedule: postData.preferredSchedule,
-      location: postData.location,
-      specificLocation: postData.specificLocation,
-      hourlyRate: postData.hourlyRate ? new Prisma.Decimal(postData.hourlyRate) : null,
-      hourlyRateMin: postData.hourlyRateMin ? new Prisma.Decimal(postData.hourlyRateMin) : null,
-      hourlyRateMax: postData.hourlyRateMax ? new Prisma.Decimal(postData.hourlyRateMax) : null,
+      type: sanitizedPostData.type,
+      subject: sanitizedPostData.subject,
+      ageGroups: sanitizedPostData.ageGroups,
+      title: sanitizedPostData.title,
+      description: sanitizedPostData.description,
+      availableDays: sanitizedPostData.availableDays,
+      availableTimes: sanitizedPostData.availableTimes,
+      preferredSchedule: sanitizedPostData.preferredSchedule,
+      location: sanitizedPostData.location,
+      specificLocation: sanitizedPostData.specificLocation,
+      hourlyRate: sanitizedPostData.hourlyRate ? new Prisma.Decimal(sanitizedPostData.hourlyRate) : null,
+      hourlyRateMin: sanitizedPostData.hourlyRateMin ? new Prisma.Decimal(sanitizedPostData.hourlyRateMin) : null,
+      hourlyRateMax: sanitizedPostData.hourlyRateMax ? new Prisma.Decimal(sanitizedPostData.hourlyRateMax) : null,
       currency: 'NOK',
       user: {
         connect: { id: user.id }
       },
     };
 
+    // Step 5: Create the post
     const newPost = await prisma.post.create({
       data: createData,
       include: {
@@ -74,6 +140,32 @@ async function handleCreatePost(
       },
     });
 
+    // Step 6: Log successful creation
+    const duration = Date.now() - startTime;
+    logPostOperation('POST_CREATE', true, user.id, ip, newPost.id, {
+      securityScore: securityValidation.securityScore,
+      warnings: securityValidation.warnings,
+      duration,
+      postType: newPost.type,
+      subject: newPost.subject
+    });
+
+    // Log to security logger
+    securityLogger.log({
+      ip,
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      method: 'POST',
+      path: '/api/posts',
+      userId: user.id,
+      eventType: 'API_ACCESS',
+      details: {
+        operation: 'POST_CREATE',
+        postId: newPost.id,
+        securityScore: securityValidation.securityScore,
+        duration
+      }
+    });
+
     return createSuccessResponse(
       newPost,
       'Post created successfully',
@@ -81,26 +173,91 @@ async function handleCreatePost(
         postId: newPost.id,
         type: newPost.type,
         subject: newPost.subject,
+        securityWarnings: securityValidation.warnings.length > 0 ? securityValidation.warnings : undefined,
+        securityScore: securityValidation.securityScore
       },
       201
     );
+
   } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    // Log error
+    logPostOperation('POST_CREATE', false, user.id, ip, undefined, {
+      error: error.message,
+      duration,
+      errorType: error.constructor.name
+    });
+
     console.error('Error creating post:', error);
-    throw new Error('Failed to create post');
+    
+    if (error instanceof APIError) {
+      throw error;
+    }
+    
+    throw new APIError('Failed to create post', 500, 'POST_CREATION_FAILED');
   }
 }
 
 /**
- * GET /api/posts - Search and list tutoring posts with advanced filtering
+ * GET /api/posts - Search and list tutoring posts with enhanced security
  */
 async function handleSearchPosts(
   request: NextRequest,
   context: APIContext
 ) {
-  const { validatedData } = context;
+  const { validatedData, ip, user } = context;
   const searchParams = validatedData!.query;
+  const startTime = Date.now();
   
   try {
+    // Step 1: Rate limiting for search operations
+    const identifier = user?.id || ip;
+    const rateLimitResult = await checkPostRateLimit('SEARCH', identifier, !!user);
+    
+    if (!rateLimitResult.allowed) {
+      recordFailedAttempt('SEARCH', identifier, !!user, 'rate_limit_exceeded');
+      
+      securityLogger.log({
+        ip,
+        userAgent: request.headers.get('user-agent') || 'unknown',
+        method: 'GET',
+        path: '/api/posts',
+        userId: user?.id,
+        eventType: 'RATE_LIMIT',
+        details: {
+          operation: 'POST_SEARCH',
+          remaining: rateLimitResult.remaining,
+          retryAfter: rateLimitResult.retryAfter
+        }
+      });
+      
+      throw new APIError(
+        `Search rate limit exceeded. Try again in ${rateLimitResult.retryAfter} seconds.`,
+        429,
+        'RATE_LIMIT_EXCEEDED'
+      );
+    }
+
+    // Step 2: Search query validation and sanitization
+    if (searchParams.q) {
+      const contentValidation = filterContent(searchParams.q);
+      if (!contentValidation.allowed) {
+        logPostOperation('POST_SEARCH', false, user?.id, ip, undefined, {
+          reason: 'Search query contains inappropriate content',
+          query: searchParams.q.substring(0, 100) // Log only first 100 chars
+        });
+        
+        throw new APIError(
+          'Search query contains inappropriate content',
+          400,
+          'INVALID_SEARCH_QUERY'
+        );
+      }
+      
+      // Use sanitized search query
+      searchParams.q = contentValidation.sanitizedContent || searchParams.q;
+    }
     // Build Prisma where clause based on search parameters
     const where: Prisma.PostWhereInput = {
       isActive: true, // Only show active posts
@@ -243,6 +400,35 @@ async function handleSearchPosts(
       hasPrev: searchParams.page > 1,
     };
 
+    // Step 4: Log successful search
+    const duration = Date.now() - startTime;
+    logPostOperation('POST_SEARCH', true, user?.id, ip, undefined, {
+      query: searchParams.q,
+      resultCount: totalCount,
+      duration,
+      filters: {
+        type: searchParams.type,
+        subject: searchParams.subject,
+        location: searchParams.location
+      }
+    });
+
+    // Log to security logger
+    securityLogger.log({
+      ip,
+      userAgent: request.headers.get('user-agent') || 'unknown',
+      method: 'GET',
+      path: '/api/posts',
+      userId: user?.id,
+      eventType: 'API_ACCESS',
+      details: {
+        operation: 'POST_SEARCH',
+        resultCount: totalCount,
+        duration,
+        hasQuery: !!searchParams.q
+      }
+    });
+
     return createPaginatedResponse(
       posts,
       pagination,
@@ -261,24 +447,56 @@ async function handleSearchPosts(
           sortBy: searchParams.sortBy,
           sortOrder: searchParams.sortOrder,
         },
+        security: {
+          rateLimit: {
+            remaining: rateLimitResult.remaining,
+            resetTime: rateLimitResult.resetTime
+          }
+        }
       }
     );
   } catch (error) {
+    const duration = Date.now() - startTime;
+    
+    // Log error
+    logPostOperation('POST_SEARCH', false, user?.id, ip, undefined, {
+      error: error.message,
+      duration,
+      errorType: error.constructor.name,
+      query: searchParams.q?.substring(0, 100)
+    });
+
     console.error('Error searching posts:', error);
-    throw new Error('Failed to search posts');
+    
+    if (error instanceof APIError) {
+      throw error;
+    }
+    
+    throw new APIError('Failed to search posts', 500, 'POST_SEARCH_FAILED');
   }
 }
 
-// Export handlers with proper middleware
+// Export handlers with enhanced security middleware
 export const POST = createAPIHandler(handleCreatePost, {
   requireAuth: true,
   validation: {
     body: CreatePostSchema,
   },
   rateLimit: {
-    maxAttempts: 5,
+    maxAttempts: 3, // Reduced from 5 for security
     windowMs: 15 * 60 * 1000, // 15 minutes
+    keyGenerator: (req) => `post-create:${req.headers.get('authorization') || req.ip}`,
   },
+  cors: {
+    origin: [
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      'https://tutorconnect.no',
+      'https://www.tutorconnect.no'
+    ],
+    methods: ['POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  },
+  language: 'no' // Norwegian language for error messages
 });
 
 export const GET = createAPIHandler(handleSearchPosts, {
@@ -287,7 +505,25 @@ export const GET = createAPIHandler(handleSearchPosts, {
     query: PostSearchSchema,
   },
   rateLimit: {
-    maxAttempts: 30,
+    maxAttempts: 60, // Increased for legitimate search usage
     windowMs: 60 * 1000, // 1 minute
+    keyGenerator: (req) => {
+      // Different limits for authenticated vs anonymous users
+      const authHeader = req.headers.get('authorization');
+      if (authHeader) {
+        return `post-search-auth:${authHeader}`;
+      }
+      return `post-search-anon:${req.ip}`;
+    },
   },
+  cors: {
+    origin: [
+      process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+      'https://tutorconnect.no',
+      'https://www.tutorconnect.no'
+    ],
+    methods: ['GET', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  },
+  language: 'no'
 });
