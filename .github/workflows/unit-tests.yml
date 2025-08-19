@@ -69,20 +69,29 @@ jobs:
         DIFF=$(echo "$CURRENT_COVERAGE - $BASE_COVERAGE" | bc -l)
         echo "COVERAGE_DIFF=$DIFF" >> $GITHUB_ENV
         
+        # Get overall coverage metrics
+        CURRENT_STMTS=$(cat coverage/coverage-summary.json | jq -r '.total.statements.pct // 0')
+        CURRENT_BRANCHES=$(cat coverage/coverage-summary.json | jq -r '.total.branches.pct // 0')
+        CURRENT_FUNCS=$(cat coverage/coverage-summary.json | jq -r '.total.functions.pct // 0')
+        CURRENT_LINES=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
+        
         # Create coverage report
         cat > coverage-report.md << EOF
         ## 📊 Coverage Report
         
-        | Metric | Before | After | Change |
-        |--------|--------|-------|--------|
+        | Metric | Before | After | Diff |
+        |--------|--------|-------|------|
         | Lines | ${BASE_COVERAGE}% | ${CURRENT_COVERAGE}% | ${DIFF:0:5}% |
         
         $(if (( $(echo "$DIFF > 0" | bc -l) )); then echo "✅ **Coverage increased!** 📈"; elif (( $(echo "$DIFF < 0" | bc -l) )); then echo "⚠️ **Coverage decreased** 📉"; else echo "📊 **Coverage unchanged**"; fi)
         
         ### Coverage Details:
-        \`\`\`
-        $(npm test -- --coverage --silent | grep -A 10 "File.*% Stmts.*% Branch" | head -10)
-        \`\`\`
+        | Metric | Coverage |
+        |--------|----------|
+        | Statements | ${CURRENT_STMTS}% |
+        | Branches | ${CURRENT_BRANCHES}% |
+        | Functions | ${CURRENT_FUNCS}% |
+        | Lines | ${CURRENT_LINES}% |
         EOF
         
     - name: Comment PR with coverage
