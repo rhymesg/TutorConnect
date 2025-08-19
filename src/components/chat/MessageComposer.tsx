@@ -332,6 +332,5 @@ export default function MessageComposer({
         </div>
       )}
     </div>
-    </div>
   );
 }

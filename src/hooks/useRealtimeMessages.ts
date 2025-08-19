@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from './useAuth';
 import { useRealtimeConnection } from './useRealtimeConnection';
 import { MessageQueue, QueuedMessage, QueueEvent } from '@/lib/messageQueue';
-import { subscribeToChat } from '@/lib/supabase';
+import { subscribeToChat } from '@/lib/supabase-client';
 import type { MessageWithSender, CreateMessageData } from '@/types/database';
 
 // Message states for optimistic UI

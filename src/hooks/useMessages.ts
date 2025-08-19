@@ -7,7 +7,7 @@ import {
   subscribeToReadReceipts,
   broadcastTyping,
   createClient as createSupabaseClient 
-} from '@/lib/supabase';
+} from '@/lib/supabase-client';
 import type { MessageWithSender, CreateMessageData } from '@/types/database';
 
 interface UseMessagesOptions {
