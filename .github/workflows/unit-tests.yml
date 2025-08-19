@@ -44,8 +44,8 @@ jobs:
     - name: Generate coverage report
       run: |
         # Get base coverage (main branch)
-        git fetch origin main
-        git checkout ${{ github.event.pull_request.base.sha }}
+        git fetch origin main:main
+        git checkout main
         npm test -- --coverage --silent > /dev/null 2>&1 || echo "No tests on base branch"
         if [ -f coverage/coverage-summary.json ]; then
           BASE_COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
@@ -54,8 +54,8 @@ jobs:
         fi
         echo "BASE_COVERAGE=$BASE_COVERAGE" >> $GITHUB_ENV
         
-        # Get current coverage (PR branch)
-        git checkout ${{ github.event.pull_request.head.sha }}
+        # Get current coverage (PR branch - already checked out)
+        git checkout $GITHUB_SHA
         npm test -- --coverage --silent > /dev/null 2>&1
         CURRENT_COVERAGE=$(cat coverage/coverage-summary.json | jq -r '.total.lines.pct // 0')
         echo "CURRENT_COVERAGE=$CURRENT_COVERAGE" >> $GITHUB_ENV
