@@ -437,3 +437,62 @@ export const formatters = {
     }
   }
 };
+
+// Education levels
+export const education = {
+  no: {
+    levels: {
+      'elementary': 'Grunnskole',
+      'high_school': 'Videregående',
+      'bachelor': 'Bachelor',
+      'master': 'Master',
+      'phd': 'PhD',
+    }
+  },
+  en: {
+    levels: {
+      'elementary': 'Elementary',
+      'high_school': 'High School', 
+      'bachelor': 'Bachelor',
+      'master': 'Master',
+      'phd': 'PhD',
+    }
+  }
+};
+
+// Norwegian regions
+export const regions = {
+  no: {
+    regions: {
+      'OSLO': 'Oslo',
+      'AKERSHUS': 'Akershus',
+      'BERGEN': 'Bergen',
+      'TRONDHEIM': 'Trondheim',
+      'STAVANGER': 'Stavanger',
+    }
+  },
+  en: {
+    regions: {
+      'OSLO': 'Oslo',
+      'AKERSHUS': 'Akershus', 
+      'BERGEN': 'Bergen',
+      'TRONDHEIM': 'Trondheim',
+      'STAVANGER': 'Stavanger',
+    }
+  }
+};
+
+
+// Posts
+export const posts = {
+  no: {
+    title: 'Innlegg',
+    create: 'Opprett innlegg',
+    edit: 'Rediger innlegg',
+  },
+  en: {
+    title: 'Posts',
+    create: 'Create post',
+    edit: 'Edit post',
+  }
+};
