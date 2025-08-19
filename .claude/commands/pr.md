@@ -33,11 +33,20 @@ BASE_BRANCH="main"
 COMMIT_COUNT=$(git rev-list --count $BASE_BRANCH..$BRANCH_NAME)
 ALL_COMMITS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"- %s" | sort | uniq)
 
+# Extract unique task IDs from all commits
+TASK_IDS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | grep -oE '\[[A-Z]+-[0-9]+[^]]*\]' | tr -d '[]' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | sort | uniq | paste -sd, -)
+
 # Create PR title based on commits
 if [ $COMMIT_COUNT -eq 1 ]; then
   PR_TITLE=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" -1)
 else
-  PR_TITLE="[${BRANCH_NAME}] Multiple improvements and fixes"
+  # Get the most common theme from commit messages
+  SUMMARY=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | sed 's/\[[^]]*\] //' | head -1)
+  if [ -n "$TASK_IDS" ]; then
+    PR_TITLE="[$TASK_IDS] $SUMMARY"
+  else
+    PR_TITLE="Multiple improvements and fixes"
+  fi
 fi
 
 # Create PR body
@@ -50,6 +59,5 @@ gh pr create \
   --base main \
   --head $BRANCH_NAME \
   --title "$PR_TITLE" \
-  --body "$PR_BODY" \
-  --web
+  --body "$PR_BODY"
 ```
