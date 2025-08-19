@@ -34,7 +34,7 @@ COMMIT_COUNT=$(git rev-list --count $BASE_BRANCH..$BRANCH_NAME)
 ALL_COMMITS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"- %s" | sort | uniq)
 
 # Extract unique task IDs from all commits
-TASK_IDS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | grep -oE '\[[A-Z]+-[0-9]+[^]]*\]' | tr -d '[]' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | sort | uniq | paste -sd, -)
+TASK_IDS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | grep -oE '\[[^]]+\]' | tr -d '[]' | tr ',' '\n' | sed 's/^ *//;s/ *$//' | sort | uniq | paste -sd, -)
 
 # Create PR title based on commits
 if [ $COMMIT_COUNT -eq 1 ]; then
