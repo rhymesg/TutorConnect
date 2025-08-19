@@ -8,7 +8,10 @@ export { default as StartChatButton } from './StartChatButton';
 
 // New enhanced components
 export { default as ChatHeader } from './ChatHeader';
+export { default as MessageList } from './MessageList';
+export { default as ChatInterface } from './ChatInterface';
 export { default as MessageStatus, MessageTimestamp } from './MessageStatus';
+export { default as ConnectionStatus } from './ConnectionStatus';
 export {
   NoChatsEmptyState,
   NoSearchResultsEmptyState,

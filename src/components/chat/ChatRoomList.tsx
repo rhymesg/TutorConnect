@@ -265,6 +265,8 @@ export default function ChatRoomList({
                       }`}>
                         {chat.lastMessage.type === 'APPOINTMENT_REQUEST' 
                           ? `📅 ${t.appointment.request}`
+                          : chat.lastMessage.type === 'APPOINTMENT_RESPONSE'
+                          ? `✅ ${t.appointment.confirmed}`
                           : chat.lastMessage.type === 'SYSTEM_MESSAGE'
                           ? `ℹ️ ${chat.lastMessage.content}`
                           : truncateMessage(chat.lastMessage.content)
@@ -279,19 +281,24 @@ export default function ChatRoomList({
                     {/* Post info */}
                     {chat.relatedPost && (
                       <div className="flex items-center gap-1 mt-1">
-                        <div className={`px-2 py-0.5 rounded-full text-xs ${
+                        <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                           chat.relatedPost.type === 'TEACHER' 
-                            ? 'bg-green-100 text-green-700' 
-                            : 'bg-blue-100 text-blue-700'
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-blue-100 text-blue-800'
                         }`}>
                           {chat.relatedPost.type === 'TEACHER' 
                             ? (language === 'no' ? 'Lærer' : 'Teacher')
                             : (language === 'no' ? 'Student' : 'Student')
                           }
                         </div>
-                        <span className="text-xs text-gray-500 truncate">
-                          {chat.relatedPost.title}
+                        <span className="text-xs text-gray-600 font-medium">
+                          {chat.relatedPost.subject}
                         </span>
+                        {chat.relatedPost.hourlyRate && (
+                          <span className="text-xs text-gray-500">
+                            • {formatters.currency(chat.relatedPost.hourlyRate)}/t
+                          </span>
+                        )}
                       </div>
                     )}
                     

@@ -5,6 +5,12 @@ import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
 import { CreateChatData, ChatWithParticipants, MessageType } from "@prisma/client";
 import { z } from 'zod';
+import { 
+  createChatRoom, 
+  validateNorwegianTutoringChatCompatibility,
+  getChatPermissions 
+} from '@/lib/chat-room';
+import { chat as chatTranslations } from '@/lib/translations';
 
 const prisma = new PrismaClient();
 
@@ -86,7 +92,7 @@ async function handleGET(request: NextRequest) {
     };
   }
 
-  // Get chats with participants, latest message, and unread count
+  // Get chats with participants, latest message, and unread count (including Norwegian context)
   const [chats, totalCount] = await Promise.all([
     prisma.chat.findMany({
       where: whereClause,
@@ -101,6 +107,7 @@ async function handleGET(request: NextRequest) {
                 profileImage: true,
                 isActive: true,
                 lastActive: true,
+                region: true, // Include Norwegian region
               },
             },
           },
@@ -115,6 +122,7 @@ async function handleGET(request: NextRequest) {
                 id: true,
                 name: true,
                 profileImage: true,
+                region: true, // Include sender region for context
               },
             },
           },
@@ -126,6 +134,13 @@ async function handleGET(request: NextRequest) {
             type: true,
             subject: true,
             isActive: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                region: true, // Include post owner region
+              },
+            },
           },
         },
         _count: {
@@ -167,16 +182,32 @@ async function handleGET(request: NextRequest) {
         },
       }) : 0;
 
+      // Check Norwegian compatibility and add metadata
+      const regionCompatibility = checkRegionCompatibility(
+        chat.participants.map(p => p.user.region)
+      );
+
+      // Determine if this is a Norwegian tutoring context
+      const isNorwegianTutoring = !!chat.relatedPost;
+      const tutoringSubject = chat.relatedPost?.subject;
+
       return {
         ...chat,
         unreadCount,
         lastMessage: chat.messages[0] || null,
         isOwner: chat.participants.some(p => p.userId === user.id),
         otherParticipants: chat.participants.filter(p => p.userId !== user.id),
-        chatType: chat.participants.length > 2 ? 'group' : 'direct',
+        chatType: chat.participants.length > 2 ? 'group' : 
+                 isNorwegianTutoring ? 'lesson' : 'direct',
         hasRecentActivity: chat.lastMessageAt && 
           (Date.now() - chat.lastMessageAt.getTime()) < 24 * 60 * 60 * 1000,
-        isPostOwnerChat: chat.relatedPost?.userId === user.id,
+        isPostOwnerChat: chat.relatedPost?.user?.id === user.id,
+        norwegianContext: {
+          isNorwegianTutoring,
+          subject: tutoringSubject,
+          regionCompatibility,
+          postOwnerRegion: chat.relatedPost?.user?.region,
+        },
       };
     })
   );
@@ -215,7 +246,7 @@ async function handleGET(request: NextRequest) {
 }
 
 /**
- * POST /api/chat - Create new chat room
+ * POST /api/chat - Create new chat room with Norwegian tutoring features
  */
 async function handlePOST(request: NextRequest) {
   const user = getAuthenticatedUser(request);
@@ -225,190 +256,134 @@ async function handlePOST(request: NextRequest) {
   const validatedData = createChatSchema.parse(body);
   const { relatedPostId, participantIds, initialMessage } = validatedData;
 
-  // Add current user to participants if not already included
-  const allParticipantIds = participantIds.includes(user.id) 
-    ? participantIds 
-    : [user.id, ...participantIds];
-
-  // Validate participants exist and are active
-  const participants = await prisma.user.findMany({
-    where: {
-      id: { in: allParticipantIds },
-      isActive: true,
-    },
-    select: {
-      id: true,
-      name: true,
-      profileImage: true,
-      isActive: true,
-    },
-  });
-
-  if (participants.length !== allParticipantIds.length) {
-    throw new BadRequestError('One or more participants not found or inactive');
-  }
-
-  // If related to a post, verify post exists and user has access
-  let relatedPost = null;
-  if (relatedPostId) {
-    relatedPost = await prisma.post.findUnique({
-      where: { id: relatedPostId },
-      select: {
-        id: true,
-        userId: true,
-        title: true,
-        type: true,
-        subject: true,
-        isActive: true,
-      },
+  try {
+    // Use Norwegian chat room utility for enhanced validation and creation
+    const chatDetails = await createChatRoom({
+      relatedPostId,
+      participantIds,
+      initialMessage,
+      creatorId: user.id,
+      chatType: relatedPostId ? 'lesson' : participantIds.length > 1 ? 'group' : 'direct',
     });
 
-    if (!relatedPost) {
-      throw new NotFoundError('Related post not found');
-    }
-
-    if (!relatedPost.isActive) {
-      throw new BadRequestError('Cannot create chat for inactive post');
-    }
-
-    // Check if user is either post owner or one of the participants
-    const hasAccess = relatedPost.userId === user.id || allParticipantIds.includes(relatedPost.userId);
-    if (!hasAccess) {
-      throw new BadRequestError('You do not have access to create chat for this post');
-    }
-  }
-
-  // Check if chat already exists between these participants for this post
-  if (relatedPostId) {
-    const existingChat = await prisma.chat.findFirst({
-      where: {
-        relatedPostId,
-        isActive: true,
-        participants: {
-          every: {
-            userId: { in: allParticipantIds },
-            isActive: true,
-          },
-        },
-      },
+    // Get full chat details for response
+    const chatWithDetails = await prisma.chat.findUnique({
+      where: { id: chatDetails.id },
       include: {
-        participants: true,
-      },
-    });
-
-    if (existingChat && existingChat.participants.length === allParticipantIds.length) {
-      return {
-        success: true,
-        data: {
-          chatId: existingChat.id,
-          message: 'Chat already exists',
-        },
-      };
-    }
-  }
-
-  // Create chat in transaction
-  const newChat = await prisma.$transaction(async (tx) => {
-    // Create the chat
-    const chat = await tx.chat.create({
-      data: {
-        relatedPostId,
-        isActive: true,
-      },
-    });
-
-    // Add all participants
-    await tx.chatParticipant.createMany({
-      data: allParticipantIds.map(participantId => ({
-        chatId: chat.id,
-        userId: participantId,
-        joinedAt: new Date(),
-        isActive: true,
-        unreadCount: 0,
-      })),
-    });
-
-    // Send initial message if provided
-    if (initialMessage) {
-      await tx.message.create({
-        data: {
-          content: initialMessage,
-          type: MessageType.TEXT,
-          chatId: chat.id,
-          senderId: user.id,
-        },
-      });
-
-      // Update chat's last message timestamp
-      await tx.chat.update({
-        where: { id: chat.id },
-        data: { lastMessageAt: new Date() },
-      });
-
-      // Update unread counts for other participants
-      await tx.chatParticipant.updateMany({
-        where: {
-          chatId: chat.id,
-          userId: { not: user.id },
-        },
-        data: {
-          unreadCount: { increment: 1 },
-        },
-      });
-    }
-
-    // Add system message for chat creation
-    await tx.message.create({
-      data: {
-        content: `${user.name} created this chat${relatedPost ? ` for "${relatedPost.title}"` : ''}`,
-        type: MessageType.SYSTEM_MESSAGE,
-        chatId: chat.id,
-        senderId: user.id,
-      },
-    });
-
-    return chat;
-  });
-
-  // Return chat with full details
-  const chatWithDetails = await prisma.chat.findUnique({
-    where: { id: newChat.id },
-    include: {
-      participants: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              profileImage: true,
-              isActive: true,
+        participants: {
+          where: { isActive: true },
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                profileImage: true,
+                isActive: true,
+                region: true, // Include Norwegian region
+              },
             },
           },
         },
-      },
-      relatedPost: {
-        select: {
-          id: true,
-          title: true,
-          type: true,
-          subject: true,
+        relatedPost: {
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            subject: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                region: true,
+              },
+            },
+          },
+        },
+        _count: {
+          select: {
+            messages: true,
+          },
         },
       },
-      _count: {
-        select: {
-          messages: true,
+    });
+
+    return {
+      success: true,
+      data: {
+        chat: chatWithDetails,
+        message: chatTranslations.no.newChat?.created || 'Chat opprettet',
+        metadata: {
+          chatType: chatDetails.chatType,
+          isNorwegianTutoring: !!relatedPostId,
+          regionCompatibility: chatWithDetails?.participants.length > 1 
+            ? checkRegionCompatibility(chatWithDetails.participants.map(p => p.user.region))
+            : null,
         },
       },
-    },
-  });
+    };
+
+  } catch (error) {
+    // Handle Norwegian-specific error messages
+    if (error instanceof BadRequestError) {
+      const norwegianErrorMessage = translateChatError(error.message);
+      throw new BadRequestError(norwegianErrorMessage);
+    }
+    throw error;
+  }
+}
+
+/**
+ * Helper function to check region compatibility for Norwegian users
+ */
+function checkRegionCompatibility(regions: (string | null)[]): {
+  compatible: boolean;
+  diversity: 'same-region' | 'mixed-regions' | 'unknown';
+  message?: string;
+} {
+  const validRegions = regions.filter(Boolean);
+  
+  if (validRegions.length === 0) {
+    return { compatible: true, diversity: 'unknown' };
+  }
+
+  const uniqueRegions = new Set(validRegions);
+  
+  if (uniqueRegions.size === 1) {
+    return {
+      compatible: true,
+      diversity: 'same-region',
+      message: `Alle deltakere er fra ${validRegions[0]}`,
+    };
+  }
 
   return {
-    success: true,
-    data: {
-      chat: chatWithDetails,
-      message: 'Chat created successfully',
-    },
+    compatible: true,
+    diversity: 'mixed-regions',
+    message: `Deltakere fra ${uniqueRegions.size} forskjellige fylker`,
   };
+}
+
+/**
+ * Helper function to translate chat error messages to Norwegian
+ */
+function translateChatError(englishMessage: string): string {
+  const errorTranslations: Record<string, string> = {
+    'One or more participants not found or inactive': 'En eller flere deltakere ble ikke funnet eller er inaktive',
+    'Related post not found': 'Relatert innlegg ikke funnet',
+    'Cannot create chat for inactive post': 'Kan ikke opprette chat for inaktivt innlegg',
+    'You do not have access to create chat for this post': 'Du har ikke tilgang til å opprette chat for dette innlegget',
+    'Maximum 10 participants allowed': 'Maksimalt 10 deltakere tillatt',
+    'Email verification required before starting chats': 'E-postbekreftelse kreves før du kan starte samtaler',
+    'Cannot create chat with your own post': 'Kan ikke opprette samtale med ditt eget innlegg',
+    'Teachers cannot initiate chats with other teacher posts': 'Lærere kan ikke starte samtaler med andre lærerinnlegg',
+    'Students cannot initiate chats with other student posts': 'Studenter kan ikke starte samtaler med andre studentinnlegg',
+    'Message validation failed': 'Meldingsvalidering feilet',
+    'Initiator account is inactive': 'Starterens konto er inaktiv',
+    'Initiator not found': 'Starter ikke funnet',
+    'Post not found': 'Innlegg ikke funnet',
+  };
+
+  return errorTranslations[englishMessage] || englishMessage;
 }
 
 export const GET = apiHandler({

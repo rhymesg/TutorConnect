@@ -1,7 +1,8 @@
-// Real-time messaging hooks
+// Enhanced real-time messaging hooks
 export { useRealtimeConnection } from './useRealtimeConnection';
 export { useRealtimeMessages } from './useRealtimeMessages';
 export { useRealtimeChat } from './useRealtimeChat';
+export { usePresence } from './usePresence';
 export { useTypingIndicator } from './useTypingIndicator';
 export { useUserPresence } from './useUserPresence';
 
@@ -9,6 +10,7 @@ export { useUserPresence } from './useUserPresence';
 export { useAuth } from './useAuth';
 export { useApiCall } from './useApiCall';
 export { useMessages } from './useMessages';
+export { useChat } from './useChat';
 export { usePosts, usePost } from './usePosts';
 export { usePostForm } from './usePostForm';
 

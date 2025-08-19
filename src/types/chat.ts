@@ -37,6 +37,9 @@ export interface Message {
     dateTime: Date;
     location: string;
     status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+    hourlyRate?: number;
+    duration?: number; // in minutes
+    subject?: string;
   };
 }
 

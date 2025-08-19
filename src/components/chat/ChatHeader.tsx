@@ -16,7 +16,8 @@ import {
   MapPin,
   DollarSign,
   Clock,
-  GraduationCap
+  GraduationCap,
+  Calendar
 } from 'lucide-react';
 import { ChatListItem } from '@/types/chat';
 import { Language, chat as chatTranslations, formatters } from '@/lib/translations';
@@ -155,6 +156,18 @@ export default function ChatHeader({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          {/* Quick actions for tutoring */}
+          <button
+            onClick={() => {
+              // TODO: Open appointment scheduling modal
+              console.log('Schedule appointment');
+            }}
+            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
+            title={language === 'no' ? 'Book undervisningstime' : 'Schedule tutoring session'}
+          >
+            <Calendar className="h-5 w-5" />
+          </button>
+          
           {/* Call buttons */}
           {onCall && (
             <button
@@ -266,13 +279,18 @@ export default function ChatHeader({
                 {chat.relatedPost.hourlyRate && (
                   <div className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />
-                    <span>{chat.relatedPost.hourlyRate} NOK/t</span>
+                    <span>{formatters.currency(chat.relatedPost.hourlyRate)}/t</span>
                   </div>
                 )}
                 
                 <div className="flex items-center gap-1">
                   <User className="h-3 w-3" />
                   <span>{chat.relatedPost.user.name}</span>
+                </div>
+                
+                <div className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  <span>{language === 'no' ? 'Fleksibel tid' : 'Flexible time'}</span>
                 </div>
               </div>
             </div>

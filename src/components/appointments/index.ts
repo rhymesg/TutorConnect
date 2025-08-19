@@ -2,6 +2,9 @@
 export { default as AppointmentManager } from './AppointmentManager';
 export { default as AppointmentCalendar } from './AppointmentCalendar';
 export { default as AppointmentList } from './AppointmentList';
+export { default as AppointmentCard } from './AppointmentCard';
+export { default as AppointmentBooking } from './AppointmentBooking';
+export { default as AppointmentStatus, StatusIndicator } from './AppointmentStatus';
 export { default as AppointmentCreateModal } from './AppointmentCreateModal';
 export { default as AppointmentDetailsModal } from './AppointmentDetailsModal';
 export { default as AppointmentChatIntegration } from './AppointmentChatIntegration';
