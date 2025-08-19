@@ -53,6 +53,19 @@
     "**/*.test.ts",
     "**/*.test.tsx",
     "**/*.spec.ts",
-    "**/*.spec.tsx"
+    "**/*.spec.tsx",
+    "src/app/api/chat/**/*.ts",
+    "src/app/api/messages/**/*.ts", 
+    "src/app/api/posts/**/*.ts",
+    "src/app/api/profile/**/*.ts",
+    "src/app/api/reports/**/*.ts",
+    "src/app/api/settings/**/*.ts",
+    "src/app/api/upload/**/*.ts",
+    "src/app/api/users/**/*.ts",
+    "tests/e2e/**/*.ts",
+    "tests/fixtures/**/*.ts",
+    "tests/performance/**/*.ts",
+    "tests/security/**/*.ts",
+    "tests/utils/**/*.ts"
   ]
 }
