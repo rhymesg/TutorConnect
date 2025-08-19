@@ -6,32 +6,38 @@ This command creates a pull request for the current branch.
 
 ### 1. Check Current Branch
 ```bash
-CURRENT_BRANCH=$(git branch --show-current)
+# Get current branch name
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
+# If on main branch, exit with message
 if [ "$CURRENT_BRANCH" = "main" ]; then
   echo "❌ Error: You are currently on the main branch."
-  echo "Please switch to a feature branch before creating a pull request."
+  echo "Please create a feature branch and commit your changes before creating a pull request."
   exit 1
+else
+  BRANCH_NAME="$CURRENT_BRANCH"
+  echo "Using current branch: $BRANCH_NAME"
 fi
 ```
 
 ### 2. Push to Upstream
 ```bash
-git push -u origin $CURRENT_BRANCH
+# Push branch with upstream tracking
+git push -u origin "$BRANCH_NAME"
 ```
 
 ### 3. Create Pull Request
 ```bash
 # Get commits for PR
 BASE_BRANCH="main"
-COMMIT_COUNT=$(git rev-list --count $BASE_BRANCH..$CURRENT_BRANCH)
-ALL_COMMITS=$(git log $BASE_BRANCH..$CURRENT_BRANCH --pretty=format:"- %s" | sort | uniq)
+COMMIT_COUNT=$(git rev-list --count $BASE_BRANCH..$BRANCH_NAME)
+ALL_COMMITS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"- %s" | sort | uniq)
 
 # Create PR title based on commits
 if [ $COMMIT_COUNT -eq 1 ]; then
-  PR_TITLE=$(git log $BASE_BRANCH..$CURRENT_BRANCH --pretty=format:"%s" -1)
+  PR_TITLE=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" -1)
 else
-  PR_TITLE="[${CURRENT_BRANCH}] Multiple improvements and fixes"
+  PR_TITLE="[${BRANCH_NAME}] Multiple improvements and fixes"
 fi
 
 # Create PR body
@@ -42,7 +48,7 @@ $ALL_COMMITS"
 # Create the PR
 gh pr create \
   --base main \
-  --head $CURRENT_BRANCH \
+  --head $BRANCH_NAME \
   --title "$PR_TITLE" \
   --body "$PR_BODY" \
   --web
