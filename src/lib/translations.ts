@@ -447,6 +447,23 @@ export const education = {
       'bachelor': 'Bachelor',
       'master': 'Master',
       'phd': 'PhD',
+    },
+    subjects: {
+      'mathematics': 'Matematikk',
+      'physics': 'Fysikk',
+      'chemistry': 'Kjemi',
+      'biology': 'Biologi',
+      'norwegian': 'Norsk',
+      'english': 'Engelsk',
+      'spanish': 'Spansk',
+      'french': 'Fransk',
+      'german': 'Tysk',
+      'history': 'Historie',
+      'geography': 'Geografi',
+      'social_studies': 'Samfunnsfag',
+      'programming': 'Programmering',
+      'economics': 'Økonomi',
+      'other': 'Annet',
     }
   },
   en: {
@@ -456,12 +473,46 @@ export const education = {
       'bachelor': 'Bachelor',
       'master': 'Master',
       'phd': 'PhD',
+    },
+    subjects: {
+      'mathematics': 'Mathematics',
+      'physics': 'Physics',
+      'chemistry': 'Chemistry',
+      'biology': 'Biology',
+      'norwegian': 'Norwegian',
+      'english': 'English',
+      'spanish': 'Spanish',
+      'french': 'French',
+      'german': 'German',
+      'history': 'History',
+      'geography': 'Geography',
+      'social_studies': 'Social Studies',
+      'programming': 'Programming',
+      'economics': 'Economics',
+      'other': 'Other',
     }
   }
 };
 
 // Norwegian regions
 export const regions = {
+  counties: [
+    'Oslo',
+    'Akershus',
+    'Bergen',
+    'Trondheim',
+    'Stavanger',
+    'Vestland',
+    'Rogaland',
+    'Trøndelag',
+    'Viken',
+    'Innlandet',
+    'Vestfold og Telemark',
+    'Agder',
+    'Møre og Romsdal',
+    'Nordland',
+    'Troms og Finnmark',
+  ],
   no: {
     regions: {
       'OSLO': 'Oslo',
