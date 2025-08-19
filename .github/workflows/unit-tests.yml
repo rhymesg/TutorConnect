@@ -124,7 +124,7 @@ jobs:
         
         # Create coverage report
         cat > coverage-report.md << EOF
-        ## 📊 Coverage Report
+        ## 📊 Test Coverage Report
         
         | Metric | Before | After | Diff |
         |--------|--------|-------|------|
