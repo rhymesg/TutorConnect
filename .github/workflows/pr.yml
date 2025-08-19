@@ -1,0 +1,280 @@
+name: Pull Request Checks
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+# Cancel in-progress runs for the same PR
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_ENV: test
+
+jobs:
+  # Quick validation
+  validate:
+    name: Quick Validation
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    outputs:
+      node-cache-hit: ${{ steps.cache-node.outputs.cache-hit }}
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Cache node modules
+        id: cache-node
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+
+      - name: Install dependencies
+        if: steps.cache-node.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Validate package.json
+        run: npm ls --depth=0
+
+  # Linting and formatting
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Restore node modules
+        if: needs.validate.outputs.node-cache-hit == 'true'
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: needs.validate.outputs.node-cache-hit != 'true'
+        run: npm ci
+
+      - name: Run ESLint
+        run: npm run lint -- --format=github
+
+      - name: Check Prettier formatting
+        run: npx prettier --check "src/**/*.{js,jsx,ts,tsx,json,css,md}" --write=false
+
+  # Type checking
+  typecheck:
+    name: TypeScript
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Restore node modules
+        if: needs.validate.outputs.node-cache-hit == 'true'
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: needs.validate.outputs.node-cache-hit != 'true'
+        run: npm ci
+
+      - name: Run TypeScript compiler
+        run: npm run type-check
+
+  # Unit tests
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: validate
+    
+    env:
+      # Test environment variables
+      NEXT_PUBLIC_SUPABASE_URL: https://test.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: test-anon-key-for-pr-tests
+      SUPABASE_SERVICE_ROLE_KEY: test-service-role-key-for-pr-tests
+      JWT_ACCESS_SECRET: test-access-secret-that-is-at-least-32-characters-long-for-pr-testing
+      JWT_REFRESH_SECRET: test-refresh-secret-that-is-at-least-32-characters-long-and-different-for-pr-testing
+      
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Restore node modules
+        if: needs.validate.outputs.node-cache-hit == 'true'
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: needs.validate.outputs.node-cache-hit != 'true'
+        run: npm ci
+
+      - name: Run tests
+        run: npm run test -- --coverage --watchAll=false --ci --maxWorkers=2 --passWithNoTests
+
+      - name: Comment PR with test results
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const path = './coverage/lcov.info';
+            
+            let coverageComment = '## 🧪 Test Results\n\n✅ All tests passed!\n\n';
+            
+            if (fs.existsSync(path)) {
+              coverageComment += '📊 Coverage report generated - check the artifacts for details.\n';
+            }
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: coverageComment
+            });
+
+      - name: Upload test coverage
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  # Build check
+  build:
+    name: Build Check
+    runs-on: ubuntu-latest
+    needs: [validate, lint, typecheck]
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Restore node modules
+        if: needs.validate.outputs.node-cache-hit == 'true'
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: needs.validate.outputs.node-cache-hit != 'true'
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npm run db:generate
+
+      - name: Build for production
+        run: npm run build
+        env:
+          NODE_ENV: production
+
+      - name: Check bundle size (optional)
+        continue-on-error: true
+        run: |
+          if [ -f ".next/static" ]; then
+            du -sh .next/static
+          else
+            echo "No static files generated"
+          fi
+
+  # Summary
+  pr-summary:
+    name: PR Summary
+    runs-on: ubuntu-latest
+    needs: [validate, lint, typecheck, test, build]
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const jobs = {
+              validate: '${{ needs.validate.result }}',
+              lint: '${{ needs.lint.result }}',
+              typecheck: '${{ needs.typecheck.result }}',
+              test: '${{ needs.test.result }}',
+              build: '${{ needs.build.result }}'
+            };
+            
+            const passed = Object.values(jobs).every(result => result === 'success');
+            const emoji = passed ? '✅' : '❌';
+            const status = passed ? 'All checks passed!' : 'Some checks failed';
+            
+            let summary = `## ${emoji} PR Status: ${status}\n\n`;
+            summary += '| Check | Status |\n';
+            summary += '|-------|--------|\n';
+            
+            for (const [job, result] of Object.entries(jobs)) {
+              const statusEmoji = result === 'success' ? '✅' : result === 'failure' ? '❌' : '⚠️';
+              summary += `| ${job} | ${statusEmoji} ${result} |\n`;
+            }
+            
+            if (!passed) {
+              summary += '\n❗ Please fix the failing checks before merging.\n';
+            }
+            
+            // Comment on PR
+            if (context.payload.pull_request) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: summary
+              });
+            }
+            
+            console.log(summary);
+            
+            if (!passed) {
+              core.setFailed('Some PR checks failed');
+            }

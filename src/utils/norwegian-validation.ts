@@ -115,13 +115,13 @@ export function getLocationFromPostalCode(postalCode: string): {
 export function inferRegionFromPostalCode(postalCode: string): NorwegianRegion | null {
   const code = parseInt(postalCode);
   
-  // Norwegian postal code ranges (approximate)
-  if (code >= 0 && code <= 1299) return NorwegianRegion.OSLO;
+  // Norwegian postal code ranges (approximate) - excluding invalid ranges
+  if (code >= 1 && code <= 1299) return NorwegianRegion.OSLO;
   if (code >= 1300 && code <= 1399) return NorwegianRegion.BAERUM;
-  if (code >= 1400 && code <= 1999) return NorwegianRegion.AKERSHUS;
-  if (code >= 1500 && code <= 1699) return NorwegianRegion.OESTFOLD;
-  if (code >= 1700 && code <= 1799) return NorwegianRegion.OESTFOLD;
+  if (code >= 1400 && code <= 1499) return NorwegianRegion.AKERSHUS;
+  if (code >= 1500 && code <= 1799) return NorwegianRegion.OESTFOLD;
   if (code >= 1800 && code <= 1999) return NorwegianRegion.AKERSHUS;
+  if (code >= 2000 && code <= 2999) return NorwegianRegion.OESTFOLD;
   if (code >= 3000 && code <= 3999) return NorwegianRegion.BUSKERUD;
   if (code >= 4000 && code <= 4999) return NorwegianRegion.ROGALAND;
   if (code >= 5000 && code <= 5999) return NorwegianRegion.HORDALAND;
@@ -152,114 +152,7 @@ export function getPostalCodesForRegion(region: NorwegianRegion): string[] {
   );
 }
 
-/**
- * Norwegian phone number validation
- */
-export function validateNorwegianPhoneNumber(phoneNumber: string): {
-  valid: boolean;
-  formatted?: string;
-  error?: string;
-} {
-  // Remove all non-digit characters
-  const cleaned = phoneNumber.replace(/\D/g, '');
-  
-  // Check if it starts with country code
-  let number = cleaned;
-  if (cleaned.startsWith('47')) {
-    number = cleaned.substring(2);
-  } else if (cleaned.startsWith('0047')) {
-    number = cleaned.substring(4);
-  }
-  
-  // Norwegian mobile numbers are 8 digits
-  if (number.length !== 8) {
-    return {
-      valid: false,
-      error: 'Norwegian phone numbers must be 8 digits'
-    };
-  }
-  
-  // First digit should be 4, 9, or certain other valid prefixes
-  const firstDigit = number[0];
-  const validPrefixes = ['2', '3', '4', '5', '6', '7', '8', '9'];
-  
-  if (!validPrefixes.includes(firstDigit)) {
-    return {
-      valid: false,
-      error: 'Invalid Norwegian phone number prefix'
-    };
-  }
-  
-  // Format as +47 XXX XX XXX
-  const formatted = `+47 ${number.substring(0, 3)} ${number.substring(3, 5)} ${number.substring(5)}`;
-  
-  return {
-    valid: true,
-    formatted
-  };
-}
 
-/**
- * Validate Norwegian personal identification number (Fødselsnummer)
- * This is a basic validation - full validation would require more complex algorithms
- */
-export function validateNorwegianPersonalId(personalId: string): {
-  valid: boolean;
-  birthDate?: Date;
-  gender?: 'MALE' | 'FEMALE';
-  error?: string;
-} {
-  // Remove any spaces or special characters
-  const cleaned = personalId.replace(/\D/g, '');
-  
-  if (cleaned.length !== 11) {
-    return {
-      valid: false,
-      error: 'Norwegian personal ID must be 11 digits'
-    };
-  }
-  
-  // Extract birth date (DDMMYY)
-  const day = parseInt(cleaned.substring(0, 2));
-  const month = parseInt(cleaned.substring(2, 4));
-  const year = parseInt(cleaned.substring(4, 6));
-  
-  // Determine century based on individual number (simplified)
-  const individualNum = parseInt(cleaned.substring(6, 9));
-  let fullYear = year;
-  
-  if (individualNum >= 500 && individualNum <= 749 && year >= 54) {
-    fullYear = 1800 + year;
-  } else if (individualNum >= 900 && individualNum <= 999 && year >= 40) {
-    fullYear = 1900 + year;
-  } else if (year >= 0 && year <= 39) {
-    fullYear = 2000 + year;
-  } else {
-    fullYear = 1900 + year;
-  }
-  
-  // Validate date
-  const birthDate = new Date(fullYear, month - 1, day);
-  if (birthDate.getDate() !== day || birthDate.getMonth() !== month - 1) {
-    return {
-      valid: false,
-      error: 'Invalid birth date in personal ID'
-    };
-  }
-  
-  // Determine gender (odd = male, even = female)
-  const genderDigit = parseInt(cleaned[8]);
-  const gender: 'MALE' | 'FEMALE' = genderDigit % 2 === 0 ? 'FEMALE' : 'MALE';
-  
-  // Note: Full validation would include checksum validation with Modulus 11
-  // This is a simplified version for demonstration purposes
-  
-  return {
-    valid: true,
-    birthDate,
-    gender
-  };
-}
 
 /**
  * Format Norwegian currency
