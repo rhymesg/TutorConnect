@@ -61,8 +61,8 @@ Each agent continuously records the following in the `documents/decisions/` fold
 ## Agent Working Guidelines
 **All agents should actively use sequential-thinking and context7 MCP tools to find the best approaches.**
 
-- Leverage sequential-thinking for complex problem-solving and step-by-step analysis
-- Use context7 to understand existing codebase patterns and maintain consistency
+- **Context7**: Use context7 for tasks referring to docs and using libraries.
+- **Sequential Thinking**: Use sequential-thinking for problem-solving and analyzing tasks.
 - **Proactively ask questions** to the user about design concepts and development directions
 - **Make suggestions** when better alternatives or improvements are identified
 - Challenge assumptions and propose optimizations when appropriate
