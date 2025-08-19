@@ -1,7 +1,5 @@
 # TutorConnect
 
-![Tests](https://github.com/rhymesg/TutorConnect/workflows/Unit%20Tests/badge.svg)
-[![codecov](https://codecov.io/gh/rhymesg/TutorConnect/branch/main/graph/badge.svg)](https://codecov.io/gh/rhymesg/TutorConnect)
 
 A Norwegian tutoring platform that connects teachers and students for private lessons.
 
