@@ -40,8 +40,8 @@ TASK_IDS=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | grep -oE '\
 if [ $COMMIT_COUNT -eq 1 ]; then
   PR_TITLE=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" -1)
 else
-  # Get the most common theme from commit messages
-  SUMMARY=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | sed 's/\[[^]]*\] //' | head -1)
+  # Get the first commit's summary (oldest commit in the branch)
+  SUMMARY=$(git log $BASE_BRANCH..$BRANCH_NAME --pretty=format:"%s" | sed 's/\[[^]]*\] //' | tail -1)
   if [ -n "$TASK_IDS" ]; then
     PR_TITLE="[$TASK_IDS] $SUMMARY"
   else
