@@ -30,7 +30,7 @@ interface PostFormFieldsProps {
   mode: 'create' | 'edit';
 }
 
-export function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' | 'errors'>) {
+function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' | 'errors'>) {
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
@@ -89,7 +89,7 @@ export function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'co
   );
 }
 
-export function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps, 'register' | 'control' | 'errors'>) {
+function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps, 'register' | 'control' | 'errors'>) {
   // Subject options
   const subjectOptions = Object.entries(education.no.subjects).map(([key, name]) => ({
     value: key.toUpperCase(),
@@ -174,7 +174,7 @@ export function BasicInfoFields({ register, control, errors }: Pick<PostFormFiel
   );
 }
 
-export function LocationFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
+function LocationFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
@@ -219,7 +219,7 @@ export function LocationFields({ register, errors }: Pick<PostFormFieldsProps, '
   );
 }
 
-export function AvailabilityFields({ 
+function AvailabilityFields({ 
   control, 
   register, 
   watch, 
@@ -339,7 +339,7 @@ export function AvailabilityFields({
   );
 }
 
-export function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
+function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">

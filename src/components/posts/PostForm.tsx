@@ -12,7 +12,12 @@ import {
 } from 'lucide-react';
 
 import { LoadingSpinner, ErrorMessage } from '@/components/ui';
-import PostFormFields from './PostFormFields';
+import dynamic from 'next/dynamic';
+
+const PostFormFields = dynamic(() => import('./PostFormFields'), {
+  ssr: false,
+  loading: () => <div className="animate-pulse h-96 bg-neutral-100 rounded-lg" />
+});
 
 import { CreatePostFormSchema, UpdatePostFormSchema, type CreatePostFormInput, type UpdatePostFormInput } from '@/schemas/post-form';
 import { PostWithDetails } from '@/types/database';

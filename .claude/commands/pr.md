@@ -54,7 +54,7 @@ PR_BODY="## Changes
 
 $ALL_COMMITS"
 
-# Create the PR
+# Create the PR (without --web flag to create directly)
 gh pr create \
   --base main \
   --head $BRANCH_NAME \
