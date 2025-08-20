@@ -24,6 +24,20 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   
+  // Transform ES modules to CommonJS
+  transformIgnorePatterns: [
+    'node_modules/(?!(jose|@supabase|@next)/)'
+  ],
+  
+  // Handle ES modules
+  extensionsToTreatAsEsm: ['.ts'],
+  
+  globals: {
+    'ts-jest': {
+      useESM: true,
+    },
+  },
+  
   // Setup file for API tests
   setupFilesAfterEnv: ['<rootDir>/jest.integration.setup.js'],
   

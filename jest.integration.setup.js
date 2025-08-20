@@ -27,3 +27,22 @@ jest.setTimeout(30000);
 global.Request = global.Request || require('node-fetch').Request;
 global.Response = global.Response || require('node-fetch').Response;
 global.Headers = global.Headers || require('node-fetch').Headers;
+
+// Mock JWT library to avoid ES module issues
+jest.mock('@/lib/jwt', () => ({
+  generateEmailVerificationToken: jest.fn().mockResolvedValue('mock-verification-token'),
+  generateTokenPair: jest.fn().mockResolvedValue({
+    accessToken: 'mock-access-token',
+    refreshToken: 'mock-refresh-token',
+  }),
+  verifyToken: jest.fn().mockResolvedValue({ 
+    userId: 'mock-user-id',
+    email: 'test@example.com'
+  }),
+}));
+
+// Mock email service
+jest.mock('@/lib/email', () => ({
+  sendVerificationEmail: jest.fn().mockResolvedValue(true),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue(true),
+}));
