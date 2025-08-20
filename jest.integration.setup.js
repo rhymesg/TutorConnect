@@ -23,10 +23,20 @@ process.on('unhandledRejection', (reason, promise) => {
 // Add timeout for database operations
 jest.setTimeout(30000);
 
-// Mock Next.js headers and cookies for API route testing
-global.Request = global.Request || require('node-fetch').Request;
-global.Response = global.Response || require('node-fetch').Response;
-global.Headers = global.Headers || require('node-fetch').Headers;
+// Mock Next.js Request/Response for API route testing using undici (built into Node 18+)
+const { Request, Response, Headers } = require('undici');
+global.Request = Request;
+global.Response = Response;
+global.Headers = Headers;
+
+// Polyfill for Web APIs not available in Node.js
+if (!global.TextEncoder) {
+  global.TextEncoder = require('util').TextEncoder;
+}
+
+if (!global.TextDecoder) {
+  global.TextDecoder = require('util').TextDecoder;
+}
 
 // Mock JWT library to avoid ES module issues
 jest.mock('@/lib/jwt', () => ({
