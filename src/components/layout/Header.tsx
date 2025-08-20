@@ -3,11 +3,11 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/hooks/useAuth';
 import { 
   Bars3Icon, 
   UserCircleIcon,
-  BellIcon,
-  MagnifyingGlassIcon 
+  BellIcon
 } from '@heroicons/react/24/outline';
 import { 
   ChevronDownIcon 
@@ -16,7 +16,6 @@ import {
 interface HeaderProps {
   onMenuClick: () => void;
   showMenuButton?: boolean;
-  isAuthenticated?: boolean;
 }
 
 interface NavigationItem {
@@ -27,12 +26,11 @@ interface NavigationItem {
 
 export default function Header({ 
   onMenuClick, 
-  showMenuButton = false, 
-  isAuthenticated = false 
+  showMenuButton = false
 }: HeaderProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [searchFocused, setSearchFocused] = useState(false);
   const pathname = usePathname();
+  const { isAuthenticated, logout } = useAuth();
 
   // Main navigation items for public pages
   const publicNavigation: NavigationItem[] = [
@@ -73,49 +71,26 @@ export default function Header({
             </Link>
           </div>
 
-          {/* Center - Public navigation (desktop) */}
-          {!isAuthenticated && (
-            <nav className="hidden md:flex space-x-8" aria-label="Hovednavigasjon">
-              {publicNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    px-3 py-2 text-sm font-medium rounded-md transition-colors
-                    ${item.current 
-                      ? 'text-brand-600 bg-brand-50' 
-                      : 'text-neutral-700 hover:text-brand-600 hover:bg-neutral-50'
-                    }
-                  `}
-                  aria-current={item.current ? 'page' : undefined}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </nav>
-          )}
+          {/* Center - Navigation (desktop) */}
+          <nav className="hidden md:flex space-x-8" aria-label="Hovednavigasjon">
+            {publicNavigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`
+                  px-3 py-2 text-sm font-medium rounded-md transition-colors
+                  ${item.current 
+                    ? 'text-brand-600 bg-brand-50' 
+                    : 'text-neutral-700 hover:text-brand-600 hover:bg-neutral-50'
+                  }
+                `}
+                aria-current={item.current ? 'page' : undefined}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </nav>
 
-          {/* Center - Search (authenticated users) */}
-          {isAuthenticated && (
-            <div className="flex-1 max-w-lg mx-8 hidden lg:block">
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <MagnifyingGlassIcon 
-                    className={`h-5 w-5 ${searchFocused ? 'text-brand-500' : 'text-neutral-400'}`} 
-                    aria-hidden="true" 
-                  />
-                </div>
-                <input
-                  type="search"
-                  placeholder="Søk etter lærere eller studenter..."
-                  className="block w-full rounded-lg border border-neutral-300 py-2 pl-10 pr-3 text-sm placeholder:text-neutral-500 focus:border-brand-500 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                  onFocus={() => setSearchFocused(true)}
-                  onBlur={() => setSearchFocused(false)}
-                  aria-label="Søk i TutorConnect"
-                />
-              </div>
-            </div>
-          )}
 
           {/* Right side - Authentication/User menu */}
           <div className="flex items-center space-x-4">
@@ -157,25 +132,12 @@ export default function Header({
                           className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
                           role="menuitem"
                         >
-                          Min profil
-                        </Link>
-                        <Link
-                          href="/dashboard"
-                          className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                          role="menuitem"
-                        >
-                          Dashboard
-                        </Link>
-                        <Link
-                          href="/settings"
-                          className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
-                          role="menuitem"
-                        >
-                          Innstillinger
+                          Min side
                         </Link>
                         <hr className="my-1 border-neutral-200" />
                         <button
                           type="button"
+                          onClick={logout}
                           className="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
                           role="menuitem"
                         >
@@ -207,31 +169,29 @@ export default function Header({
         </div>
       </div>
 
-      {/* Mobile navigation menu (public pages only) */}
-      {!isAuthenticated && (
-        <div className="md:hidden border-t border-neutral-200 bg-white">
-          <nav className="mx-auto max-w-7xl px-4 py-2" aria-label="Mobilnavigasjon">
-            <div className="flex space-x-4">
-              {publicNavigation.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`
-                    px-3 py-2 text-sm font-medium rounded-md transition-colors
-                    ${item.current 
-                      ? 'text-brand-600 bg-brand-50' 
-                      : 'text-neutral-700 hover:text-brand-600'
-                    }
-                  `}
-                  aria-current={item.current ? 'page' : undefined}
-                >
-                  {item.name}
-                </Link>
-              ))}
-            </div>
-          </nav>
-        </div>
-      )}
+      {/* Mobile navigation menu */}
+      <div className="md:hidden border-t border-neutral-200 bg-white">
+        <nav className="mx-auto max-w-7xl px-4 py-2" aria-label="Mobilnavigasjon">
+          <div className="flex space-x-4">
+            {publicNavigation.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`
+                  px-3 py-2 text-sm font-medium rounded-md transition-colors
+                  ${item.current 
+                    ? 'text-brand-600 bg-brand-50' 
+                    : 'text-neutral-700 hover:text-brand-600'
+                  }
+                `}
+                aria-current={item.current ? 'page' : undefined}
+              >
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }
