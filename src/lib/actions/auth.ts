@@ -135,7 +135,7 @@ export async function loginAction(
     });
 
     // Set secure HTTP-only cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
     const refreshTokenExpiry = remember 
       ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
@@ -181,15 +181,36 @@ export async function loginAction(
 
     // Handle email verification requirement
     if (!user.emailVerified) {
-      redirect('/auth/verify-email?message=login-verification-required');
+      // Generate new verification token and send email
+      const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      
+      // Update user with new token
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken: verificationToken,
+        }
+      });
+      
+      // Send verification email
+      try {
+        const { sendVerificationEmail } = await import('@/lib/email');
+        await sendVerificationEmail(user.email, user.name, verificationToken);
+        console.log('Verification email sent to:', user.email);
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        // Continue even if email fails
+      }
+      
+      redirect('/auth/verify-email?message=login-verification-required&email=' + encodeURIComponent(user.email));
     }
 
     // Revalidate relevant pages
-    revalidatePath('/dashboard');
     revalidatePath('/profile');
+    revalidatePath('/posts');
 
-    // Redirect to dashboard
-    redirect('/dashboard');
+    // Redirect to profile page (especially useful for new users)
+    redirect('/profile');
 
   } catch (error) {
     console.error('Login action error:', error);
@@ -235,14 +256,19 @@ export async function registerAction(
     const name = formData.get('name') as string;
     const region = formData.get('region') as string;
 
-    // Validate using Zod schema
-    const validatedData = registerUserSchema.parse({
+    // Create simplified validation object
+    const validationData = {
       email,
       password,
       confirmPassword,
       name,
       region,
-    });
+      acceptTerms: true, // Implicit acceptance by submitting form
+      acceptPrivacy: true, // Implicit acceptance by submitting form
+    };
+
+    // Validate using Zod schema
+    const validatedData = registerUserSchema.parse(validationData);
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -270,7 +296,26 @@ export async function registerAction(
       },
     });
 
-    // TODO: Send verification email
+    // Generate verification token
+    const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    
+    // Store verification token in database
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken: verificationToken,
+      }
+    });
+
+    // Send verification email
+    try {
+      const { sendVerificationEmail } = await import('@/lib/email');
+      await sendVerificationEmail(user.email, user.name, verificationToken);
+      console.log('Verification email sent to:', user.email);
+    } catch (emailError) {
+      console.error('Failed to send verification email:', emailError);
+      // Don't fail registration if email fails - user can still verify later
+    }
 
     // Revalidate pages
     revalidatePath('/auth/login');

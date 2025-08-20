@@ -34,8 +34,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Determine if current page should show navigation
   const isPublicPage = pathname === '/' || 
                       pathname.startsWith('/auth') || 
-                      pathname === '/om-oss' || 
-                      pathname === '/kontakt';
+                      pathname === '/om-oss';
 
   // Determine layout structure based on authentication and page type
   const showSidebar = isAuthenticated && !isPublicPage;
@@ -82,7 +81,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {children}
           </div>
           
-          {/* Footer - only show on public pages */}
+          {/* Footer - show on all public pages */}
           {isPublicPage && <Footer />}
         </main>
       </div>

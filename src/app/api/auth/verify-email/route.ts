@@ -10,7 +10,7 @@ import {
   TokenExpiredError,
   InvalidTokenError
 } from '@/lib/errors';
-import { verifyEmailVerificationToken, generateEmailVerificationToken } from '@/lib/jwt';
+import { generateEmailVerificationToken } from '@/lib/jwt';
 import { sendVerificationEmail } from '@/lib/email';
 
 const prisma = new PrismaClient();
@@ -27,12 +27,12 @@ export async function POST(request: NextRequest) {
 
     const { token } = validatedData;
 
-    // Verify the email verification token
-    const payload = await verifyEmailVerificationToken(token);
-
-    // Find user by ID and check if they need verification
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
+    // Find user by verification token
+    const user = await prisma.user.findFirst({
+      where: { 
+        verificationToken: token,
+        emailVerified: null // Not yet verified
+      },
       select: {
         id: true,
         email: true,
@@ -69,15 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if the token matches the stored verification token
-    if (user.verificationToken !== token) {
-      throw new InvalidTokenError();
-    }
-
-    // Check if email matches
-    if (user.email !== payload.email) {
-      throw new BadRequestError('Token is not valid for this email address');
-    }
+    // Token is already validated by the query above
 
     // Update user to mark email as verified
     const updatedUser = await prisma.user.update({
