@@ -206,11 +206,11 @@ export async function loginAction(
     }
 
     // Revalidate relevant pages
-    revalidatePath('/dashboard');
     revalidatePath('/profile');
+    revalidatePath('/posts');
 
-    // Redirect to dashboard
-    redirect('/dashboard');
+    // Redirect to profile page (especially useful for new users)
+    redirect('/profile');
 
   } catch (error) {
     console.error('Login action error:', error);

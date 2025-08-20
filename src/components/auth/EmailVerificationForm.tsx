@@ -333,7 +333,7 @@ function EmailVerificationFormInner({
             Tilbake til innlogging
           </a>
           <p className="text-xs text-neutral-500">
-            Har du problemer? <a href="/kontakt" className="text-brand-600 hover:text-brand-500 underline">Kontakt oss for hjelp</a>
+            Har du problemer? <a href="/om-oss#kontakt" className="text-brand-600 hover:text-brand-500 underline">Kontakt oss for hjelp</a>
           </p>
         </div>
       </div>

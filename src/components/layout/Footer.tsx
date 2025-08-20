@@ -54,7 +54,7 @@ export default function Footer() {
       title: 'Støtte',
       links: [
         { name: 'Hjelp', href: '/help' },
-        { name: 'Kontakt oss', href: '/kontakt' },
+        { name: 'Kontakt oss', href: '/om-oss#kontakt' },
         { name: 'Sikkerhet', href: '/sikkerhet' },
         { name: 'Tilgjengelighet', href: '/tilgjengelighet' },
       ],

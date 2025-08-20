@@ -270,7 +270,7 @@ export default function PrivacyPage() {
                 <a href="/" className="btn-ghost">
                   ← Gå tilbake
                 </a>
-                <a href="/kontakt" className="btn-primary">
+                <a href="/om-oss#kontakt" className="btn-primary">
                   Kontakt oss for spørsmål
                 </a>
               </div>

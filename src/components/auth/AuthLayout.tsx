@@ -51,7 +51,7 @@ export default function AuthLayout({
                 Personvern
               </Link>
               <Link
-                href="/kontakt"
+                href="/om-oss#kontakt"
                 className="text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
               >
                 Kontakt

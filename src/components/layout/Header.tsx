@@ -39,7 +39,6 @@ export default function Header({
     { name: 'Finn lærer', href: '/posts?type=teacher', current: pathname.startsWith('/posts') },
     { name: 'Bli lærer', href: '/auth/register?type=teacher', current: false },
     { name: 'Om oss', href: '/om-oss', current: pathname === '/om-oss' },
-    { name: 'Kontakt', href: '/kontakt', current: pathname === '/kontakt' },
   ];
 
   return (
