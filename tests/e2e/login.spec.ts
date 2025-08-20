@@ -25,6 +25,7 @@ test.describe('Login Flow Tests', () => {
         name: testUser.name,
         email: testUser.email,
         password: testUser.hashedPassword,
+        region: 'OSLO',
         emailVerified: true, // Set as verified so login works
       }
     });
@@ -55,7 +56,7 @@ test.describe('Login Flow Tests', () => {
 
     // Check required form fields
     await expect(page.getByLabel(/e-post|email/i)).toBeVisible();
-    await expect(page.getByLabel(/passord|password/i)).toBeVisible();
+    await expect(page.getByLabel('Passord*')).toBeVisible();
 
     // Check submit button
     await expect(page.getByRole('button', { name: /logg inn|login|sign in/i })).toBeVisible();
@@ -79,7 +80,7 @@ test.describe('Login Flow Tests', () => {
   test('should validate email format', async ({ page }) => {
     // Fill form with invalid email
     await page.getByLabel(/e-post|email/i).fill('invalid-email');
-    await page.getByLabel(/passord|password/i).fill('somepassword');
+    await page.getByLabel('Passord*').fill('somepassword');
 
     await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
 
@@ -90,7 +91,7 @@ test.describe('Login Flow Tests', () => {
   test('should successfully login with valid credentials', async ({ page }) => {
     // Fill login form with test user credentials
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
 
     // Submit form
     await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
@@ -122,7 +123,7 @@ test.describe('Login Flow Tests', () => {
   test('should show error for invalid credentials', async ({ page }) => {
     // Try login with wrong password
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill('wrongpassword');
+    await page.getByLabel('Passord*').fill('wrongpassword');
 
     await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
 
@@ -133,7 +134,7 @@ test.describe('Login Flow Tests', () => {
   test('should show error for non-existent user', async ({ page }) => {
     // Try login with non-existent email
     await page.getByLabel(/e-post|email/i).fill('nonexistent@example.com');
-    await page.getByLabel(/passord|password/i).fill('somepassword');
+    await page.getByLabel('Passord*').fill('somepassword');
 
     await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
 
@@ -164,7 +165,7 @@ test.describe('Login Flow Tests', () => {
     const emailField = page.getByLabel(/e-post|email/i);
     await expect(emailField).toHaveAttribute('type', 'email');
 
-    const passwordField = page.getByLabel(/passord|password/i);
+    const passwordField = page.getByLabel('Passord*');
     await expect(passwordField).toHaveAttribute('type', 'password');
 
     // Test keyboard navigation
@@ -182,7 +183,7 @@ test.describe('Login Flow Tests', () => {
   test('should show loading state during form submission', async ({ page }) => {
     // Fill form with valid credentials
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
 
     // Submit form and immediately check for loading state
     const submitButton = page.getByRole('button', { name: /logg inn|login|sign in/i });
@@ -205,7 +206,7 @@ test.describe('Login Flow Tests', () => {
     if (await rememberMeCheckbox.isVisible()) {
       // Test remember me functionality
       await page.getByLabel(/e-post|email/i).fill(testUser.email);
-      await page.getByLabel(/passord|password/i).fill(testUser.password);
+      await page.getByLabel('Passord*').fill(testUser.password);
       await rememberMeCheckbox.check();
       
       await expect(rememberMeCheckbox).toBeChecked();
@@ -224,7 +225,7 @@ test.describe('Login Flow Tests', () => {
   });
 
   test('should handle password visibility toggle if available', async ({ page }) => {
-    const passwordField = page.getByLabel(/passord|password/i);
+    const passwordField = page.getByLabel('Passord*');
     const toggleButton = page.getByRole('button', { name: /vis.*passord|show.*password|toggle.*password/i });
     
     if (await toggleButton.isVisible()) {
@@ -247,7 +248,7 @@ test.describe('Login Flow Tests', () => {
     
     // Login with valid credentials
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
     await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
     
     // Should redirect to the specified URL
@@ -256,7 +257,7 @@ test.describe('Login Flow Tests', () => {
 
   test('should prevent multiple form submissions', async ({ page }) => {
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
 
     const submitButton = page.getByRole('button', { name: /logg inn|login|sign in/i });
     
@@ -285,6 +286,7 @@ test.describe('Login Flow Tests', () => {
         name: 'Unverified User',
         email: unverifiedUser.email,
         password: hashedPassword,
+        region: 'OSLO',
         emailVerified: false, // Not verified
       }
     });
@@ -292,7 +294,7 @@ test.describe('Login Flow Tests', () => {
     try {
       // Try to login with unverified account
       await page.getByLabel(/e-post|email/i).fill(unverifiedUser.email);
-      await page.getByLabel(/passord|password/i).fill(unverifiedUser.password);
+      await page.getByLabel('Passord*').fill(unverifiedUser.password);
       await page.getByRole('button', { name: /logg inn|login|sign in/i }).click();
 
       // Should show email verification required message

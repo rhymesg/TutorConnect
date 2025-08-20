@@ -41,7 +41,8 @@ test.describe('Registration Flow Tests', () => {
     // Check required form fields
     await expect(page.getByLabel(/navn|name/i)).toBeVisible();
     await expect(page.getByLabel(/e-post|email/i)).toBeVisible();
-    await expect(page.getByLabel(/passord|password/i)).toBeVisible();
+    await expect(page.getByLabel('Passord*')).toBeVisible();
+    await expect(page.getByLabel('Bekreft passord*')).toBeVisible();
 
     // Check submit button
     await expect(page.getByRole('button', { name: /registrer|sign up|opprett/i })).toBeVisible();
@@ -57,14 +58,14 @@ test.describe('Registration Flow Tests', () => {
     // Check for validation error messages
     await expect(page.getByText(/navn.*påkrevd|name.*required/i)).toBeVisible();
     await expect(page.getByText(/e-post.*påkrevd|email.*required/i)).toBeVisible();
-    await expect(page.getByText(/passord.*påkrevd|password.*required/i)).toBeVisible();
+    await expect(page.getByText(/passord.*påkrevd|password.*required/i).first()).toBeVisible();
   });
 
   test('should validate email format', async ({ page }) => {
     // Fill form with invalid email
     await page.getByLabel(/navn|name/i).fill(testUser.name);
     await page.getByLabel(/e-post|email/i).fill('invalid-email');
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
 
     await page.getByRole('button', { name: /registrer|sign up|opprett/i }).click();
 
@@ -76,7 +77,7 @@ test.describe('Registration Flow Tests', () => {
     // Fill form with weak password
     await page.getByLabel(/navn|name/i).fill(testUser.name);
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill('123');
+    await page.getByLabel('Passord*').fill('123');
 
     await page.getByRole('button', { name: /registrer|sign up|opprett/i }).click();
 
@@ -88,7 +89,8 @@ test.describe('Registration Flow Tests', () => {
     // Fill registration form
     await page.getByLabel(/navn|name/i).fill(testUser.name);
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
+    await page.getByLabel('Bekreft passord*').fill(testUser.password);
 
     // Submit form
     await page.getByRole('button', { name: /registrer|sign up|opprett/i }).click();
@@ -107,7 +109,8 @@ test.describe('Registration Flow Tests', () => {
     // First registration
     await page.getByLabel(/navn|name/i).fill(testUser.name);
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
+    await page.getByLabel('Bekreft passord*').fill(testUser.password);
     await page.getByRole('button', { name: /registrer|sign up|opprett/i }).click();
 
     // Wait for first registration to complete
@@ -119,7 +122,8 @@ test.describe('Registration Flow Tests', () => {
     // Try to register with same email
     await page.getByLabel(/navn|name/i).fill('Another User');
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
+    await page.getByLabel('Bekreft passord*').fill(testUser.password);
     await page.getByRole('button', { name: /registrer|sign up|opprett/i }).click();
 
     // Check for duplicate email error
@@ -143,7 +147,7 @@ test.describe('Registration Flow Tests', () => {
     const emailField = page.getByLabel(/e-post|email/i);
     await expect(emailField).toHaveAttribute('type', 'email');
 
-    const passwordField = page.getByLabel(/passord|password/i);
+    const passwordField = page.getByLabel('Passord*');
     await expect(passwordField).toHaveAttribute('type', 'password');
 
     // Test keyboard navigation
@@ -161,7 +165,8 @@ test.describe('Registration Flow Tests', () => {
     // Fill form
     await page.getByLabel(/navn|name/i).fill(testUser.name);
     await page.getByLabel(/e-post|email/i).fill(testUser.email);
-    await page.getByLabel(/passord|password/i).fill(testUser.password);
+    await page.getByLabel('Passord*').fill(testUser.password);
+    await page.getByLabel('Bekreft passord*').fill(testUser.password);
 
     // Submit form and immediately check for loading state
     const submitButton = page.getByRole('button', { name: /registrer|sign up|opprett/i });

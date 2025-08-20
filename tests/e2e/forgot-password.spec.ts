@@ -25,6 +25,7 @@ test.describe('Forgot Password Flow Tests', () => {
         name: testUser.name,
         email: testUser.email,
         password: testUser.hashedPassword,
+        region: 'OSLO',
         emailVerified: true,
       }
     });
