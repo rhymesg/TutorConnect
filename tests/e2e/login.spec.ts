@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, NorwegianRegion } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -25,8 +25,8 @@ test.describe('Login Flow Tests', () => {
         name: testUser.name,
         email: testUser.email,
         password: testUser.hashedPassword,
-        region: 'OSLO',
-        emailVerified: true, // Set as verified so login works
+        region: NorwegianRegion.OSLO,
+        emailVerified: new Date(), // Set as verified so login works
       }
     });
   });
@@ -286,8 +286,8 @@ test.describe('Login Flow Tests', () => {
         name: 'Unverified User',
         email: unverifiedUser.email,
         password: hashedPassword,
-        region: 'OSLO',
-        emailVerified: false, // Not verified
+        region: NorwegianRegion.OSLO,
+        emailVerified: null, // Not verified
       }
     });
 

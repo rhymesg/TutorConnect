@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, NorwegianRegion } from '@prisma/client';
 
 const prisma = new PrismaClient();
 

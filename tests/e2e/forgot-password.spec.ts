@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, NorwegianRegion } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -25,8 +25,8 @@ test.describe('Forgot Password Flow Tests', () => {
         name: testUser.name,
         email: testUser.email,
         password: testUser.hashedPassword,
-        region: 'OSLO',
-        emailVerified: true,
+        region: NorwegianRegion.OSLO,
+        emailVerified: new Date(),
       }
     });
   });
