@@ -3,13 +3,21 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useApiCall } from '@/hooks/useApiCall';
-import { PublicProfileView } from './PublicProfileView';
+import { ProfileView } from './ProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { User } from '@prisma/client';
 
 interface PublicProfileData extends User {
-  documents?: Array<{
+  privacyGender: string;
+  privacyAge: string;
+  privacyDocuments: string;
+  privacyContact: string;
+  completeness: {
+    percentage: number;
+    missingFields: string[];
+  };
+  documents: Array<{
     id: string;
     documentType: string;
     fileName: string;
@@ -32,10 +40,7 @@ interface Props {
 export function PublicProfileContainer({ userId }: Props) {
   const { user: currentUser } = useAuth();
   const [profileData, setProfileData] = useState<PublicProfileData | null>(null);
-  const [isRequestingInfo, setIsRequestingInfo] = useState(false);
-  
   const { execute: fetchProfile, loading, error } = useApiCall<PublicProfileData>();
-  const { execute: requestInfo } = useApiCall();
 
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.id === userId;
@@ -54,31 +59,6 @@ export function PublicProfileContainer({ userId }: Props) {
       });
     }
   }, [userId, isOwnProfile, fetchProfile]);
-
-  // Handle info request for private fields
-  const handleInfoRequest = async (fields: string[]) => {
-    if (!currentUser) return;
-
-    setIsRequestingInfo(true);
-    try {
-      const response = await requestInfo('/api/profile/info-request', {
-        method: 'POST',
-        data: {
-          targetUserId: userId,
-          requestedFields: fields,
-        },
-      });
-
-      if (response?.success) {
-        // Show success message - could be implemented with a toast system
-        console.log('Info request sent successfully');
-      }
-    } catch (error) {
-      console.error('Info request error:', error);
-    } finally {
-      setIsRequestingInfo(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -124,11 +104,10 @@ export function PublicProfileContainer({ userId }: Props) {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm">
-          <PublicProfileView 
+          <ProfileView 
             profile={profileData}
-            currentUser={currentUser}
-            onInfoRequest={handleInfoRequest}
-            isRequestingInfo={isRequestingInfo}
+            onEditClick={() => {}} // No edit functionality for public view
+            isPublicView={true}
           />
         </div>
       </div>
