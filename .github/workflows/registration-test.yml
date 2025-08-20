@@ -232,6 +232,8 @@ jobs:
                   name: 'Another User',
                   email: testUser.email, // Same email
                   password: 'anotherhashedpassword',
+                  region: 'STAVANGER',
+                  emailVerified: null,
                 }
               });
               throw new Error('Unique constraint should have prevented duplicate email');

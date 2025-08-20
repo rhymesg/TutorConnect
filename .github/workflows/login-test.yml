@@ -256,6 +256,8 @@ jobs:
                   name: 'Duplicate User',
                   email: testEmail, // Same email
                   password: hashedPassword,
+                  region: 'BERGEN',
+                  emailVerified: null,
                 }
               });
               throw new Error('Email uniqueness constraint failed - duplicate email was allowed');
