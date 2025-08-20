@@ -119,6 +119,11 @@ TutorConnect/
 - **Email**: mail.tutorconnect.no setup available
 - **Account**: rhymesg@gmail.com
 
+## Contact Information
+- **Main Contact**: contact@tutorconnect.no (all inquiries)
+- **Business Type**: Individual/Personal project (not corporation)
+- **Legal Entity**: Individual (not AS/corporation)
+
 ## Reference Materials
 - **Original Plan**: ./documents/TutorConnect - Plan.pdf
 - **Reference Apps**: Finn.no, Midttanbud

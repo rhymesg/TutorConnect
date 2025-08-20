@@ -161,8 +161,8 @@ export async function GET(request: NextRequest) {
       meta: {
         timestamp: new Date().toISOString(),
         complianceFramework: 'GDPR (EU General Data Protection Regulation)',
-        dataController: 'TutorConnect AS',
-        contactEmail: 'privacy@tutorconnect.no',
+        dataController: 'TutorConnect',
+        contactEmail: 'contact@tutorconnect.no',
       }
     });
 

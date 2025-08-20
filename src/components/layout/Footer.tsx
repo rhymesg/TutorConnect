@@ -140,10 +140,10 @@ export default function Footer() {
                 <div className="flex items-center">
                   <EnvelopeIcon className="h-5 w-5 mr-2 text-neutral-400" aria-hidden="true" />
                   <Link 
-                    href="mailto:hei@tutorconnect.no"
+                    href="mailto:contact@tutorconnect.no"
                     className="text-sm hover:text-white transition-colors duration-200"
                   >
-                    hei@tutorconnect.no
+                    contact@tutorconnect.no
                   </Link>
                 </div>
                 <div className="flex items-center">

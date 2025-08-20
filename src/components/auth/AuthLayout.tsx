@@ -39,13 +39,13 @@ export default function AuthLayout({
                 Om oss
               </Link>
               <Link
-                href="/vilkar"
+                href="/terms"
                 className="text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
               >
                 Vilkår
               </Link>
               <Link
-                href="/personvern"
+                href="/privacy"
                 className="text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
               >
                 Personvern

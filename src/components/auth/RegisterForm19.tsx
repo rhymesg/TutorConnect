@@ -1,12 +1,13 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { registerAction, type RegisterFormState } from '@/lib/actions/auth';
 import AuthForm from './AuthForm19';
 import FormField from './FormField';
 import FormError from './FormError';
 import { RegionSelector } from './RegionSelector';
 import { navigation, forms } from '@/lib/translations';
+import { NorwegianRegion } from '@prisma/client';
 
 interface RegisterFormProps {
   onSuccess?: (data: any) => void;
@@ -22,6 +23,9 @@ export default function RegisterForm19({
     registerAction,
     null
   );
+  
+  // Local state for region selection
+  const [selectedRegion, setSelectedRegion] = useState<NorwegianRegion | undefined>();
 
   return (
     <AuthForm
@@ -63,14 +67,14 @@ export default function RegisterForm19({
         />
       )}
 
-      {/* Full Name field */}
+      {/* Username field */}
       <FormField
-        label="Fullt navn"
+        label="Brukernavn"
         name="name"
         type="text"
-        placeholder="Skriv inn ditt fulle navn"
+        placeholder="Velg et unikt brukernavn"
         required
-        autoComplete="name"
+        autoComplete="username"
         autoFocus
         error={state?.fieldErrors?.name}
       />
@@ -88,13 +92,19 @@ export default function RegisterForm19({
 
       {/* Region selector */}
       <div>
-        <label htmlFor="region" className="block text-sm font-medium text-neutral-700 mb-2">
-          Region
-        </label>
         <RegionSelector
+          label="Region"
           name="region"
+          value={selectedRegion}
+          onChange={setSelectedRegion}
           required
           error={state?.fieldErrors?.region}
+        />
+        {/* Hidden input for form submission */}
+        <input
+          type="hidden"
+          name="region"
+          value={selectedRegion || ''}
         />
       </div>
 

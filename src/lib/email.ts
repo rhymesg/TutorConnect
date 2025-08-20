@@ -256,7 +256,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
           </a>
         </div>
         
-        <p>Har du spørsmål? Ta gjerne kontakt med oss på <a href="mailto:support@tutorconnect.no">support@tutorconnect.no</a></p>
+        <p>Har du spørsmål? Ta gjerne kontakt med oss på <a href="mailto:contact@tutorconnect.no">contact@tutorconnect.no</a></p>
         
         <p style="color: #666; font-size: 14px;">
           Med vennlig hilsen,<br>
@@ -278,7 +278,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
 
       Besøk dashbordet ditt: ${EMAIL_CONFIG.baseUrl}/dashboard
 
-      Har du spørsmål? Ta gjerne kontakt med oss på support@tutorconnect.no
+      Har du spørsmål? Ta gjerne kontakt med oss på contact@tutorconnect.no
 
       Med vennlig hilsen,
       TutorConnect-teamet
