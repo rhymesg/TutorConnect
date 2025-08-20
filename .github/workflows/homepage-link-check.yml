@@ -54,6 +54,8 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
         NEXTAUTH_SECRET: test-secret-key-for-github-actions
         NEXTAUTH_URL: http://localhost:3000
+        JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+        JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
         
     - name: Start Next.js application
       run: |
@@ -65,6 +67,8 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
         NEXTAUTH_SECRET: test-secret-key-for-github-actions
         NEXTAUTH_URL: http://localhost:3000
+        JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+        JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
 
     - name: Run Homepage Link Tests
       run: npx playwright test tests/e2e/homepage-links.spec.ts
@@ -73,6 +77,8 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
         NEXTAUTH_SECRET: test-secret-key-for-github-actions
         NEXTAUTH_URL: http://localhost:3000
+        JWT_ACCESS_SECRET: ${{ secrets.JWT_ACCESS_SECRET }}
+        JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
 
     - name: Upload test results
       uses: actions/upload-artifact@v4
