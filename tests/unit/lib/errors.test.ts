@@ -21,7 +21,7 @@ import {
   errorMessages,
   getLocalizedErrorMessage,
   createErrorResponse,
-} from './errors';
+} from '@/lib/errors';
 
 describe('Error Classes', () => {
   describe('APIError', () => {
