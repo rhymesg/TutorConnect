@@ -19,37 +19,6 @@ export default function AuthLayout({
 }: AuthLayoutProps) {
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
-      {/* Header */}
-      <header className="bg-white border-b border-neutral-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            {/* Logo */}
-            <div className="flex items-center">
-              <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-brand-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">TC</span>
-                </div>
-                <span className="text-xl font-bold text-neutral-900">
-                  TutorConnect
-                </span>
-              </Link>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex items-center space-x-4">
-              {showBackToHome && (
-                <Link
-                  href="/"
-                  className="text-sm text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
-                >
-                  ← Tilbake til hovedsiden
-                </Link>
-              )}
-            </nav>
-          </div>
-        </div>
-      </header>
-
       {/* Main content */}
       <main className="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12">
         <div className="w-full max-w-md">
