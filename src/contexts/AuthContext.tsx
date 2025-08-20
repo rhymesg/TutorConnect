@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -22,7 +22,7 @@ interface AuthState {
   refreshToken: string | null;
 }
 
-interface UseAuthReturn extends AuthState {
+interface AuthContextType extends AuthState {
   login: (email: string, password: string, remember?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
@@ -30,7 +30,9 @@ interface UseAuthReturn extends AuthState {
   clearAuth: () => void;
 }
 
-export function useAuth(): UseAuthReturn {
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   
   const [state, setState] = useState<AuthState>({
@@ -234,7 +236,7 @@ export function useAuth(): UseAuthReturn {
     }
   }, [state.accessToken, clearAuth, router]);
 
-  return {
+  const contextValue: AuthContextType = {
     ...state,
     login,
     logout,
@@ -242,4 +244,18 @@ export function useAuth(): UseAuthReturn {
     refreshAuth,
     clearAuth,
   };
+
+  return (
+    <AuthContext.Provider value={contextValue}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
 }

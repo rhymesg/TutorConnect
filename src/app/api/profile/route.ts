@@ -1,22 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { authMiddleware, type AuthenticatedRequest, getAuthenticatedUser } from '@/middleware/auth';
-import { 
-  updateProfileSchema, 
-  updatePrivacySettingsSchema,
-  applyPrivacySettings,
-  calculateProfileCompleteness,
-  type UpdateProfileInput
-} from '@/schemas/profile';
-import { 
-  APIError, 
-  ValidationError, 
-  NotFoundError,
-  handlePrismaError,
-  handleZodError,
-  createErrorResponse 
-} from '@/lib/errors';
-import { getLocalizedErrorMessage } from '@/lib/errors';
+import { cookies } from 'next/headers';
+import { jwtVerify } from 'jose';
 
 const prisma = new PrismaClient();
 
@@ -25,13 +10,25 @@ const prisma = new PrismaClient();
  */
 export async function GET(request: NextRequest) {
   try {
-    // Authenticate user
-    await authMiddleware(request);
-    const user = getAuthenticatedUser(request as AuthenticatedRequest);
+    // Get token from cookies
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('access_token')?.value;
+
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify token
+    const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
+    const { payload } = await jwtVerify(accessToken, secret);
+    const decoded = { sub: payload.sub as string };
     
-    // Get full profile with related data
+    // Get user profile
     const profile = await prisma.user.findUnique({
-      where: { id: user.id },
+      where: { id: decoded.sub },
       select: {
         id: true,
         email: true,
@@ -79,41 +76,36 @@ export async function GET(request: NextRequest) {
     });
 
     if (!profile) {
-      throw new NotFoundError('Profile');
+      return NextResponse.json(
+        { success: false, error: 'Profile not found' },
+        { status: 404 }
+      );
     }
 
-    // Calculate profile completeness
-    const completeness = calculateProfileCompleteness(profile);
-
-    // Since this is the user's own profile, return full data
-    const responseData = applyPrivacySettings(profile, { 
-      isOwner: true,
-      requesterId: user.id 
-    });
+    // Calculate simple completeness
+    const requiredFields = ['name', 'bio', 'school', 'degree'];
+    const completedFields = requiredFields.filter(field => 
+      profile[field as keyof typeof profile]
+    );
+    const completeness = {
+      percentage: Math.round((completedFields.length / requiredFields.length) * 100),
+      missingFields: requiredFields.filter(field => 
+        !profile[field as keyof typeof profile]
+      )
+    };
 
     return NextResponse.json({
       success: true,
       data: {
-        ...responseData,
+        ...profile,
         completeness,
-      },
-      meta: {
-        timestamp: new Date().toISOString(),
       }
     });
 
   } catch (error) {
     console.error('Profile GET error:', error);
-    
-    if (error instanceof APIError) {
-      return NextResponse.json(
-        createErrorResponse(error, 'en'),
-        { status: error.statusCode }
-      );
-    }
-
     return NextResponse.json(
-      createErrorResponse(new Error('Failed to fetch profile'), 'en'),
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -124,255 +116,103 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Authenticate user
-    await authMiddleware(request);
-    const user = getAuthenticatedUser(request as AuthenticatedRequest);
-    
-    // Parse and validate request body
-    const body = await request.json();
-    const validatedData = updateProfileSchema.parse(body);
+    // Get token from cookies
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('access_token')?.value;
 
-    // Update profile in database
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Verify token
+    const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
+    const { payload } = await jwtVerify(accessToken, secret);
+    const decoded = { sub: payload.sub as string };
+    
+    // Parse request body
+    const body = await request.json();
+    
+    // Update profile
     const updatedProfile = await prisma.user.update({
-      where: { id: user.id },
+      where: { id: decoded.sub },
       data: {
-        ...validatedData,
+        ...body,
         updatedAt: new Date(),
       },
       select: {
         id: true,
-        email: true,
         name: true,
         region: true,
         postalCode: true,
         gender: true,
         birthYear: true,
-        profileImage: true,
         school: true,
         degree: true,
         certifications: true,
         bio: true,
-        privacyGender: true,
-        privacyAge: true,
-        privacyDocuments: true,
-        privacyContact: true,
         updatedAt: true,
       }
     });
 
-    // Calculate updated profile completeness
-    const completeness = calculateProfileCompleteness(updatedProfile);
-
     return NextResponse.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: {
-        ...updatedProfile,
-        completeness,
-      },
-      meta: {
-        timestamp: new Date().toISOString(),
-      }
+      data: updatedProfile
     });
 
   } catch (error) {
     console.error('Profile PUT error:', error);
-    
-    if (error instanceof Error && error.name === 'ZodError') {
-      const validationError = handleZodError(error);
-      return NextResponse.json(
-        createErrorResponse(validationError, 'en'),
-        { status: validationError.statusCode }
-      );
-    }
-    
-    if (error instanceof APIError) {
-      return NextResponse.json(
-        createErrorResponse(error, 'en'),
-        { status: error.statusCode }
-      );
-    }
-
-    // Handle Prisma errors
-    if (error && typeof error === 'object' && 'code' in error) {
-      const prismaError = handlePrismaError(error);
-      return NextResponse.json(
-        createErrorResponse(prismaError, 'en'),
-        { status: prismaError.statusCode }
-      );
-    }
-
     return NextResponse.json(
-      createErrorResponse(new Error('Failed to update profile'), 'en'),
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
 
 /**
- * DELETE /api/profile - Deactivate user account (soft delete)
- */
-export async function DELETE(request: NextRequest) {
-  try {
-    // Authenticate user
-    await authMiddleware(request);
-    const user = getAuthenticatedUser(request as AuthenticatedRequest);
-    
-    // Get confirmation from request body
-    const body = await request.json();
-    const { confirmEmail } = body;
-
-    if (confirmEmail !== user.email) {
-      throw new ValidationError({
-        confirmEmail: ['Email confirmation does not match your account email']
-      });
-    }
-
-    // Soft delete: deactivate account instead of hard delete (GDPR compliance)
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      }
-    });
-
-    // Also deactivate user's posts
-    await prisma.post.updateMany({
-      where: { userId: user.id },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      }
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Account deactivated successfully',
-      meta: {
-        timestamp: new Date().toISOString(),
-      }
-    });
-
-  } catch (error) {
-    console.error('Profile DELETE error:', error);
-    
-    if (error instanceof Error && error.name === 'ZodError') {
-      const validationError = handleZodError(error);
-      return NextResponse.json(
-        createErrorResponse(validationError, 'en'),
-        { status: validationError.statusCode }
-      );
-    }
-    
-    if (error instanceof APIError) {
-      return NextResponse.json(
-        createErrorResponse(error, 'en'),
-        { status: error.statusCode }
-      );
-    }
-
-    return NextResponse.json(
-      createErrorResponse(new Error('Failed to deactivate account'), 'en'),
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * PATCH /api/profile - Update specific profile fields
+ * PATCH /api/profile - Update specific profile fields including privacy settings
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Authenticate user
-    await authMiddleware(request);
-    const user = getAuthenticatedUser(request as AuthenticatedRequest);
-    
-    // Parse and validate request body
-    const body = await request.json();
-    
-    // Check if this is a privacy settings update
-    if (body.privacyGender || body.privacyAge || body.privacyDocuments || body.privacyContact) {
-      const validatedPrivacyData = updatePrivacySettingsSchema.parse(body);
-      
-      const updatedProfile = await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          ...validatedPrivacyData,
-          updatedAt: new Date(),
-        },
-        select: {
-          privacyGender: true,
-          privacyAge: true,
-          privacyDocuments: true,
-          privacyContact: true,
-          updatedAt: true,
-        }
-      });
+    // Get token from cookies
+    const cookieStore = cookies();
+    const accessToken = cookieStore.get('access_token')?.value;
 
-      return NextResponse.json({
-        success: true,
-        message: 'Privacy settings updated successfully',
-        data: updatedProfile,
-        meta: {
-          timestamp: new Date().toISOString(),
-        }
-      });
+    if (!accessToken) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      );
     }
 
-    // Otherwise, validate as regular profile update
-    const validatedData = updateProfileSchema.parse(body);
+    // Verify token
+    const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
+    const { payload } = await jwtVerify(accessToken, secret);
+    const decoded = { sub: payload.sub as string };
+    
+    // Parse request body
+    const body = await request.json();
 
+    // Update profile
     const updatedProfile = await prisma.user.update({
-      where: { id: user.id },
+      where: { id: decoded.sub },
       data: {
-        ...validatedData,
+        ...body,
         updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        name: true,
-        region: true,
-        postalCode: true,
-        gender: true,
-        birthYear: true,
-        school: true,
-        degree: true,
-        certifications: true,
-        bio: true,
-        updatedAt: true,
       }
     });
 
     return NextResponse.json({
       success: true,
-      message: 'Profile updated successfully',
-      data: updatedProfile,
-      meta: {
-        timestamp: new Date().toISOString(),
-      }
+      data: updatedProfile
     });
 
   } catch (error) {
     console.error('Profile PATCH error:', error);
-    
-    if (error instanceof Error && error.name === 'ZodError') {
-      const validationError = handleZodError(error);
-      return NextResponse.json(
-        createErrorResponse(validationError, 'en'),
-        { status: validationError.statusCode }
-      );
-    }
-    
-    if (error instanceof APIError) {
-      return NextResponse.json(
-        createErrorResponse(error, 'en'),
-        { status: error.statusCode }
-      );
-    }
-
     return NextResponse.json(
-      createErrorResponse(new Error('Failed to update profile'), 'en'),
+      { success: false, error: 'Internal server error' },
       { status: 500 }
     );
   }

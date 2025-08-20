@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { Chat, ChatListItem, Message, TypingIndicator, ChatFilter } from '@/types/chat';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import ChatRoomList from './ChatRoomList';
 import ConversationView from './ConversationView';
 import { chat as chatTranslations, useLanguage } from '@/lib/translations';

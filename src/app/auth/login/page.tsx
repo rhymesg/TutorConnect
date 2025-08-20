@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import AuthLayout from '@/components/auth/AuthLayout';
-import LoginForm19 from '@/components/auth/LoginForm19';
+import SimpleLoginForm from '@/components/auth/SimpleLoginForm';
 
 export const metadata: Metadata = {
   title: 'Logg inn',
@@ -17,7 +17,7 @@ export default function LoginPage() {
       title="Logg inn på TutorConnect"
       description="Få tilgang til din konto og start å finne lærere eller studenter"
     >
-      <LoginForm19 />
+      <SimpleLoginForm />
     </AuthLayout>
   );
 }

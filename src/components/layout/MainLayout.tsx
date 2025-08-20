@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import Header from './Header';
 import MobileNavigation from './MobileNavigation';
 import Sidebar from './Sidebar';
@@ -13,18 +14,8 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const pathname = usePathname();
-
-  // Check authentication status (placeholder for now)
-  useEffect(() => {
-    // TODO: Replace with actual auth check from Supabase
-    const checkAuth = () => {
-      // Placeholder auth check
-      setIsAuthenticated(false);
-    };
-    checkAuth();
-  }, []);
+  const { isAuthenticated } = useAuth();
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -54,7 +45,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       <Header 
         onMenuClick={() => setSidebarOpen(!sidebarOpen)}
         showMenuButton={showSidebar}
-        isAuthenticated={isAuthenticated}
       />
 
       <div className="flex h-[calc(100vh-4rem)]">

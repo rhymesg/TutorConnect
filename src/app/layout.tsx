@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 
 const inter = Inter({
@@ -117,9 +118,11 @@ export default function RootLayout({
         )}
       </head>
       <body className="min-h-screen bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
-        <MainLayout>
-          {children}
-        </MainLayout>
+        <AuthProvider>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </AuthProvider>
         
         {/* Service Worker registration script will be added by PWA configuration */}
         <script

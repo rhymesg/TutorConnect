@@ -3,16 +3,16 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
-  // Only run specific unit tests that are confirmed working
+  // Run tests from tests/ directory
   testMatch: [
-    '<rootDir>/src/lib/errors.test.ts',
+    '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/tests/**/*.test.tsx',
   ],
   
-  // Exclude everything else for now
+  // Exclude only build and dependency directories
   testPathIgnorePatterns: [
     '<rootDir>/.next/', 
     '<rootDir>/node_modules/', 
-    '<rootDir>/tests/',
     '<rootDir>/coverage/',
   ],
   

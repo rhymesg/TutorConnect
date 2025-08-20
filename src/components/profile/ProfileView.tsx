@@ -16,6 +16,10 @@ import { DocumentsList } from './DocumentsList';
 import { RecentPosts } from './RecentPosts';
 
 interface ProfileData extends User {
+  privacyGender: string;
+  privacyAge: string;
+  privacyDocuments: string;
+  privacyContact: string;
   completeness: {
     percentage: number;
     missingFields: string[];
@@ -39,9 +43,10 @@ interface ProfileData extends User {
 interface Props {
   profile: ProfileData;
   onEditClick: () => void;
+  isPublicView?: boolean; // True when viewing someone else's profile
 }
 
-export function ProfileView({ profile, onEditClick }: Props) {
+export function ProfileView({ profile, onEditClick, isPublicView = false }: Props) {
   const formatAge = (birthYear: number | null) => {
     if (!birthYear) return null;
     const currentYear = new Date().getFullYear();
@@ -57,6 +62,12 @@ export function ProfileView({ profile, onEditClick }: Props) {
       PREFER_NOT_TO_SAY: 'Ønsker ikke å oppgi'
     };
     return genderMap[gender as keyof typeof genderMap] || gender;
+  };
+
+  // Helper to check if a field should be visible based on privacy settings
+  const isFieldVisible = (privacySetting: string | null) => {
+    if (!isPublicView) return true; // Always show on own profile
+    return privacySetting === 'PUBLIC'; // Only show public fields on public view
   };
 
   return (
@@ -95,13 +106,15 @@ export function ProfileView({ profile, onEditClick }: Props) {
           </div>
         </div>
         
-        <button
-          onClick={onEditClick}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <PencilIcon className="h-4 w-4 mr-2" />
-          Rediger profil
-        </button>
+        {!isPublicView && (
+          <button
+            onClick={onEditClick}
+            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            <PencilIcon className="h-4 w-4 mr-2" />
+            Rediger profil
+          </button>
+        )}
       </div>
 
       {/* Personal information */}
@@ -116,13 +129,13 @@ export function ProfileView({ profile, onEditClick }: Props) {
               <dt className="text-sm font-medium text-gray-500">E-post</dt>
               <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
             </div>
-            {profile.gender && (
+            {profile.gender && isFieldVisible(profile.privacyGender) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Kjønn</dt>
                 <dd className="mt-1 text-sm text-gray-900">{formatGender(profile.gender)}</dd>
               </div>
             )}
-            {profile.birthYear && (
+            {profile.birthYear && isFieldVisible(profile.privacyAge) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Alder</dt>
                 <dd className="mt-1 text-sm text-gray-900">{formatAge(profile.birthYear)}</dd>
@@ -196,7 +209,7 @@ export function ProfileView({ profile, onEditClick }: Props) {
       )}
 
       {/* Documents section */}
-      {profile.documents && profile.documents.length > 0 && (
+      {profile.documents && profile.documents.length > 0 && isFieldVisible(profile.privacyDocuments) && (
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <DocumentTextIcon className="h-5 w-5 mr-2" />
@@ -218,7 +231,7 @@ export function ProfileView({ profile, onEditClick }: Props) {
       )}
 
       {/* Empty states */}
-      {(!profile.bio && (!profile.posts || profile.posts.length === 0) && 
+      {!isPublicView && (!profile.bio && (!profile.posts || profile.posts.length === 0) && 
         (!profile.documents || profile.documents.length === 0)) && (
         <div className="text-center py-12">
           <UserIcon className="mx-auto h-12 w-12 text-gray-400" />

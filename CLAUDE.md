@@ -58,14 +58,14 @@ Each agent continuously records the following in the `documents/decisions/` fold
 - Use relative workload indicators when comparing tasks, not absolute time units
 
 ## Agent Working Guidelines
-**All agents should actively use sequential-thinking and context7 MCP tools to find the best approaches.**
+**IMPORTANT: Keep it simple - only do what is explicitly requested.**
 
 - **Context7**: Use context7 for tasks referring to docs and using libraries.
 - **Sequential Thinking**: Use sequential-thinking for problem-solving and analyzing tasks.
-- **Proactively ask questions** to the user about design concepts and development directions
-- **Make suggestions** when better alternatives or improvements are identified
-- Challenge assumptions and propose optimizations when appropriate
-- Engage in collaborative decision-making rather than just following instructions
+- **Simple Approach First**: Always use the simplest possible solution that works
+- **No Extra Features**: Do not add features, optimizations, or improvements unless specifically asked
+- **Minimal Implementation**: Implement only the exact requirements, nothing more
+- **Ask Before Adding**: Always ask before adding any functionality not explicitly requested
 
 ## Technology Standards and Best Practices
 **ALWAYS prioritize latest stable versions and avoid deprecated technologies.**
