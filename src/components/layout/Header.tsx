@@ -198,10 +198,7 @@ export default function Header({
                   Logg inn
                 </Link>
                 <Link href="/auth/register">
-                  <ShimmerButton 
-                    className="px-4 py-2 text-xs font-medium"
-                    shimmerDuration="6s"
-                  >
+                  <ShimmerButton className="px-4 py-2 text-xs font-medium text-white">
                     Registrer deg
                   </ShimmerButton>
                 </Link>
