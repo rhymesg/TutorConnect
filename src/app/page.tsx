@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import StatsSection from '@/components/home/StatsSection';
 
 export const metadata: Metadata = {
@@ -29,12 +30,18 @@ export default function HomePage() {
               i hele Norge. Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
-              <button className="btn-primary bg-white text-brand-600 hover:bg-neutral-50 focus:ring-white">
+              <Link 
+                href="/auth/register?type=teacher" 
+                className="btn-primary bg-white text-brand-600 hover:bg-neutral-50 focus:ring-white"
+              >
                 Start som lærer
-              </button>
-              <button className="btn-ghost text-white hover:bg-white/10 focus:ring-white">
+              </Link>
+              <Link 
+                href="/posts?type=teacher" 
+                className="btn-ghost text-white hover:bg-white/10 focus:ring-white"
+              >
                 Finn en lærer
-              </button>
+              </Link>
             </div>
           </div>
         </div>
