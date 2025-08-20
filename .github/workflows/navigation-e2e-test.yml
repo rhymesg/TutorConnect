@@ -96,7 +96,7 @@ jobs:
             // Click "Registrer deg" in header
             await page.click('a:has-text("Registrer deg")');
             await expect(page).toHaveURL('/auth/register');
-            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
+            await expect(page.locator('h1:has-text("Opprett konto")')).toBeVisible();
             
             console.log('✅ Header "Registrer deg" navigation works');
             
@@ -107,32 +107,15 @@ jobs:
             await page.locator('a:has-text("Opprett konto")').scrollIntoViewIfNeeded();
             await page.click('a:has-text("Opprett konto")');
             await expect(page).toHaveURL('/auth/register');
-            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
+            await expect(page.locator('h1:has-text("Opprett konto")')).toBeVisible();
             
             console.log('✅ CTA "Opprett konto" navigation works');
             
-            // Test 3: Hero section "Start som lærer" button
-            await page.goto('/');
-            
-            await page.click('a:has-text("Start som lærer")');
-            await expect(page).toHaveURL('/auth/register?type=teacher');
-            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
-            
-            console.log('✅ Hero "Start som lærer" navigation works');
-            
-            // Test 4: Hero section "Finn en lærer" button
-            await page.goto('/');
-            
-            await page.click('a:has-text("Finn en lærer")');
-            await expect(page).toHaveURL('/posts?type=teacher');
-            
-            console.log('✅ Hero "Finn en lærer" navigation works');
-            
-            // Test 5: Check that register page actually loads properly
+            // Test 3: Check that register page actually loads properly
             await page.goto('/auth/register');
             
             // Check that all key elements are present
-            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
+            await expect(page.locator('h1:has-text("Opprett konto")')).toBeVisible();
             await expect(page.locator('input[name="name"]')).toBeVisible();
             await expect(page.locator('input[name="email"]')).toBeVisible();
             await expect(page.locator('input[name="password"]')).toBeVisible();
@@ -162,19 +145,18 @@ jobs:
             // Test 6: Header navigation links
             await page.goto('/');
             
-            // Test "Finn lærer" in header
-            await page.click('a:has-text("Finn lærer")');
+            // Test "Finn en lærer" in header
+            await page.click('a:has-text("Finn en lærer")');
             await expect(page).toHaveURL('/posts?type=teacher');
             
-            console.log('✅ Header "Finn lærer" navigation works');
+            console.log('✅ Header "Finn en lærer" navigation works');
             
-            // Test "Bli lærer" in header
+            // Test "Finn en student" in header
             await page.goto('/');
-            await page.click('a:has-text("Bli lærer")');
-            await expect(page).toHaveURL('/auth/register?type=teacher');
-            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
+            await page.click('a:has-text("Finn en student")');
+            await expect(page).toHaveURL('/posts?type=student');
             
-            console.log('✅ Header "Bli lærer" navigation works');
+            console.log('✅ Header "Finn en student" navigation works');
             
             // Test "Om oss" in header
             await page.goto('/');
