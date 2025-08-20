@@ -5,10 +5,14 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 test.describe('Login Flow Tests', () => {
+  if (!process.env.TEST_USER_PASSWORD) {
+    throw new Error('TEST_USER_PASSWORD environment variable is required for E2E tests');
+  }
+
   const testUser = {
     name: 'Test User',
     email: `test-login-${Date.now()}@example.com`,
-    password: process.env.TEST_USER_PASSWORD || 'TestPassword123!',
+    password: process.env.TEST_USER_PASSWORD,
     hashedPassword: '',
   };
 
@@ -271,7 +275,7 @@ test.describe('Login Flow Tests', () => {
     // Create unverified test user
     const unverifiedUser = {
       email: `unverified-${Date.now()}@example.com`,
-      password: process.env.TEST_USER_PASSWORD || 'TestPassword123!',
+      password: process.env.TEST_USER_PASSWORD,
     };
     
     const hashedPassword = await bcrypt.hash(unverifiedUser.password, 12);

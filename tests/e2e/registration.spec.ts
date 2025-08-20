@@ -4,10 +4,14 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 test.describe('Registration Flow Tests', () => {
+  if (!process.env.TEST_USER_PASSWORD) {
+    throw new Error('TEST_USER_PASSWORD environment variable is required for E2E tests');
+  }
+
   const testUser = {
     name: 'Test User',
     email: `test-${Date.now()}@example.com`,
-    password: process.env.TEST_USER_PASSWORD || 'TestPassword123!',
+    password: process.env.TEST_USER_PASSWORD
   };
 
   test.beforeEach(async ({ page }) => {

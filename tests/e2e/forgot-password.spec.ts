@@ -5,10 +5,14 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 test.describe('Forgot Password Flow Tests', () => {
+  if (!process.env.TEST_USER_PASSWORD) {
+    throw new Error('TEST_USER_PASSWORD environment variable is required for E2E tests');
+  }
+
   const testUser = {
     name: 'Test User',
     email: `test-forgot-${Date.now()}@example.com`,
-    password: process.env.TEST_USER_PASSWORD || 'TestPassword123!',
+    password: process.env.TEST_USER_PASSWORD,
     hashedPassword: '',
   };
 
