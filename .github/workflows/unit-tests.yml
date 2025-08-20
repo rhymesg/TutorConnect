@@ -125,16 +125,18 @@ jobs:
         $(if [ "$CHANGED_LINES" = "N/A" ]; then echo "📝 **No source files changed**"; else echo "📊 **Changed files coverage**: ${CHANGED_LINES}%"; fi)
         EOF
         
-    - name: Comment PR with coverage
-      uses: actions/github-script@v7
-      with:
-        script: |
-          const fs = require('fs');
-          const coverageReport = fs.readFileSync('coverage-report.md', 'utf8');
-          
-          github.rest.issues.createComment({
-            issue_number: context.issue.number,
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            body: coverageReport
-          });
+    # TODO: Temporarily disabled - Test Coverage Report commenting
+    # Will be enabled after stabilizing the test infrastructure
+    # - name: Comment PR with coverage
+    #   uses: actions/github-script@v7
+    #   with:
+    #     script: |
+    #       const fs = require('fs');
+    #       const coverageReport = fs.readFileSync('coverage-report.md', 'utf8');
+    #       
+    #       github.rest.issues.createComment({
+    #         issue_number: context.issue.number,
+    #         owner: context.repo.owner,
+    #         repo: context.repo.repo,
+    #         body: coverageReport
+    #       });
