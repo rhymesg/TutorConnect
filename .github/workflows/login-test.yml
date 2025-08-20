@@ -46,7 +46,7 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
 
     - name: Run API integration tests
-      run: npm test -- tests/integration/auth/login-api.test.ts
+      run: npx jest --config jest.integration.config.js tests/integration/auth/login-api.test.ts
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test

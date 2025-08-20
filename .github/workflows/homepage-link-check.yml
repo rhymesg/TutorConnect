@@ -38,8 +38,8 @@ jobs:
 
     - name: Setup test database
       run: |
-        npm run db:push
-        npm run db:seed
+        npx prisma generate
+        npx prisma db push
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test

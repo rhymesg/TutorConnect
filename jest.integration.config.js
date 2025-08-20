@@ -1,22 +1,21 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  testEnvironment: 'jsdom',
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  // Use Node.js environment for API route testing
+  testEnvironment: 'node',
   
-  // Run all test files
+  // Run only integration tests
   testMatch: [
-    '<rootDir>/src/**/*.test.ts',
-    '<rootDir>/tests/**/*.test.ts',
+    '<rootDir>/tests/integration/**/*.test.ts',
   ],
   
-  // Exclude only necessary directories
+  // Exclude directories
   testPathIgnorePatterns: [
     '<rootDir>/.next/', 
     '<rootDir>/node_modules/', 
     '<rootDir>/coverage/',
   ],
   
-  // Simple transform - use ts-jest
+  // Use ts-jest for TypeScript
   preset: 'ts-jest',
   
   moduleFileExtensions: ['ts', 'js', 'json'],
@@ -25,14 +24,17 @@ module.exports = {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
   
+  // Setup file for API tests
+  setupFilesAfterEnv: ['<rootDir>/jest.integration.setup.js'],
+  
   // Coverage configuration
   collectCoverage: true,
-  coverageDirectory: 'coverage',
+  coverageDirectory: 'coverage/integration',
   coverageReporters: ['text', 'lcov', 'json', 'json-summary'],
   collectCoverageFrom: [
-    'src/**/*.{ts,tsx}', // Include all source files
+    'src/app/api/**/*.ts',
+    'src/lib/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.test.ts',
-    '!src/types/**', // Exclude type definitions
   ],
 };
