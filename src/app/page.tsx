@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import StatsSection from '@/components/home/StatsSection';
 
 export const metadata: Metadata = {
   title: 'Hjem',
@@ -23,9 +24,9 @@ export default function HomePage() {
                 student
               </span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-blue-100 text-pretty">
-              TutorConnect kobler sammen kvalifiserte lærere og motiverte studenter 
-              for privatundervisning i hele Norge. Trygg, enkel og effektiv læring.
+            <p className="mx-auto mt-6 max-w-3xl text-lg leading-8 text-blue-100 text-pretty">
+              TutorConnect kobler sammen lærere og studenter som ønsker å dele kunnskap 
+              i hele Norge. Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov.
             </p>
             <div className="mt-10 flex items-center justify-center gap-x-6">
               <button className="btn-primary bg-white text-brand-600 hover:bg-neutral-50 focus:ring-white">
@@ -47,7 +48,7 @@ export default function HomePage() {
               Hvorfor velge TutorConnect?
             </h2>
             <p className="mt-4 text-lg text-neutral-600 text-pretty">
-              Vi gjør privatundervisning trygt, enkelt og tilgjengelig for alle
+              Vi gjør det enkelt å finne og kontakte lærere i ditt område
             </p>
           </div>
 
@@ -56,14 +57,14 @@ export default function HomePage() {
             <div className="card text-center">
               <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-100">
                 <svg className="h-8 w-8 text-brand-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.623 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z" />
                 </svg>
               </div>
               <h3 className="mt-6 text-xl font-semibold text-neutral-900">
-                Verifiserte profiler
+                Mangfoldig fellesskap
               </h3>
               <p className="mt-2 text-neutral-600">
-                Alle lærere gjennomgår grundig bakgrunnssjekk og verifikasjon av kvalifikasjoner
+                Finn lærere med ulik bakgrunn og ekspertise som passer dine behov
               </p>
             </div>
 
@@ -101,33 +102,7 @@ export default function HomePage() {
       </section>
 
       {/* Stats Section */}
-      <section className="bg-brand-50 py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-              Tilliten til tusenvis av nordmenn
-            </h2>
-          </div>
-          <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="text-center">
-              <div className="text-4xl font-bold text-brand-600">500+</div>
-              <div className="mt-2 text-sm font-medium text-neutral-600">Aktive lærere</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-brand-600">2000+</div>
-              <div className="mt-2 text-sm font-medium text-neutral-600">Fornøyde studenter</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-brand-600">15+</div>
-              <div className="mt-2 text-sm font-medium text-neutral-600">Fag tilgjengelig</div>
-            </div>
-            <div className="text-center">
-              <div className="text-4xl font-bold text-brand-600">98%</div>
-              <div className="mt-2 text-sm font-medium text-neutral-600">Tilfredshet</div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <StatsSection />
 
       {/* CTA Section */}
       <section className="bg-neutral-900 py-16 sm:py-24">
