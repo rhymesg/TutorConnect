@@ -267,9 +267,12 @@ function EmailVerificationFormInner({
           }
         </p>
         {email && (
-          <p className="text-sm font-medium text-neutral-900 mt-2">
-            {email}
-          </p>
+          <div className="bg-neutral-50 border border-neutral-200 rounded-lg p-3 mt-4">
+            <p className="text-xs text-neutral-600 mb-1">E-post sendt til:</p>
+            <p className="text-sm font-medium text-neutral-900 break-all">
+              {email}
+            </p>
+          </div>
         )}
       </div>
 

@@ -121,6 +121,7 @@ TutorConnect/
 
 ## Contact Information
 - **Main Contact**: contact@tutorconnect.no (all inquiries)
+- **Automated Emails**: noreply@tutorconnect.no (notifications, verification, system emails)
 - **Business Type**: Individual/Personal project (not corporation)
 - **Legal Entity**: Individual (not AS/corporation)
 

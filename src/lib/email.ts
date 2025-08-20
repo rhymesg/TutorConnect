@@ -1,12 +1,7 @@
 /**
- * Email service for TutorConnect
- * This is a placeholder implementation. In production, you would use:
- * - SendGrid
- * - AWS SES
- * - Postmark
- * - Mailgun
- * - Or similar email service
+ * Email service for TutorConnect using SMTP
  */
+import nodemailer from 'nodemailer';
 
 interface EmailTemplate {
   subject: string;
@@ -22,6 +17,26 @@ const EMAIL_CONFIG = {
   fromName: 'TutorConnect',
   baseUrl: process.env.NEXTAUTH_URL || 'https://tutorconnect.no',
 } as const;
+
+/**
+ * Create SMTP transporter
+ */
+const createTransporter = () => {
+  if (!process.env.SMTP_HOST) {
+    console.warn('SMTP not configured - emails will only be logged');
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true', // true for 465, false for other ports
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS,
+    },
+  });
+};
 
 /**
  * Email verification template
@@ -160,28 +175,10 @@ function createPasswordResetEmailTemplate(name: string, resetToken: string): Ema
  * This is a placeholder implementation - replace with actual email service
  */
 async function sendEmail(to: string, template: EmailTemplate): Promise<void> {
-  // In production, implement actual email sending logic here
-  // Example with SendGrid:
-  /*
-  const sgMail = require('@sendgrid/mail');
-  sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+  const transporter = createTransporter();
   
-  const msg = {
-    to: to,
-    from: {
-      email: EMAIL_CONFIG.fromAddress,
-      name: EMAIL_CONFIG.fromName,
-    },
-    subject: template.subject,
-    text: template.text,
-    html: template.html,
-  };
-  
-  await sgMail.send(msg);
-  */
-
-  // For development/testing, log the email instead of sending
-  if (process.env.NODE_ENV === 'development') {
+  // For development/testing without SMTP, log the email instead of sending
+  if (!transporter) {
     console.log('🔗 Email would be sent to:', to);
     console.log('📧 Subject:', template.subject);
     console.log('📝 Content:', template.text);
@@ -189,9 +186,25 @@ async function sendEmail(to: string, template: EmailTemplate): Promise<void> {
     return;
   }
 
-  // In production, throw error if no email service is configured
-  console.error('Email service not configured. Email not sent to:', to);
-  throw new Error('Email service not configured');
+  try {
+    const mailOptions = {
+      from: {
+        name: EMAIL_CONFIG.fromName,
+        address: EMAIL_CONFIG.fromAddress,
+      },
+      to: to,
+      subject: template.subject,
+      text: template.text,
+      html: template.html,
+    };
+
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully to:', to, 'MessageID:', result.messageId);
+    return; // Successfully sent, exit function
+  } catch (error) {
+    console.error('❌ Failed to send email to:', to, error);
+    throw error;
+  }
 }
 
 /**

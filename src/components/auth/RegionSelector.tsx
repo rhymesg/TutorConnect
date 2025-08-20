@@ -12,7 +12,7 @@ interface RegionOption {
 
 interface RegionSelectorProps {
   label: string;
-  name: string;
+  name?: string;
   value?: NorwegianRegion;
   required?: boolean;
   disabled?: boolean;
@@ -194,7 +194,7 @@ export function RegionSelector({
   return (
     <div className="space-y-1">
       {/* Label */}
-      <label htmlFor={name} className={labelClasses}>
+      <label htmlFor={name || 'region-selector'} className={labelClasses}>
         {label}
       </label>
 
@@ -203,8 +203,7 @@ export function RegionSelector({
         <div className="relative">
           <input
             ref={inputRef}
-            id={name}
-            name={name}
+            id={name || 'region-selector'}
             type="text"
             value={isOpen ? searchTerm : selectedOption?.label || ''}
             placeholder={placeholder}
@@ -225,7 +224,7 @@ export function RegionSelector({
             aria-expanded={isOpen}
             aria-haspopup="listbox"
             aria-invalid={hasError}
-            aria-describedby={error ? `${name}-error` : undefined}
+            aria-describedby={error ? `${name || 'region-selector'}-error` : undefined}
             autoComplete="off"
             role="combobox"
           />
@@ -247,7 +246,7 @@ export function RegionSelector({
             <ul
               ref={listRef}
               role="listbox"
-              aria-labelledby={name}
+              aria-labelledby={name || 'region-selector'}
               className="py-1"
             >
               {filteredOptions.length > 0 ? (
@@ -288,7 +287,7 @@ export function RegionSelector({
       {/* Error message */}
       {error && (
         <p
-          id={`${name}-error`}
+          id={`${name || 'region-selector'}-error`}
           className="text-sm text-red-600 mt-1 flex items-center"
           role="alert"
           aria-live="polite"

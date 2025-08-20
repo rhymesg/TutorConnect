@@ -94,7 +94,6 @@ export default function RegisterForm19({
       <div>
         <RegionSelector
           label="Region"
-          name="region"
           value={selectedRegion}
           onChange={setSelectedRegion}
           required
