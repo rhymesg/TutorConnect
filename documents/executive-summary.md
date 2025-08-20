@@ -197,7 +197,6 @@ Stage 13: Final launch (Medium effort)
 
 ### Medium-long Term Scalability
 - 📱 **Mobile App**: React Native expansion
-- 💳 **Payment System**: Online payment integration
 - 🌍 **Multi-language**: i18n-based multilingual support
 - 🔔 **Notification System**: Push notification expansion
 
