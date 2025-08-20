@@ -55,7 +55,7 @@ export default function OmOssPage() {
         {/* Additional Info Section */}
         <section className="mt-12 text-center">
           <p className="text-sm text-neutral-600">
-            TutorConnect - der kunnskap møter behov
+            TutorConnect - læring der du vil
           </p>
         </section>
       </div>

@@ -47,9 +47,6 @@ export default function HomePage() {
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
               Hvorfor velge TutorConnect?
             </h2>
-            <p className="mt-4 text-lg text-neutral-600 text-pretty">
-              Vi gjør det enkelt å finne og kontakte lærere i ditt område
-            </p>
           </div>
 
           <div className="mt-16 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -111,15 +108,12 @@ export default function HomePage() {
             Klar til å begynne?
           </h2>
           <p className="mt-4 text-lg text-neutral-300 text-pretty">
-            Bli med i TutorConnect i dag og opplev fremtidens privatundervisning
+            Opplev læring der du vil - på din måte, i ditt tempo, på ditt sted
           </p>
           <div className="mt-8 flex items-center justify-center gap-x-6">
-            <button className="btn-primary">
+            <a href="/auth/register" className="btn-primary">
               Opprett konto
-            </button>
-            <button className="btn-ghost text-white hover:bg-white/10">
-              Les mer <span aria-hidden="true">→</span>
-            </button>
+            </a>
           </div>
         </div>
       </section>

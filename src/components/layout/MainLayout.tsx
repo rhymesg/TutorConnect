@@ -81,7 +81,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             {children}
           </div>
           
-          {/* Footer - only show on public pages */}
+          {/* Footer - show on all public pages */}
           {isPublicPage && <Footer />}
         </main>
       </div>
