@@ -157,7 +157,75 @@ jobs:
             
             console.log('✅ Logo navigation back to home works');
             
-            console.log('✅ All navigation tests passed');
+            console.log('✅ All main navigation tests passed');
+            
+            // Test 6: Header navigation links
+            await page.goto('/');
+            
+            // Test "Finn lærer" in header
+            await page.click('a:has-text("Finn lærer")');
+            await expect(page).toHaveURL('/posts?type=teacher');
+            
+            console.log('✅ Header "Finn lærer" navigation works');
+            
+            // Test "Bli lærer" in header
+            await page.goto('/');
+            await page.click('a:has-text("Bli lærer")');
+            await expect(page).toHaveURL('/auth/register?type=teacher');
+            await expect(page.locator('h2:has-text("Opprett konto")')).toBeVisible();
+            
+            console.log('✅ Header "Bli lærer" navigation works');
+            
+            // Test "Om oss" in header
+            await page.goto('/');
+            await page.click('a:has-text("Om oss")');
+            await expect(page).toHaveURL('/om-oss');
+            
+            console.log('✅ Header "Om oss" navigation works');
+            
+            // Test 7: Footer navigation links
+            await page.goto('/');
+            
+            // Scroll to footer first
+            await page.locator('footer').scrollIntoViewIfNeeded();
+            
+            // Test "Personvern" in footer
+            await page.click('a:has-text("Personvern")');
+            await expect(page).toHaveURL('/privacy');
+            
+            console.log('✅ Footer "Personvern" navigation works');
+            
+            // Test "Vilkår og betingelser" in footer
+            await page.goto('/');
+            await page.locator('footer').scrollIntoViewIfNeeded();
+            await page.click('a:has-text("Vilkår og betingelser")');
+            await expect(page).toHaveURL('/terms');
+            
+            console.log('✅ Footer "Vilkår og betingelser" navigation works');
+            
+            // Test "Kontakt" in footer (should go to om-oss with anchor)
+            await page.goto('/');
+            await page.locator('footer').scrollIntoViewIfNeeded();
+            await page.click('a:has-text("Kontakt")');
+            await expect(page).toHaveURL('/om-oss#kontakt');
+            
+            console.log('✅ Footer "Kontakt" navigation works');
+            
+            // Test 8: Verify that target pages exist and load properly
+            const pagesToCheck = [
+              { url: '/privacy', expectedElement: 'h1, h2' },
+              { url: '/terms', expectedElement: 'h1, h2' },
+              { url: '/om-oss', expectedElement: 'h1, h2' },
+              { url: '/posts?type=teacher', expectedElement: 'h1, h2, main' }
+            ];
+            
+            for (const { url, expectedElement } of pagesToCheck) {
+              await page.goto(url);
+              await expect(page.locator(expectedElement).first()).toBeVisible({ timeout: 10000 });
+              console.log(`✅ Page ${url} loads properly`);
+            }
+            
+            console.log('✅ All navigation and page loading tests passed');
           });
         });
         EOF
