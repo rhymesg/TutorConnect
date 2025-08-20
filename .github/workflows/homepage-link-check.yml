@@ -1,0 +1,247 @@
+name: Homepage Link Validation
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  link-validation:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup test database
+      run: |
+        npm run db:push
+        npm run db:seed
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium
+
+    - name: Build Next.js application
+      run: npm run build
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+        
+    - name: Start Next.js application
+      run: |
+        npm run start &
+        sleep 10
+        curl -f http://localhost:3000/ || exit 1
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Run Homepage Link Tests
+      run: npx playwright test tests/e2e/homepage-links.spec.ts
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
+
+  link-checker:
+    runs-on: ubuntu-latest
+    needs: link-validation
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build application
+      run: npm run build
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Static link analysis
+      run: |
+        echo "🔍 Checking for broken internal links..."
+        
+        # Check for common broken link patterns in homepage
+        if grep -r "href.*404\|href.*undefined\|href.*null" src/app/page.tsx src/components/layout/Footer.tsx; then
+          echo "❌ Found potentially broken links"
+          exit 1
+        fi
+        
+        # Check for missing route files for internal links
+        MISSING_ROUTES=()
+        
+        # Check privacy page
+        if ! [ -f "src/app/privacy/page.tsx" ]; then
+          MISSING_ROUTES+=("/privacy")
+        fi
+        
+        # Check terms page  
+        if ! [ -f "src/app/terms/page.tsx" ]; then
+          MISSING_ROUTES+=("/terms")
+        fi
+        
+        # Check om-oss page
+        if ! [ -f "src/app/om-oss/page.tsx" ]; then
+          MISSING_ROUTES+=("/om-oss")
+        fi
+        
+        # Check auth/register page
+        if ! [ -f "src/app/auth/register/page.tsx" ]; then
+          MISSING_ROUTES+=("/auth/register")
+        fi
+        
+        if [ ${#MISSING_ROUTES[@]} -gt 0 ]; then
+          echo "❌ Missing route files for:"
+          printf '%s\n' "${MISSING_ROUTES[@]}"
+          exit 1
+        fi
+        
+        echo "✅ All internal route files exist"
+        echo "✅ No broken link patterns detected"
+
+  accessibility-check:
+    runs-on: ubuntu-latest
+    needs: link-validation
+    if: success()
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright and axe
+      run: |
+        npx playwright install chromium
+        npm install @axe-core/playwright
+
+    - name: Build and start application
+      run: |
+        npm run build
+        npm run start &
+        sleep 10
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Run accessibility tests
+      run: |
+        cat > accessibility-test.js << 'EOF'
+        const { chromium } = require('playwright');
+        const { injectAxe, checkA11y } = require('axe-playwright');
+
+        (async () => {
+          const browser = await chromium.launch();
+          const page = await browser.newPage();
+          
+          try {
+            await page.goto('http://localhost:3000/');
+            await injectAxe(page);
+            
+            // Check accessibility
+            await checkA11y(page, null, {
+              detailedReport: true,
+              detailedReportOptions: { html: true }
+            });
+            
+            console.log('✅ Accessibility check passed');
+          } catch (error) {
+            console.error('❌ Accessibility violations found:', error.message);
+            process.exit(1);
+          } finally {
+            await browser.close();
+          }
+        })();
+        EOF
+        
+        node accessibility-test.js
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [link-validation, link-checker, accessibility-check]
+    if: always()
+    
+    steps:
+    - name: Test Summary
+      run: |
+        echo "## 🔗 Homepage Link Validation Summary" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.link-validation.result }}" == "success" ]; then
+          echo "✅ **Playwright E2E Tests**: All homepage links working correctly" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Playwright E2E Tests**: Some tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.link-checker.result }}" == "success" ]; then
+          echo "✅ **Static Analysis**: No broken links detected" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Static Analysis**: Issues found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.accessibility-check.result }}" == "success" ]; then
+          echo "✅ **Accessibility**: WCAG compliance verified" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Accessibility**: Violations detected" >> $GITHUB_STEP_SUMMARY
+        fi

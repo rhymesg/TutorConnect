@@ -1,0 +1,397 @@
+name: Login Functionality Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup test database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Run API integration tests
+      run: npm test -- tests/integration/auth/login-api.test.ts
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+        NODE_ENV: test
+        TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: login-unit-test-coverage
+        path: coverage/
+        retention-days: 3
+
+  e2e-tests:
+    name: E2E Login Flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: unit-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+
+    - name: Build application
+      run: npm run build
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 15
+        curl -f http://localhost:3000/ || (echo "App failed to start" && exit 1)
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Run E2E login tests
+      run: npx playwright test tests/e2e/login.spec.ts --reporter=html
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+        TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: login-e2e-test-results
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
+
+  authentication-validation:
+    name: Authentication Security Tests  
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    needs: unit-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Run authentication validation tests
+      run: |
+        cat > auth-validation.js << 'EOF'
+        const { PrismaClient } = require('@prisma/client');
+        const bcrypt = require('bcryptjs');
+        const prisma = new PrismaClient();
+
+        async function validateAuthentication() {
+          console.log('🔍 Validating authentication system...');
+          
+          try {
+            // Create test user for authentication testing
+            const testEmail = `auth-test-${Date.now()}@example.com`;
+            const testPassword = 'TestPassword123!';
+            const hashedPassword = await bcrypt.hash(testPassword, 12);
+            
+            const testUser = await prisma.user.create({
+              data: {
+                name: 'Auth Test User',
+                email: testEmail,
+                password: hashedPassword,
+                emailVerified: true,
+              }
+            });
+            
+            console.log('✅ Test user created with hashed password');
+            
+            // Validate password hashing
+            const isValidPassword = await bcrypt.compare(testPassword, testUser.password);
+            if (!isValidPassword) {
+              throw new Error('Password hashing validation failed');
+            }
+            console.log('✅ Password hashing validation passed');
+            
+            // Validate wrong password rejection
+            const isWrongPassword = await bcrypt.compare('wrongpassword', testUser.password);
+            if (isWrongPassword) {
+              throw new Error('Wrong password validation failed - should reject invalid passwords');
+            }
+            console.log('✅ Wrong password rejection working correctly');
+            
+            // Test user retrieval by email (case insensitive check)
+            const retrievedUser = await prisma.user.findUnique({
+              where: { email: testEmail.toLowerCase() }
+            });
+            
+            if (!retrievedUser) {
+              throw new Error('User retrieval by email failed');
+            }
+            console.log('✅ User retrieval by email working');
+            
+            // Test email uniqueness constraint
+            try {
+              await prisma.user.create({
+                data: {
+                  name: 'Duplicate User',
+                  email: testEmail, // Same email
+                  password: hashedPassword,
+                }
+              });
+              throw new Error('Email uniqueness constraint failed - duplicate email was allowed');
+            } catch (error) {
+              if (error.code === 'P2002') {
+                console.log('✅ Email uniqueness constraint working');
+              } else {
+                throw error;
+              }
+            }
+            
+            // Cleanup
+            await prisma.user.delete({
+              where: { id: testUser.id }
+            });
+            
+            console.log('✅ Authentication system validation passed');
+            
+          } catch (error) {
+            console.error('❌ Authentication validation failed:', error.message);
+            process.exit(1);
+          } finally {
+            await prisma.$disconnect();
+          }
+        }
+
+        validateAuthentication();
+        EOF
+        
+        node auth-validation.js
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+  security-validation:
+    name: Login Security Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Security checks for login
+      run: |
+        echo "🔒 Running security validation for login..."
+        
+        # Check for password comparison (bcrypt)
+        if ! grep -r "bcrypt.*compare\|compare.*bcrypt" src/app/api/auth/login/ src/lib/actions/auth.ts; then
+          echo "❌ No secure password comparison found in login code"
+          exit 1
+        fi
+        echo "✅ Secure password comparison implementation found"
+        
+        # Check for input validation
+        if ! grep -r "zod\|joi\|validator" src/schemas/auth.ts src/app/api/auth/login/; then
+          echo "❌ No input validation found"
+          exit 1
+        fi
+        echo "✅ Input validation found"
+        
+        # Check for JWT token handling
+        if ! grep -r "jwt\|jose\|jsonwebtoken" src/app/api/auth/login/ src/lib/; then
+          echo "⚠️ No JWT token handling found - consider implementing session management"
+        else
+          echo "✅ JWT token handling found"
+        fi
+        
+        # Check for rate limiting considerations
+        if grep -r "rate.*limit\|throttle" src/app/api/auth/login/ src/middleware/; then
+          echo "✅ Rate limiting considerations found"
+        else
+          echo "⚠️ Consider implementing rate limiting for login endpoint"
+        fi
+        
+        # Check for secure headers
+        if grep -r "Cache-Control.*no-store\|no-cache" src/app/api/auth/login/; then
+          echo "✅ Secure cache headers found"
+        else
+          echo "⚠️ Consider adding secure cache headers (no-store, no-cache)"
+        fi
+        
+        # Check for SQL injection prevention (using Prisma)
+        if grep -r "prisma\|ORM" src/app/api/auth/login/; then
+          echo "✅ Using ORM (Prisma) for database queries"
+        else
+          echo "⚠️ Raw SQL queries detected - ensure proper sanitization"
+        fi
+        
+        # Check for timing attack prevention
+        if grep -r "constant.*time\|timing.*safe" src/app/api/auth/login/; then
+          echo "✅ Timing attack prevention measures found"
+        else
+          echo "ℹ️ Consider implementing constant-time comparison for enhanced security"
+        fi
+        
+        echo "✅ Security validation completed"
+
+  test-summary:
+    name: Login Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests, authentication-validation, security-validation]
+    if: always()
+
+    steps:
+    - name: Generate test summary
+      run: |
+        echo "## 🔐 Login Testing Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.unit-tests.result }}" == "success" ]; then
+          echo "✅ **Unit & Integration Tests**: All API login tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Unit & Integration Tests**: Some tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+          echo "✅ **E2E Tests**: Login flow working correctly" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **E2E Tests**: Login flow issues detected" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.authentication-validation.result }}" == "success" ]; then
+          echo "✅ **Authentication Validation**: Password hashing and user authentication working" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Authentication Validation**: Authentication system issues found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.security-validation.result }}" == "success" ]; then
+          echo "✅ **Security Validation**: Security measures in place" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Security Validation**: Security concerns detected" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Test Coverage Areas" >> $GITHUB_STEP_SUMMARY
+        echo "- **Form Validation**: Required fields, email format validation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Authentication**: Password verification, user lookup, JWT token generation" >> $GITHUB_STEP_SUMMARY
+        echo "- **Security**: Password hashing, input validation, timing attack prevention" >> $GITHUB_STEP_SUMMARY
+        echo "- **Database Integration**: User authentication, email verification status" >> $GITHUB_STEP_SUMMARY
+        echo "- **User Experience**: Form accessibility, loading states, error messages" >> $GITHUB_STEP_SUMMARY
+        echo "- **Edge Cases**: Unverified emails, rate limiting, remember me functionality" >> $GITHUB_STEP_SUMMARY

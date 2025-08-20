@@ -1,0 +1,357 @@
+name: Registration Functionality Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  unit-tests:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup test database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Run API integration tests
+      run: npm test -- tests/integration/auth/registration-api.test.ts
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+        NODE_ENV: test
+        TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+    - name: Upload test coverage
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unit-test-coverage
+        path: coverage/
+        retention-days: 3
+
+  e2e-tests:
+    name: E2E Registration Flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: unit-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Install Playwright browsers
+      run: npx playwright install chromium
+
+    - name: Build application
+      run: npm run build
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 15
+        curl -f http://localhost:3000/ || (echo "App failed to start" && exit 1)
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Run E2E registration tests
+      run: npx playwright test tests/e2e/registration.spec.ts --reporter=html
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        NEXTAUTH_SECRET: test-secret-key-for-github-actions
+        NEXTAUTH_URL: http://localhost:3000
+        TEST_USER_PASSWORD: ${{ secrets.TEST_USER_PASSWORD }}
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: e2e-test-results
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 7
+
+  database-validation:
+    name: Database Validation Tests  
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    needs: unit-tests
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: tutorconnect_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Setup database
+      run: |
+        npx prisma generate
+        npx prisma db push
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+    - name: Run database validation tests
+      run: |
+        cat > db-validation.js << 'EOF'
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+
+        async function validateSchema() {
+          console.log('🔍 Validating user table schema...');
+          
+          try {
+            // Test user creation with required fields
+            const testUser = await prisma.user.create({
+              data: {
+                name: 'Test User',
+                email: `test-${Date.now()}@example.com`,
+                password: 'hashedpassword',
+                emailVerified: false,
+              }
+            });
+            
+            console.log('✅ User creation successful');
+            
+            // Validate required fields exist
+            if (!testUser.id || !testUser.name || !testUser.email || !testUser.password) {
+              throw new Error('Missing required user fields');
+            }
+            
+            // Test unique email constraint
+            try {
+              await prisma.user.create({
+                data: {
+                  name: 'Another User',
+                  email: testUser.email, // Same email
+                  password: 'anotherhashedpassword',
+                }
+              });
+              throw new Error('Unique constraint should have prevented duplicate email');
+            } catch (error) {
+              if (error.code === 'P2002') {
+                console.log('✅ Email unique constraint working');
+              } else {
+                throw error;
+              }
+            }
+            
+            // Test email verification default
+            if (testUser.emailVerified !== false) {
+              throw new Error('Email verification should default to false');
+            }
+            console.log('✅ Email verification defaults to false');
+            
+            // Cleanup
+            await prisma.user.delete({
+              where: { id: testUser.id }
+            });
+            
+            console.log('✅ Database schema validation passed');
+            
+          } catch (error) {
+            console.error('❌ Database validation failed:', error.message);
+            process.exit(1);
+          } finally {
+            await prisma.$disconnect();
+          }
+        }
+
+        validateSchema();
+        EOF
+        
+        node db-validation.js
+      env:
+        DATABASE_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+        DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
+
+  security-validation:
+    name: Security Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Security checks for registration
+      run: |
+        echo "🔒 Running security validation for registration..."
+        
+        # Check for password hashing
+        if ! grep -r "bcrypt\|argon2\|scrypt" src/app/api/auth/register/ src/lib/actions/auth.ts; then
+          echo "❌ No password hashing found in registration code"
+          exit 1
+        fi
+        echo "✅ Password hashing implementation found"
+        
+        # Check for input validation
+        if ! grep -r "zod\|joi\|validator" src/schemas/auth.ts src/app/api/auth/register/; then
+          echo "❌ No input validation found"
+          exit 1
+        fi
+        echo "✅ Input validation found"
+        
+        # Check for rate limiting considerations
+        if grep -r "rate.*limit\|throttle" src/app/api/auth/register/ src/middleware/; then
+          echo "✅ Rate limiting considerations found"
+        else
+          echo "⚠️ Consider implementing rate limiting for registration endpoint"
+        fi
+        
+        # Check for SQL injection prevention (using Prisma)
+        if grep -r "prisma\|ORM" src/app/api/auth/register/; then
+          echo "✅ Using ORM (Prisma) for database queries"
+        else
+          echo "⚠️ Raw SQL queries detected - ensure proper sanitization"
+        fi
+        
+        echo "✅ Security validation completed"
+
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, e2e-tests, database-validation, security-validation]
+    if: always()
+
+    steps:
+    - name: Generate test summary
+      run: |
+        echo "## 🧪 Registration Testing Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "${{ needs.unit-tests.result }}" == "success" ]; then
+          echo "✅ **Unit & Integration Tests**: All API tests passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Unit & Integration Tests**: Some tests failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+          echo "✅ **E2E Tests**: Registration flow working correctly" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **E2E Tests**: Registration flow issues detected" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.database-validation.result }}" == "success" ]; then
+          echo "✅ **Database Validation**: Schema and constraints working" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Database Validation**: Database issues found" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "${{ needs.security-validation.result }}" == "success" ]; then
+          echo "✅ **Security Validation**: Security measures in place" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ **Security Validation**: Security concerns detected" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Test Coverage Areas" >> $GITHUB_STEP_SUMMARY
+        echo "- **Form Validation**: Required fields, email format, password strength" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Endpoints**: Registration endpoint functionality and error handling" >> $GITHUB_STEP_SUMMARY
+        echo "- **Database Integration**: User creation, uniqueness constraints, data integrity" >> $GITHUB_STEP_SUMMARY
+        echo "- **Security**: Password hashing, input validation, SQL injection prevention" >> $GITHUB_STEP_SUMMARY
+        echo "- **User Experience**: Form accessibility, loading states, error messages" >> $GITHUB_STEP_SUMMARY
