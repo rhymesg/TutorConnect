@@ -12,7 +12,6 @@ import {
 import { 
   ChevronDownIcon 
 } from '@heroicons/react/24/solid';
-import { ShimmerButton } from '@/components/ui/ShimmerButton';
 
 interface HeaderProps {
   onMenuClick: () => void;
@@ -197,10 +196,11 @@ export default function Header({
                 >
                   Logg inn
                 </Link>
-                <Link href="/auth/register">
-                  <ShimmerButton className="px-4 py-2 text-xs font-medium text-white">
-                    Registrer deg
-                  </ShimmerButton>
+                <Link
+                  href="/auth/register"
+                  className="btn-primary text-sm"
+                >
+                  Registrer deg
                 </Link>
               </>
             )}
