@@ -1,10 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // App Router is enabled by default in Next.js 14
+  // React 19 experimental features (stable features only)
+  experimental: {
+    // reactCompiler: true,          // Requires canary
+    // ppr: 'incremental',          // Requires canary
+    // dynamicIO: true,             // Requires canary
+    // staleTimes: {                // Requires canary
+    //   dynamic: 30,
+    //   static: 180,
+    // },
+  },
+
+  // App Router is enabled by default in Next.js 15
   // Server external packages (moved from experimental)
   serverExternalPackages: ['@prisma/client', 'bcryptjs'],
 
-  // Performance optimizations (swcMinify is now default)
+  // Performance optimizations
   poweredByHeader: false,
 
   // Image optimization for Norwegian regions
@@ -106,7 +117,10 @@ const nextConfig = {
     removeConsole: process.env.NODE_ENV === 'production',
   },
 
-  // Temporarily disable TypeScript and ESLint errors during transition
+  // Enable strict mode for React 19 compatibility
+  reactStrictMode: true,
+
+  // Temporarily ignore build errors for React 19 migration
   typescript: {
     ignoreBuildErrors: true,
   },

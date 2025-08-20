@@ -88,6 +88,9 @@
   --animate-fade-in: fadeIn 0.5s ease-in-out;
   --animate-slide-in: slideIn 0.3s ease-out;
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  --animate-beam-flow: beam-flow 4s ease-in-out infinite;
 
   /* Screen sizes for Norwegian mobile usage patterns */
   --breakpoint-xs: 475px;
@@ -102,6 +105,36 @@
 @keyframes slideIn {
   0% { transform: translateY(10px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+  }
+}
+
+@keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+  }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+  }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+  }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+  }
+}
+
+@keyframes beam-flow {
+  0% {
+    stroke-dashoffset: 40;
+  }
+  100% {
+    stroke-dashoffset: -40;
+  }
 }
 
 /* Base styles for TutorConnect */

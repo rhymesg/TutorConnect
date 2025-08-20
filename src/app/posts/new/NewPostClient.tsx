@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { PostForm } from '@/components/posts';
+import PostForm19 from '@/components/posts/PostForm19';
 import { PostWithDetails } from '@/types/database';
 
 export default function NewPostClient() {
@@ -17,7 +17,7 @@ export default function NewPostClient() {
   };
 
   return (
-    <PostForm
+    <PostForm19
       mode="create"
       onSuccess={handleSuccess}
       onCancel={handleCancel}

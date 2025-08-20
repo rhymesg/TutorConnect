@@ -1,6 +1,6 @@
 import { Metadata } from 'next';
 import AuthLayout from '@/components/auth/AuthLayout';
-import RegisterForm from '@/components/auth/RegisterForm';
+import RegisterForm19 from '@/components/auth/RegisterForm19';
 
 export const metadata: Metadata = {
   title: 'Registrer deg',
@@ -17,7 +17,7 @@ export default function RegisterPage() {
       title="Bli med i TutorConnect"
       description="Opprett din gratis konto og start å finne kvalifiserte lærere eller studenter"
     >
-      <RegisterForm />
+      <RegisterForm19 />
     </AuthLayout>
   );
 }

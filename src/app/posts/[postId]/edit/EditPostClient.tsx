@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { PostForm } from '@/components/posts';
+import PostForm19 from '@/components/posts/PostForm19';
 import { LoadingSpinner, ErrorMessage } from '@/components/ui';
 import { PostWithDetails } from '@/types/database';
 import { useApiCall } from '@/hooks/useApiCall';
@@ -96,7 +96,7 @@ export default function EditPostClient({ postId, initialPost }: EditPostClientPr
   }
 
   return (
-    <PostForm
+    <PostForm19
       mode="edit"
       post={post}
       onSuccess={handleSuccess}
