@@ -45,7 +45,7 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
 
     - name: Install Playwright Browsers
-      run: npx playwright install chromium
+      run: npx playwright install --with-deps
 
     - name: Build Next.js application
       run: npm run build
@@ -190,7 +190,7 @@ jobs:
 
     - name: Install Playwright and axe
       run: |
-        npx playwright install chromium
+        npx playwright install --with-deps
         npm install @axe-core/playwright
 
     - name: Build and start application

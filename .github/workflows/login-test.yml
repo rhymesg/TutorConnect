@@ -98,7 +98,7 @@ jobs:
         DIRECT_URL: postgresql://postgres:postgres@localhost:5432/tutorconnect_test
 
     - name: Install Playwright browsers
-      run: npx playwright install chromium
+      run: npx playwright install --with-deps
 
     - name: Build application
       run: npm run build
