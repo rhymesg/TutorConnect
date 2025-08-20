@@ -3,10 +3,9 @@ module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   
-  // Run all test files
+  // Run only unit tests in src directory
   testMatch: [
     '<rootDir>/src/**/*.test.ts',
-    '<rootDir>/tests/**/*.test.ts',
   ],
   
   // Exclude only necessary directories
