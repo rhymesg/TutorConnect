@@ -218,7 +218,8 @@ jobs:
                 name: 'Auth Test User',
                 email: testEmail,
                 password: hashedPassword,
-                emailVerified: true,
+                region: 'BERGEN',
+                emailVerified: new Date(),
               }
             });
             

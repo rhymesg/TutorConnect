@@ -213,7 +213,8 @@ jobs:
                 name: 'Test User',
                 email: `test-${Date.now()}@example.com`,
                 password: 'hashedpassword',
-                emailVerified: false,
+                region: 'STAVANGER',
+                emailVerified: new Date(),
               }
             });
             
