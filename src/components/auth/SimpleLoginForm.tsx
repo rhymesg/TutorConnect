@@ -2,45 +2,27 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
+import FormField from './FormField';
 
 export default function SimpleLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+  const { login, isLoading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
 
-    try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Store in localStorage
-        localStorage.setItem('accessToken', data.data.accessToken);
-        localStorage.setItem('refreshToken', data.data.refreshToken);
-        localStorage.setItem('user', JSON.stringify(data.data.user));
-        
-        // Redirect to profile
-        router.push('/profile');
-      } else {
-        setError(data.error || 'Login failed');
-      }
-    } catch (err) {
-      setError('Network error');
-    } finally {
-      setLoading(false);
+    const result = await login(email, password);
+    
+    if (result.success) {
+      // Redirect to profile
+      router.push('/profile');
+    } else {
+      setError(result.error || 'Login failed');
     }
   };
 
@@ -58,29 +40,37 @@ export default function SimpleLoginForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
           <div className="rounded-md bg-red-50 p-4">
-            <div className="text-sm text-red-700">{error}</div>
+            <div className="text-sm text-red-700 flex items-center">
+              <svg
+                className="h-4 w-4 mr-2 flex-shrink-0"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              {error}
+            </div>
           </div>
         )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-neutral-700">
-            E-postadresse
-          </label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
-            placeholder="din@epost.no"
-          />
-        </div>
+        <FormField
+          label="E-postadresse"
+          name="email"
+          type="email"
+          placeholder="din@epost.no"
+          autoComplete="email"
+          autoFocus
+          value={email}
+          onChange={setEmail}
+        />
 
         <div>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-2">
             <label htmlFor="password" className="block text-sm font-medium text-neutral-700">
               Passord
             </label>
@@ -91,25 +81,24 @@ export default function SimpleLoginForm() {
               Glemt passord?
             </a>
           </div>
-          <input
-            id="password"
+          <FormField
+            label=""
             name="password"
             type="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-lg border border-neutral-300 px-3 py-2 text-sm placeholder:text-neutral-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
             placeholder="Skriv inn passordet ditt"
+            autoComplete="current-password"
+            value={password}
+            onChange={setPassword}
+            className="mb-0"
           />
         </div>
 
         <button
           type="submit"
-          disabled={loading}
-          className="w-full rounded-lg bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={isLoading}
+          className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
         >
-          {loading ? 'Logger inn...' : 'Logg inn'}
+          {isLoading ? 'Logger inn...' : 'Logg inn'}
         </button>
       </form>
 
@@ -131,6 +120,16 @@ export default function SimpleLoginForm() {
           >
             Registrer deg her
           </a>
+        </p>
+      </div>
+
+      {/* Security info */}
+      <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg mt-6">
+        <p className="flex items-center">
+          <svg className="h-4 w-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+          Din pålogging er beskyttet med sikker kryptering
         </p>
       </div>
     </>

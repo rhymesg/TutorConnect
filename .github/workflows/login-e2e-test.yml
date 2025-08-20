@@ -86,7 +86,14 @@ jobs:
         import { test, expect } from '@playwright/test';
 
         test.describe('Login Flow', () => {
-          test('should login successfully', async ({ page }) => {
+          test('should login successfully and update header state', async ({ page }) => {
+            // First visit home page to check initial header state
+            await page.goto('/');
+            
+            // Check that login/register buttons are visible when not authenticated
+            await expect(page.locator('a:has-text("Logg inn")')).toBeVisible();
+            await expect(page.locator('a:has-text("Registrer deg")')).toBeVisible();
+            
             // Navigate to login page
             await page.goto('/auth/login');
             
@@ -106,24 +113,53 @@ jobs:
             ]);
             
             // Wait a bit for any redirects or UI updates
+            await page.waitForTimeout(3000);
+            
+            // Navigate to home page to check header state after login
+            await page.goto('/');
+            
+            // Wait for header to update
+            await page.waitForTimeout(1000);
+            
+            // Check that login/register buttons are gone
+            await expect(page.locator('a:has-text("Logg inn")')).not.toBeVisible();
+            await expect(page.locator('a:has-text("Registrer deg")')).not.toBeVisible();
+            
+            // Check that user menu is now visible (look for user icon button or dropdown)
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible();
+            
+            // Click user menu to open dropdown
+            await userMenuButton.click();
+            
+            // Check that "Min side" and "Logg ut" options are visible in dropdown
+            await expect(page.locator('a:has-text("Min side")')).toBeVisible();
+            await expect(page.locator('button:has-text("Logg ut")')).toBeVisible();
+            
+            console.log('✅ Login and header state test passed');
+            
+            // Test logout functionality
+            const logoutButton = page.locator('button:has-text("Logg ut")');
+            await logoutButton.click();
+            
+            // Wait for logout to complete and any redirects
             await page.waitForTimeout(2000);
             
-            // Check that we're no longer on login page OR check for success indicators
-            const currentUrl = page.url();
-            const isLoginPage = currentUrl.includes('/auth/login');
+            // Check that we're redirected to home page (logout should redirect to /)
+            await expect(page).toHaveURL('/');
             
-            if (!isLoginPage) {
-              // We successfully redirected away from login
-              console.log('Successfully redirected to:', currentUrl);
-            } else {
-              // Still on login page, check for error messages
-              const hasError = await page.locator('text=Invalid credentials').isVisible().catch(() => false);
-              if (hasError) {
-                throw new Error('Login failed with invalid credentials');
-              }
-              // If no error, login might have succeeded but didn't redirect
-              console.log('Login completed, still on login page');
-            }
+            // Wait for header to update after logout
+            await page.waitForTimeout(1000);
+            
+            // Check that login/register buttons are visible again after logout
+            await expect(page.locator('a:has-text("Logg inn")')).toBeVisible();
+            await expect(page.locator('a:has-text("Registrer deg")')).toBeVisible();
+            
+            // Check that user menu button is no longer visible
+            await expect(page.locator('button[aria-label="Brukermeny"]')).not.toBeVisible();
+            
+            console.log('✅ Logout and header state test passed');
+            console.log('✅ Complete authentication flow test passed');
           });
         });
         EOF

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { MessageCircle, Send, X } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { chat as chatTranslations, useLanguage, forms } from '@/lib/translations';
 
 interface StartChatButtonProps {

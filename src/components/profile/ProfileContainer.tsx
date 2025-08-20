@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useApiCall } from '@/hooks/useApiCall';
 import { ProfileView } from './ProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';

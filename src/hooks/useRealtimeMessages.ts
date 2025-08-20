@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { useRealtimeConnection } from './useRealtimeConnection';
 import { MessageQueue, QueuedMessage, QueueEvent } from '@/lib/messageQueue';
 import { subscribeToChat } from '@/lib/supabase-client';

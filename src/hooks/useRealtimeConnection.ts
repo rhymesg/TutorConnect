@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useAuth } from './useAuth';
+import { useAuth } from '@/contexts/AuthContext';
 import { createClient as createSupabaseClient } from '@/lib/supabase-client';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
