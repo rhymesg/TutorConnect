@@ -13,9 +13,22 @@ Detailed explanation of changes made."
 ```
 
 ## Commit Message Format
-- **Title**: `[TASK-ID, TASK-ID2, ...] Brief summary`
-- **Body**: Detailed explanation (optional)
+- **One line only** - Keep commit messages concise and to a single line
+- **Title**: `[TASK-ID, TASK-ID2, ...] Brief description of change` (multiple task IDs allowed)
 - **NO SIGNATURES**: Do not include "Generated with Claude Code" or similar signatures
+
+### Task ID Guidelines
+- Use actual task numbers when available (e.g., `E2E-005`, `FRONT-001`, `BACK-004`)
+- Multiple task IDs: `[E2E-005, UI-003, FRONT-001] Description`
+- If no task ID exists, use category only without dashes and numbers
+- Common categories: `DOC`, `FIX`, `E2E`, `FRONT`, `UI`, `BACK`, `SEC`, `PERF`, `TEST`, `CONFIG` (not limited to these)
+
+### Examples
+- ✅ Good: `[E2E-005, UI-003] Fix navigation test and update styling`
+- ✅ Good: `[BACK-004] Add user authentication middleware`
+- ✅ Good: `[UI] Update button styling for consistency`
+- ✅ Good: `[REFACTOR] Reorganize component structure`
+- ❌ Bad: `[E2E-001] Fix navigation test headings` (when no actual task ID exists)
 
 ## Example
 ```bash
