@@ -26,10 +26,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isPublicPage = pathname === '/' || 
                       pathname.startsWith('/auth') || 
                       pathname === '/om-oss';
+  
+  // Hide navigation for public profile pages (viewing other users' profiles)
+  const isPublicProfilePage = pathname.startsWith('/profile/') && pathname !== '/profile';
 
   // Determine layout structure based on authentication and page type
-  const showSidebar = isAuthenticated && !isPublicPage;
-  const showMobileNav = isAuthenticated && !isPublicPage;
+  const showSidebar = isAuthenticated && !isPublicPage && !isPublicProfilePage;
+  const showMobileNav = isAuthenticated && !isPublicPage && !isPublicProfilePage;
+  const showHeader = !isPublicProfilePage;
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -42,12 +46,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </a>
 
       {/* Header */}
-      <Header 
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-        showMenuButton={showSidebar}
-      />
+      {showHeader && (
+        <Header 
+          onMenuClick={() => setSidebarOpen(!sidebarOpen)}
+          showMenuButton={showSidebar}
+        />
+      )}
 
-      <div className="flex h-[calc(100vh-4rem)]">
+      <div className={`flex ${showHeader ? 'h-[calc(100vh-4rem)]' : 'h-screen'}`}>
         {/* Desktop Sidebar */}
         {showSidebar && (
           <Sidebar 

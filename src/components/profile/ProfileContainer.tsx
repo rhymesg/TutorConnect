@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiCall } from '@/hooks/useApiCall';
-import { ProfileView } from './ProfileView';
+import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { User } from '@prisma/client';
@@ -13,6 +14,14 @@ interface ProfileData extends User {
   privacyAge: string;
   privacyDocuments: string;
   privacyContact: string;
+  privacyEducation: string;
+  privacyCertifications: string;
+  privacyLocation: string;
+  privacyPostalCode: string;
+  privacyMemberSince: string;
+  privacyLastActive: string;
+  privacyActivity: string;
+  privacyStats: string;
   completeness: {
     percentage: number;
     missingFields: string[];
@@ -34,6 +43,7 @@ interface ProfileData extends User {
 }
 
 export function ProfileContainer() {
+  const router = useRouter();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,7 +57,23 @@ export function ProfileContainer() {
         const data = await response.json();
         
         if (data.success) {
-          setProfileData(data.data);
+          // Ensure all privacy fields have default values
+          const profileWithDefaults = {
+            ...data.data,
+            privacyGender: data.data.privacyGender || 'PUBLIC',
+            privacyAge: data.data.privacyAge || 'PUBLIC',
+            privacyDocuments: data.data.privacyDocuments || 'PUBLIC',
+            privacyContact: data.data.privacyContact || 'PUBLIC',
+            privacyEducation: data.data.privacyEducation || 'PUBLIC',
+            privacyCertifications: data.data.privacyCertifications || 'PUBLIC',
+            privacyLocation: data.data.privacyLocation || 'PUBLIC',
+            privacyPostalCode: data.data.privacyPostalCode || 'PUBLIC',
+            privacyMemberSince: data.data.privacyMemberSince || 'PUBLIC',
+            privacyLastActive: data.data.privacyLastActive || 'PUBLIC',
+            privacyActivity: data.data.privacyActivity || 'PUBLIC',
+            privacyStats: data.data.privacyStats || 'PUBLIC'
+          };
+          setProfileData(profileWithDefaults);
         } else {
           setError(data.error || 'Profile fetch failed');
         }
@@ -91,9 +117,9 @@ export function ProfileContainer() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white rounded-lg shadow-sm">
-          <ProfileView 
+          <InlineProfileView 
             profile={profileData} 
-            onEditClick={() => {}}
+            onProfileUpdate={setProfileData}
             isPublicView={false}
           />
         </div>

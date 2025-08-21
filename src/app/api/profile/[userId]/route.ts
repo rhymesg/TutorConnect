@@ -29,7 +29,7 @@ export async function GET(
   { params }: RouteParams
 ) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     
     // Validate userId format (cuid)
     if (!userId || typeof userId !== 'string' || userId.length < 10) {
@@ -72,14 +72,27 @@ export async function GET(
         gender: true,
         birthYear: true,
         profileImage: true,
-        school: true,
         degree: true,
+        education: true,
         certifications: true,
         bio: true,
         privacyGender: true,
         privacyAge: true,
         privacyDocuments: true,
         privacyContact: true,
+        privacyEducation: true,
+        privacyCertifications: true,
+        privacyLocation: true,
+        privacyPostalCode: true,
+        privacyMemberSince: true,
+        privacyLastActive: true,
+        privacyActivity: true,
+        privacyStats: true,
+        teacherSessions: true,
+        teacherStudents: true,
+        studentSessions: true,
+        studentTeachers: true,
+        isActive: true,
         lastActive: true,
         createdAt: true,
         documents: {
@@ -195,11 +208,11 @@ async function getPublicUserStats(userId: string) {
     prisma.$queryRaw`
       SELECT COUNT(*)
       FROM appointments a
-      JOIN chats c ON a.chat_id = c.id
-      JOIN chat_participants cp ON c.id = cp.chat_id
-      WHERE cp.user_id = ${userId} 
+      JOIN chats c ON a."chatId" = c.id
+      JOIN chat_participants cp ON c.id = cp."chatId"
+      WHERE cp."userId" = ${userId} 
       AND a.status = 'COMPLETED'
-      AND a.both_completed = true
+      AND a."bothCompleted" = true
     `,
     
     // Future: average rating from completed appointments

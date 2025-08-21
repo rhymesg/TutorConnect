@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
@@ -38,14 +38,26 @@ export async function GET(request: NextRequest) {
         gender: true,
         birthYear: true,
         profileImage: true,
-        school: true,
         degree: true,
+        education: true,
         certifications: true,
         bio: true,
         privacyGender: true,
         privacyAge: true,
         privacyDocuments: true,
         privacyContact: true,
+        privacyEducation: true,
+        privacyCertifications: true,
+        privacyLocation: true,
+        privacyPostalCode: true,
+        privacyMemberSince: true,
+        privacyLastActive: true,
+        privacyActivity: true,
+        privacyStats: true,
+        teacherSessions: true,
+        teacherStudents: true,
+        studentSessions: true,
+        studentTeachers: true,
         isActive: true,
         lastActive: true,
         createdAt: true,
@@ -83,7 +95,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Calculate simple completeness
-    const requiredFields = ['name', 'bio', 'school', 'degree'];
+    const requiredFields = ['name', 'bio', 'education', 'degree'];
     const completedFields = requiredFields.filter(field => 
       profile[field as keyof typeof profile]
     );
@@ -117,7 +129,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
@@ -149,8 +161,8 @@ export async function PUT(request: NextRequest) {
         postalCode: true,
         gender: true,
         birthYear: true,
-        school: true,
         degree: true,
+        education: true,
         certifications: true,
         bio: true,
         updatedAt: true,
@@ -177,7 +189,7 @@ export async function PUT(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
