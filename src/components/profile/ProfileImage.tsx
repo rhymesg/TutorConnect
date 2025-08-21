@@ -46,7 +46,7 @@ export function ProfileImage({ src, name, size = 'md', className = '' }: Props) 
           const parent = target.parentElement;
           if (parent) {
             parent.innerHTML = `
-              <div class="${baseClasses} bg-blue-600 flex items-center justify-center">
+              <div class="${baseClasses} bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
                 <span class="text-white font-medium text-${size === 'sm' ? 'xs' : size === 'lg' || size === 'xl' ? 'lg' : 'sm'}">
                   ${initials || <UserIcon className="${iconSizes[size]}" />}
                 </span>
@@ -59,7 +59,7 @@ export function ProfileImage({ src, name, size = 'md', className = '' }: Props) 
   }
 
   return (
-    <div className={`${baseClasses} bg-blue-600 flex items-center justify-center`}>
+    <div className={`${baseClasses} bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center`}>
       {initials ? (
         <span className={`text-white font-medium ${size === 'sm' ? 'text-xs' : size === 'lg' || size === 'xl' ? 'text-lg' : 'text-sm'}`}>
           {initials}

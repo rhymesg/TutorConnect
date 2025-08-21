@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 
@@ -46,13 +48,13 @@ export default function BadgesPage() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8">
-          <Link 
-            href="/profile" 
+          <button 
+            onClick={() => window.history.back()}
             className="inline-flex items-center text-sm text-gray-600 hover:text-gray-900 mb-4"
           >
             <ArrowLeftIcon className="h-4 w-4 mr-1" />
-            Tilbake til profil
-          </Link>
+            Tilbake
+          </button>
           
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
             TutorConnect Merke System

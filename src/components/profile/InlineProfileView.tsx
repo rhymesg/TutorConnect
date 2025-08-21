@@ -294,6 +294,16 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
     const privacyValue = privacyField ? (profile as any)[privacyField] : null;
     const isPrivacySaving = saving === privacyField;
 
+    // If this is a public view and the field should be private, don't render at all
+    if (isPublicView && privacyValue === 'PRIVATE') {
+      return null;
+    }
+    
+    // For public view, if field doesn't exist (filtered by privacy), don't render
+    if (isPublicView && !value && privacyField && !(profile as any).hasOwnProperty(fieldName)) {
+      return null;
+    }
+
     return (
       <div>
         <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
@@ -389,7 +399,20 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   };
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-6 space-y-8 relative">
+      {/* View Profile Button */}
+      {!isPublicView && (
+        <div className="absolute top-4 right-4">
+          <button
+            onClick={() => window.open(`/profile/${profile.id}`, '_blank', 'width=850,height=700,scrollbars=yes,resizable=yes')}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-300 transition-colors shadow-sm"
+          >
+            <span>👁️</span>
+            <span className="ml-2">Se offentlig profil</span>
+          </button>
+        </div>
+      )}
+
       {/* Header section */}
       <div className="flex items-start justify-between">
         <div className="flex items-start space-x-6">
@@ -467,18 +490,18 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               </div>
             )}
             
-            <div className="flex items-center text-sm text-gray-600 mt-1">
-              <MapPinIcon className="h-4 w-4 mr-1" />
-              <span>{profile.region}</span>
-              {profile.postalCode && (
-                <span className="ml-1">({profile.postalCode})</span>
-              )}
-            </div>
+            {profile.region && (
+              <div className="flex items-center text-sm text-gray-600 mt-1">
+                <MapPinIcon className="h-4 w-4 mr-1" />
+                <span>{profile.region}</span>
+              </div>
+            )}
             
             <div className="flex items-center mt-2">
               <div className="flex items-center space-x-3">
-                <div className="flex items-center text-sm text-green-600">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                {/* Show activity status with appropriate colors */}
+                <div className={`flex items-center text-sm ${profile.isActive ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div className={`w-2 h-2 rounded-full mr-2 ${profile.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
                   {profile.isActive ? 'Aktiv' : 'Inaktiv'}
                 </div>
                 
@@ -539,35 +562,37 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             
             {renderEditableField('postalCode', 'Postnummer', profile.postalCode, 'text', undefined, 'privacyPostalCode')}
             
-            <div>
-              <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                <span>Medlem siden</span>
-                {!isPublicView && (
-                  <button
-                    onClick={() => handlePrivacyToggle('privacyMemberSince', profile.privacyMemberSince)}
-                    disabled={saving === 'privacyMemberSince'}
-                    className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
-                      profile.privacyMemberSince === 'PUBLIC' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={profile.privacyMemberSince === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
-                  >
-                    {saving === 'privacyMemberSince' ? (
-                      <LoadingSpinner className="w-3 h-3 mr-1" />
-                    ) : profile.privacyMemberSince === 'PUBLIC' ? (
-                      <EyeIcon className="w-3 h-3 mr-1" />
-                    ) : (
-                      <EyeSlashIcon className="w-3 h-3 mr-1" />
-                    )}
-                    {profile.privacyMemberSince === 'PUBLIC' ? 'Offentlig' : 'Privat'}
-                  </button>
-                )}
-              </dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {formatters.date(new Date(profile.createdAt))}
-              </dd>
-            </div>
+            {isFieldVisible(profile.privacyMemberSince) && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
+                  <span>Medlem siden</span>
+                  {!isPublicView && (
+                    <button
+                      onClick={() => handlePrivacyToggle('privacyMemberSince', profile.privacyMemberSince)}
+                      disabled={saving === 'privacyMemberSince'}
+                      className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
+                        profile.privacyMemberSince === 'PUBLIC' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={profile.privacyMemberSince === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                    >
+                      {saving === 'privacyMemberSince' ? (
+                        <LoadingSpinner className="w-3 h-3 mr-1" />
+                      ) : profile.privacyMemberSince === 'PUBLIC' ? (
+                        <EyeIcon className="w-3 h-3 mr-1" />
+                      ) : (
+                        <EyeSlashIcon className="w-3 h-3 mr-1" />
+                      )}
+                      {profile.privacyMemberSince === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                    </button>
+                  )}
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {formatters.date(new Date(profile.createdAt))}
+                </dd>
+              </div>
+            )}
             
             {profile.lastActive && isFieldVisible(profile.privacyLastActive) && (
               <div>
@@ -606,31 +631,32 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
         <div>
           <dl className="space-y-4">
             {/* Combined degree + education field */}
-            <div>
-              <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                <span>Utdanning</span>
-                {!isPublicView && (
-                  <button
-                    onClick={() => handlePrivacyToggle('privacyEducation', profile.privacyEducation)}
-                    disabled={saving === 'privacyEducation'}
-                    className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
-                      profile.privacyEducation === 'PUBLIC' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={profile.privacyEducation === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
-                  >
-                    {saving === 'privacyEducation' ? (
-                      <LoadingSpinner className="w-3 h-3 mr-1" />
-                    ) : profile.privacyEducation === 'PUBLIC' ? (
-                      <EyeIcon className="w-3 h-3 mr-1" />
-                    ) : (
-                      <EyeSlashIcon className="w-3 h-3 mr-1" />
-                    )}
-                    {profile.privacyEducation === 'PUBLIC' ? 'Offentlig' : 'Privat'}
-                  </button>
-                )}
-              </dt>
+            {isFieldVisible(profile.privacyEducation) && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
+                  <span>Utdanning</span>
+                  {!isPublicView && (
+                    <button
+                      onClick={() => handlePrivacyToggle('privacyEducation', profile.privacyEducation)}
+                      disabled={saving === 'privacyEducation'}
+                      className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
+                        profile.privacyEducation === 'PUBLIC' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={profile.privacyEducation === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                    >
+                      {saving === 'privacyEducation' ? (
+                        <LoadingSpinner className="w-3 h-3 mr-1" />
+                      ) : profile.privacyEducation === 'PUBLIC' ? (
+                        <EyeIcon className="w-3 h-3 mr-1" />
+                      ) : (
+                        <EyeSlashIcon className="w-3 h-3 mr-1" />
+                      )}
+                      {profile.privacyEducation === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                    </button>
+                  )}
+                </dt>
               {editingField === 'education' ? (
                 <dd className="mt-1 space-y-2">
                   <div className="flex space-x-2">
@@ -702,24 +728,26 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                   )}
                 </dd>
               )}
-            </div>
+              </div>
+            )}
 
             {renderEditableField('certifications', 'Sertifiseringer', profile.certifications, 'textarea', undefined, 'privacyCertifications')}
             
             {/* Portfolio/Supporting Documents Section */}
-            <div>
-              <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                <span>Tilleggsmateriale</span>
-                {!isPublicView && (
-                  <button
-                    onClick={() => handlePrivacyToggle('privacyDocuments', profile.privacyDocuments)}
-                    disabled={saving === 'privacyDocuments'}
-                    className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
-                      profile.privacyDocuments === 'PUBLIC' 
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                    title={profile.privacyDocuments === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+            {isFieldVisible(profile.privacyDocuments) && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
+                  <span>Tilleggsmateriale</span>
+                  {!isPublicView && (
+                    <button
+                      onClick={() => handlePrivacyToggle('privacyDocuments', profile.privacyDocuments)}
+                      disabled={saving === 'privacyDocuments'}
+                      className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
+                        profile.privacyDocuments === 'PUBLIC' 
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                      title={profile.privacyDocuments === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
                   >
                     {saving === 'privacyDocuments' ? (
                       <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -765,7 +793,8 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                   )}
                 </div>
               </dd>
-            </div>
+              </div>
+            )}
 
             {/* Activity Stats */}
             <div className="mt-6">
