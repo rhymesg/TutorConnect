@@ -2,7 +2,13 @@
 
 import { useActionState, useState, useOptimistic, useRef } from 'react';
 import { User, NorwegianRegion, Gender } from '@prisma/client';
-import { PhotoIcon, XMarkIcon, Save, AlertTriangle, CheckCircle } from 'lucide-react';
+import { 
+  PhotoIcon, 
+  XMarkIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  DocumentArrowUpIcon
+} from '@heroicons/react/24/outline';
 import { FormField } from '@/components/auth/FormField';
 import { FormError } from '@/components/auth/FormError';
 import { RegionSelector } from '@/components/auth/RegionSelector';
@@ -126,7 +132,7 @@ export function ProfileEdit19({ profile, onSave, onCancel }: Props) {
             
             {profileState?.success && (
               <div className="flex items-center text-green-700">
-                <CheckCircle className="w-4 h-4 mr-1" />
+                <CheckCircleIcon className="w-4 h-4 mr-1" />
                 <span>Profil oppdatert</span>
               </div>
             )}
@@ -140,7 +146,7 @@ export function ProfileEdit19({ profile, onSave, onCancel }: Props) {
         {profileState?.error && (
           <div className="rounded-lg bg-red-50 border border-red-200 p-4">
             <div className="flex items-center">
-              <AlertTriangle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
+              <ExclamationTriangleIcon className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-red-800">
                   Kunne ikke lagre profil
@@ -391,7 +397,7 @@ export function ProfileEdit19({ profile, onSave, onCancel }: Props) {
               className="inline-flex items-center px-6 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
-              <Save className="w-4 h-4 mr-2" />
+              <DocumentArrowUpIcon className="w-4 h-4 mr-2" />
               Lagre endringer
             </button>
           </div>

@@ -241,15 +241,6 @@ export function ProfileView({ profile, onEditClick, isPublicView = false }: Prop
           <p className="mt-1 text-sm text-gray-500">
             Legg til en biografi og last opp dokumenter for å fullføre profilen din.
           </p>
-          <div className="mt-6">
-            <button
-              onClick={onEditClick}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              <PencilIcon className="h-4 w-4 mr-2" />
-              Rediger profil
-            </button>
-          </div>
         </div>
       )}
     </div>

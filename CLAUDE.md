@@ -119,6 +119,12 @@ TutorConnect/
 - **Email**: mail.tutorconnect.no setup available
 - **Account**: rhymesg@gmail.com
 
+## Test Account Information
+- **Email**: tester@tutorconnect.no
+- **Password**: Qmffor1802!
+- **Purpose**: Development testing, E2E tests, manual testing
+- **Note**: Password stored in .env.local as TEST_EMAIL and TEST_PASSWORD
+
 ## Contact Information
 - **Main Contact**: contact@tutorconnect.no (all inquiries)
 - **Automated Emails**: noreply@tutorconnect.no (notifications, verification, system emails)

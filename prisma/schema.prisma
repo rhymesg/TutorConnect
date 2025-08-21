@@ -8,6 +8,258 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id                   String            @id @default(cuid())
+  email                String            @unique
+  password             String
+  emailVerified        DateTime?
+  verificationToken    String?
+  name                 String
+  region               NorwegianRegion
+  postalCode           String?
+  gender               Gender            @default(PREFER_NOT_TO_SAY)
+  birthYear            Int?
+  profileImage         String?
+  degree               String?
+  education            String?
+  certifications       String?
+  bio                  String?
+  privacyGender        PrivacySetting    @default(PUBLIC)
+  privacyAge           PrivacySetting    @default(PUBLIC)
+  privacyDocuments     PrivacySetting    @default(PUBLIC)
+  privacyContact       PrivacySetting    @default(PUBLIC)
+  privacyEducation     PrivacySetting    @default(PUBLIC)
+  privacyCertifications PrivacySetting   @default(PUBLIC)
+  privacyLocation      PrivacySetting    @default(PUBLIC)
+  privacyPostalCode    PrivacySetting    @default(PUBLIC)
+  privacyMemberSince   PrivacySetting    @default(PUBLIC)
+  privacyLastActive    PrivacySetting    @default(PUBLIC)
+  privacyActivity      PrivacySetting    @default(PUBLIC)
+  privacyStats         PrivacySetting    @default(PUBLIC)
+  teacherSessions      Int               @default(0)
+  teacherStudents      Int               @default(0)
+  studentSessions      Int               @default(0)
+  studentTeachers      Int               @default(0)
+  isActive             Boolean           @default(true)
+  lastActive           DateTime?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  failedLoginAttempts  Int?              @default(0)
+  lockedUntil          DateTime?
+  chatParticipants     ChatParticipant[]
+  reportedChats        ChatReport[]      @relation("ChatReportReporter")
+  reviewedReports      ChatReport[]      @relation("ChatReportReviewer")
+  documents            Document[]
+  receivedInfoRequests InfoRequest[]     @relation("InfoRequestReceiver")
+  sentInfoRequests     InfoRequest[]     @relation("InfoRequestSender")
+  sentMessages         Message[]
+  posts                Post[]
+  sessions             UserSession[]
+
+  @@index([region, isActive])
+  @@index([email])
+  @@index([lastActive])
+  @@map("users")
+}
+
+model Post {
+  id                String          @id @default(cuid())
+  type              PostType
+  subject           Subject
+  ageGroups         AgeGroup[]
+  title             String
+  description       String
+  availableDays     String[]
+  availableTimes    String[]
+  preferredSchedule String?
+  location          NorwegianRegion
+  specificLocation  String?
+  hourlyRate        Decimal?        @db.Decimal(8, 2)
+  hourlyRateMin     Decimal?        @db.Decimal(8, 2)
+  hourlyRateMax     Decimal?        @db.Decimal(8, 2)
+  currency          String          @default("NOK")
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  userId            String
+  chats             Chat[]
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([type, subject, location, isActive])
+  @@index([userId, isActive])
+  @@index([createdAt])
+  @@index([location, subject])
+  @@map("posts")
+}
+
+model Chat {
+  id            String            @id @default(cuid())
+  relatedPostId String?
+  isActive      Boolean           @default(true)
+  lastMessageAt DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  appointments  Appointment[]
+  participants  ChatParticipant[]
+  reports       ChatReport[]
+  relatedPost   Post?             @relation(fields: [relatedPostId], references: [id])
+  messages      Message[]
+
+  @@index([relatedPostId])
+  @@index([lastMessageAt])
+  @@map("chats")
+}
+
+model ChatParticipant {
+  id          String    @id @default(cuid())
+  chatId      String
+  userId      String
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  isActive    Boolean   @default(true)
+  unreadCount Int       @default(0)
+  lastReadAt  DateTime?
+  chat        Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatId, userId])
+  @@index([userId, isActive])
+  @@index([chatId, isActive])
+  @@map("chat_participants")
+}
+
+model Message {
+  id               String       @id @default(cuid())
+  content          String
+  content_search   String?
+  type             MessageType  @default(TEXT)
+  chatId           String
+  senderId         String
+  isEdited         Boolean      @default(false)
+  editedAt         DateTime?
+  sentAt           DateTime     @default(now())
+  appointmentId    String?
+  replyToMessageId String?
+  appointment      Appointment? @relation(fields: [appointmentId], references: [id])
+  chat             Chat         @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  replyTo          Message?     @relation("MessageReply", fields: [replyToMessageId], references: [id])
+  replies          Message[]    @relation("MessageReply")
+  sender           User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([chatId, sentAt])
+  @@index([senderId])
+  @@index([replyToMessageId])
+  @@index([content_search])
+  @@map("messages")
+}
+
+model Appointment {
+  id                 String            @id @default(cuid())
+  chatId             String
+  dateTime           DateTime
+  location           String
+  specificLocation   String?
+  duration           Int               @default(60)
+  status             AppointmentStatus @default(PENDING)
+  teacherReady       Boolean           @default(false)
+  studentReady       Boolean           @default(false)
+  bothCompleted      Boolean           @default(false)
+  reminderTime       Int?
+  notes              String?
+  cancellationReason String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  chat               Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  messages           Message[]
+
+  @@index([chatId, status])
+  @@index([dateTime, status])
+  @@map("appointments")
+}
+
+model Document {
+  id                 String             @id @default(cuid())
+  userId             String
+  documentType       DocumentType
+  fileName           String
+  fileUrl            String
+  fileSize           Int?
+  mimeType           String?
+  documentContent    String?
+  encryptionMetadata String?
+  verificationStatus VerificationStatus @default(PENDING)
+  verifiedAt         DateTime?
+  verificationNotes  String?
+  uploadedAt         DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, documentType])
+  @@index([verificationStatus])
+  @@map("documents")
+}
+
+model InfoRequest {
+  id              String    @id @default(cuid())
+  senderId        String
+  receiverId      String
+  requestType     String
+  message         String?
+  status          String    @default("PENDING")
+  responseMessage String?
+  requestedAt     DateTime  @default(now())
+  respondedAt     DateTime?
+  receiver        User      @relation("InfoRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender          User      @relation("InfoRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@unique([senderId, receiverId, requestType])
+  @@index([receiverId, status])
+  @@index([senderId])
+  @@map("info_requests")
+}
+
+model ChatReport {
+  id          String    @id @default(cuid())
+  chatId      String
+  reporterId  String
+  reason      String
+  description String?
+  messageIds  String[]
+  status      String    @default("PENDING")
+  priority    String    @default("MEDIUM")
+  reviewedBy  String?
+  reviewNotes String?
+  actionTaken String?
+  createdAt   DateTime  @default(now())
+  reviewedAt  DateTime?
+  resolvedAt  DateTime?
+  chat        Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  reporter    User      @relation("ChatReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reviewer    User?     @relation("ChatReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([chatId, status])
+  @@index([reporterId])
+  @@index([status, priority])
+  @@index([createdAt])
+  @@map("chat_reports")
+}
+
+model UserSession {
+  id           String   @id @default(cuid())
+  userId       String
+  ipAddress    String
+  userAgent    String
+  createdAt    DateTime @default(now())
+  lastActivity DateTime @default(now())
+  requestCount Int      @default(1)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, ipAddress])
+  @@index([userId, lastActivity])
+  @@index([ipAddress])
+  @@map("user_sessions")
+}
+
 enum Gender {
   MALE
   FEMALE
@@ -105,296 +357,4 @@ enum NorwegianRegion {
   NORDLAND
   TROMS
   FINNMARK
-}
-
-model User {
-  id                String   @id @default(cuid())
-  email             String   @unique
-  password          String
-  emailVerified     DateTime?
-  verificationToken String?
-  
-  name              String
-  region            NorwegianRegion
-  postalCode        String?
-  gender            Gender              @default(PREFER_NOT_TO_SAY)
-  birthYear         Int?
-  
-  
-  profileImage      String?
-  school            String?
-  degree            String?
-  certifications    String?
-  bio               String?
-  
-  privacyGender     PrivacySetting      @default(PUBLIC)
-  privacyAge        PrivacySetting      @default(PUBLIC)
-  privacyDocuments  PrivacySetting      @default(ON_REQUEST)
-  privacyContact    PrivacySetting      @default(ON_REQUEST)
-  
-  isActive          Boolean             @default(true)
-  lastActive        DateTime?
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  posts             Post[]
-  sentMessages      Message[]
-  chatParticipants  ChatParticipant[]
-  documents         Document[]
-  sentInfoRequests  InfoRequest[]       @relation("InfoRequestSender")
-  receivedInfoRequests InfoRequest[]    @relation("InfoRequestReceiver")
-  reportedChats     ChatReport[]        @relation("ChatReportReporter")
-  reviewedReports   ChatReport[]        @relation("ChatReportReviewer")
-  sessions          UserSession[]
-  
-  // Security fields for authentication
-  failedLoginAttempts Int?              @default(0)
-  lockedUntil       DateTime?
-  
-  @@map("users")
-  @@index([region, isActive])
-  @@index([email])
-  @@index([lastActive])
-}
-
-model Post {
-  id                String      @id @default(cuid())
-  type              PostType
-  subject           Subject
-  ageGroups         AgeGroup[]
-  
-  title             String
-  description       String
-  
-  availableDays     String[]
-  availableTimes    String[]
-  preferredSchedule String?
-  
-  location          NorwegianRegion
-  specificLocation  String?
-  
-  hourlyRate        Decimal?    @db.Decimal(8,2)
-  hourlyRateMin     Decimal?    @db.Decimal(8,2)
-  hourlyRateMax     Decimal?    @db.Decimal(8,2)
-  currency          String      @default("NOK")
-  
-  isActive          Boolean     @default(true)
-  
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
-  
-  userId            String
-  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  chats             Chat[]
-  
-  @@map("posts")
-  @@index([type, subject, location, isActive])
-  @@index([userId, isActive])
-  @@index([createdAt])
-  @@index([location, subject])
-}
-
-model Chat {
-  id              String            @id @default(cuid())
-  relatedPostId   String?
-  relatedPost     Post?             @relation(fields: [relatedPostId], references: [id], onDelete: SetNull)
-  
-  isActive        Boolean           @default(true)
-  lastMessageAt   DateTime?
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
-  participants    ChatParticipant[]
-  messages        Message[]
-  appointments    Appointment[]
-  reports         ChatReport[]
-  
-  @@map("chats")
-  @@index([relatedPostId])
-  @@index([lastMessageAt])
-}
-
-model ChatParticipant {
-  id            String    @id @default(cuid())
-  chatId        String
-  userId        String
-  
-  joinedAt      DateTime  @default(now())
-  leftAt        DateTime?
-  isActive      Boolean   @default(true)
-  
-  unreadCount   Int       @default(0)
-  lastReadAt    DateTime?
-  
-  chat          Chat      @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([chatId, userId])
-  @@map("chat_participants")
-  @@index([userId, isActive])
-  @@index([chatId, isActive])
-}
-
-model Message {
-  id            String      @id @default(cuid())
-  content       String                  // Will be encrypted for sensitive messages
-  content_search String?                // Search hash for encrypted content
-  type          MessageType @default(TEXT)
-  
-  chatId        String
-  senderId      String
-  
-  isEdited      Boolean     @default(false)
-  editedAt      DateTime?
-  
-  sentAt        DateTime    @default(now())
-  
-  appointmentId String?
-  appointment   Appointment? @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
-  
-  replyToMessageId String?
-  replyTo       Message?    @relation("MessageReply", fields: [replyToMessageId], references: [id], onDelete: SetNull)
-  replies       Message[]   @relation("MessageReply")
-  
-  chat          Chat        @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  sender        User        @relation(fields: [senderId], references: [id], onDelete: Cascade)
-  
-  @@map("messages")
-  @@index([chatId, sentAt])
-  @@index([senderId])
-  @@index([replyToMessageId])
-  @@index([content_search])
-}
-
-model Appointment {
-  id              String            @id @default(cuid())
-  chatId          String
-  
-  dateTime        DateTime
-  location        String
-  specificLocation String?
-  duration        Int               @default(60) // minutes
-  
-  status          AppointmentStatus @default(PENDING)
-  teacherReady    Boolean           @default(false)
-  studentReady    Boolean           @default(false)
-  bothCompleted   Boolean           @default(false)
-  
-  reminderTime    Int?              // minutes before appointment
-  
-  notes           String?
-  cancellationReason String?
-  
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
-  chat            Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  messages        Message[]
-  
-  @@map("appointments")
-  @@index([chatId, status])
-  @@index([dateTime, status])
-}
-
-model Document {
-  id              String            @id @default(cuid())
-  userId          String
-  
-  documentType    DocumentType
-  fileName        String
-  fileUrl         String
-  fileSize        Int?
-  mimeType        String?
-  
-  // Encrypted document metadata
-  documentContent String?                    // Encrypted document content/metadata
-  encryptionMetadata String?                // JSON string of encryption parameters
-  
-  verificationStatus VerificationStatus @default(PENDING)
-  verifiedAt      DateTime?
-  verificationNotes String?
-  
-  uploadedAt      DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
-  
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@map("documents")
-  @@index([userId, documentType])
-  @@index([verificationStatus])
-}
-
-model InfoRequest {
-  id              String            @id @default(cuid())
-  senderId        String
-  receiverId      String
-  
-  requestType     String            // "contact", "documents", "detailed_profile"
-  message         String?
-  
-  status          String            @default("PENDING") // PENDING, APPROVED, REJECTED
-  responseMessage String?
-  
-  requestedAt     DateTime          @default(now())
-  respondedAt     DateTime?
-  
-  sender          User              @relation("InfoRequestSender", fields: [senderId], references: [id], onDelete: Cascade)
-  receiver        User              @relation("InfoRequestReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
-  
-  @@map("info_requests")
-  @@index([receiverId, status])
-  @@index([senderId])
-  @@unique([senderId, receiverId, requestType])
-}
-
-model ChatReport {
-  id              String            @id @default(cuid())
-  chatId          String
-  reporterId      String
-  
-  reason          String            // harassment, spam, scam, inappropriate_content, fake_profile, other
-  description     String?
-  messageIds      String[]          // Array of message IDs being reported
-  
-  status          String            @default("PENDING") // PENDING, UNDER_REVIEW, RESOLVED, DISMISSED
-  priority        String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
-  
-  reviewedBy      String?           // Admin who reviewed the report
-  reviewNotes     String?
-  actionTaken     String?           // Action taken by moderator
-  
-  createdAt       DateTime          @default(now())
-  reviewedAt      DateTime?
-  resolvedAt      DateTime?
-  
-  chat            Chat              @relation(fields: [chatId], references: [id], onDelete: Cascade)
-  reporter        User              @relation("ChatReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
-  reviewer        User?             @relation("ChatReportReviewer", fields: [reviewedBy], references: [id], onDelete: SetNull)
-  
-  @@map("chat_reports")
-  @@index([chatId, status])
-  @@index([reporterId])
-  @@index([status, priority])
-  @@index([createdAt])
-}
-
-model UserSession {
-  id              String            @id @default(cuid())
-  userId          String
-  ipAddress       String
-  userAgent       String
-  
-  createdAt       DateTime          @default(now())
-  lastActivity    DateTime          @default(now())
-  requestCount    Int               @default(1)
-  
-  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  @@unique([userId, ipAddress])
-  @@map("user_sessions")
-  @@index([userId, lastActivity])
-  @@index([ipAddress])
 }
