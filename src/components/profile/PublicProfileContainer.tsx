@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiCall } from '@/hooks/useApiCall';
-import { ProfileView } from './ProfileView';
+import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { User } from '@prisma/client';
@@ -13,6 +13,18 @@ interface PublicProfileData extends User {
   privacyAge: string;
   privacyDocuments: string;
   privacyContact: string;
+  privacyEducation: string;
+  privacyCertifications: string;
+  privacyLocation: string;
+  privacyPostalCode: string;
+  privacyMemberSince: string;
+  privacyLastActive: string;
+  privacyActivity: string;
+  privacyStats: string;
+  teacherSessions: number;
+  teacherStudents: number;
+  studentSessions: number;
+  studentTeachers: number;
   completeness: {
     percentage: number;
     missingFields: string[];
@@ -39,8 +51,7 @@ interface Props {
 
 export function PublicProfileContainer({ userId }: Props) {
   const { user: currentUser } = useAuth();
-  const [profileData, setProfileData] = useState<PublicProfileData | null>(null);
-  const { execute: fetchProfile, loading, error } = useApiCall<PublicProfileData>();
+  const { execute: fetchProfile, data: profileData, isLoading: loading, error } = useApiCall<PublicProfileData>();
 
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.id === userId;
@@ -48,17 +59,16 @@ export function PublicProfileContainer({ userId }: Props) {
   // Fetch profile data
   useEffect(() => {
     if (userId) {
-      const endpoint = isOwnProfile ? '/api/profile' : `/api/profile/${userId}`;
+      // Always use public profile endpoint to show public view
+      const endpoint = `/api/profile/${userId}`;
       
       fetchProfile(endpoint, {
         method: 'GET',
-      }).then((data) => {
-        if (data?.success) {
-          setProfileData(data.data);
-        }
       });
     }
-  }, [userId, isOwnProfile, fetchProfile]);
+  }, [userId, fetchProfile]);
+
+  console.log('Debug - loading:', loading, 'error:', error, 'profileData:', profileData); // Debug log
 
   if (loading) {
     return (
@@ -69,6 +79,7 @@ export function PublicProfileContainer({ userId }: Props) {
   }
 
   if (error) {
+    console.log('Error state triggered:', error); // Debug log
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <ErrorMessage 
@@ -84,6 +95,7 @@ export function PublicProfileContainer({ userId }: Props) {
   }
 
   if (!profileData) {
+    console.log('No profile data - this is the current issue'); // Debug log
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <ErrorMessage 
@@ -94,21 +106,47 @@ export function PublicProfileContainer({ userId }: Props) {
     );
   }
 
-  // Redirect to own profile if viewing self
-  if (isOwnProfile) {
-    window.location.href = '/profile';
-    return null;
-  }
+  // Allow viewing own profile in public view mode
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
-          <ProfileView 
-            profile={profileData}
-            onEditClick={() => {}} // No edit functionality for public view
-            isPublicView={true}
-          />
+      {/* Simple header for navigation */}
+      <div className="bg-white border-b border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => window.history.length > 1 ? window.history.back() : window.close()}
+              className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg border border-gray-300 transition-colors"
+            >
+              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              Tilbake
+            </button>
+            <span className="text-sm text-gray-500">Offentlig profil</span>
+          </div>
+          <button
+            onClick={() => window.close()}
+            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg border border-gray-300 transition-colors"
+          >
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+            Lukk
+          </button>
+        </div>
+      </div>
+      
+      {/* Profile content */}
+      <div className="flex items-center justify-center p-4">
+        <div className="w-full max-w-4xl">
+          <div className="bg-white rounded-lg shadow-sm">
+            <InlineProfileView 
+              profile={profileData}
+              onProfileUpdate={() => {}} // No update functionality for public view
+              isPublicView={true}
+            />
+          </div>
         </div>
       </div>
     </div>

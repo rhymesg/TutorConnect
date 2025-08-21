@@ -132,27 +132,71 @@ export function applyPrivacySettings(
     delete filteredProfile.birthYear;
   }
   
+  // Apply location privacy
+  if (profile.privacyLocation === PrivacySetting.PRIVATE || 
+      (profile.privacyLocation === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.region;
+  }
+  
+  // Apply postal code privacy
+  if (profile.privacyPostalCode === PrivacySetting.PRIVATE || 
+      (profile.privacyPostalCode === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.postalCode;
+  }
+  
+  // Apply education privacy
+  if (profile.privacyEducation === PrivacySetting.PRIVATE || 
+      (profile.privacyEducation === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.degree;
+    delete filteredProfile.education;
+  }
+  
+  // Apply certifications privacy
+  if (profile.privacyCertifications === PrivacySetting.PRIVATE || 
+      (profile.privacyCertifications === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.certifications;
+  }
+  
   // Apply document privacy
   if (profile.privacyDocuments === PrivacySetting.PRIVATE || 
       (profile.privacyDocuments === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
     delete filteredProfile.documents;
-    delete filteredProfile.certifications;
-    delete filteredProfile.school;
-    delete filteredProfile.degree;
   }
   
   // Apply contact privacy
   if (profile.privacyContact === PrivacySetting.PRIVATE || 
       (profile.privacyContact === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
     delete filteredProfile.email;
-    delete filteredProfile.postalCode;
   }
   
-  // Always hide privacy settings and sensitive data from non-owners
-  delete filteredProfile.privacyGender;
-  delete filteredProfile.privacyAge;
-  delete filteredProfile.privacyDocuments;
-  delete filteredProfile.privacyContact;
+  // Apply member since privacy
+  if (profile.privacyMemberSince === PrivacySetting.PRIVATE || 
+      (profile.privacyMemberSince === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.createdAt;
+  }
+  
+  // Apply last active privacy
+  if (profile.privacyLastActive === PrivacySetting.PRIVATE || 
+      (profile.privacyLastActive === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.lastActive;
+  }
+  
+  // Apply activity privacy
+  if (profile.privacyActivity === PrivacySetting.PRIVATE || 
+      (profile.privacyActivity === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.posts;
+  }
+  
+  // Apply stats privacy
+  if (profile.privacyStats === PrivacySetting.PRIVATE || 
+      (profile.privacyStats === PrivacySetting.ON_REQUEST && !hasRequestPermission)) {
+    delete filteredProfile.teacherSessions;
+    delete filteredProfile.teacherStudents;
+    delete filteredProfile.studentSessions;
+    delete filteredProfile.studentTeachers;
+  }
+  
+  // Keep privacy settings for frontend filtering, but hide sensitive data from non-owners
   delete filteredProfile.emailVerified;
   delete filteredProfile.verificationToken;
   delete filteredProfile.password;

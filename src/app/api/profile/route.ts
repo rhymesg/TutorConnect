@@ -11,7 +11,7 @@ const prisma = new PrismaClient();
 export async function GET(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
@@ -129,7 +129,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     // Get token from cookies
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const accessToken = cookieStore.get('access_token')?.value;
 
     if (!accessToken) {
