@@ -41,6 +41,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Update lastActive on successful login
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { lastActive: new Date() }
+    });
+
     // Generate token
     const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
     const accessToken = await new SignJWT({ sub: user.id })

@@ -17,7 +17,7 @@ model User {
   name                 String
   region               NorwegianRegion
   postalCode           String?
-  gender               Gender            @default(PREFER_NOT_TO_SAY)
+  gender               Gender?
   birthYear            Int?
   profileImage         String?
   degree               String?
