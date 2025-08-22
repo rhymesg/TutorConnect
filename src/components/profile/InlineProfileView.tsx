@@ -79,7 +79,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   };
 
   const formatGender = (gender: string | null) => {
-    if (!gender) return 'Ikke oppgitt';
+    if (!gender) return null;
     const genderMap = {
       MALE: 'Mann',
       FEMALE: 'Kvinne',
@@ -594,7 +594,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               </div>
             )}
             
-            {profile.lastActive && isFieldVisible(profile.privacyLastActive) && (
+            {isFieldVisible(profile.privacyLastActive) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
                   <span>Sist aktiv</span>
@@ -621,7 +621,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                   )}
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {formatters.date(new Date(profile.lastActive))}
+                  {profile.lastActive ? formatters.date(new Date(profile.lastActive)) : <span className="text-gray-400 italic">Ikke oppgitt</span>}
                 </dd>
               </div>
             )}
@@ -761,27 +761,57 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 )}
               </dt>
               <dd className="mt-2">
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
-                  <DocumentTextIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <div className="text-sm text-gray-600 mb-2">
-                    <span className="font-medium">Last opp tilleggsmateriale</span>
+                {isPublicView ? (
+                  // Public view - simple file list placeholder
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    {profile.documents && profile.documents.length > 0 ? (
+                      <div className="space-y-2">
+                        {profile.documents.map((doc, index) => (
+                          <div key={doc.id || index} className="flex items-center space-x-2 p-2 bg-white rounded border">
+                            <DocumentTextIcon className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-700 truncate">{doc.fileName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-sm text-gray-500 italic">
+                        Ingen filer tilgjengelig
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-gray-500">
-                    CV, portefølje, vitnemål, sertifikater, prosjekteksempler
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    PDF, DOC, DOCX, JPG, PNG • Maks 10MB per fil
-                  </p>
-                  
-                  {/* Placeholder for future files */}
-                  <div className="mt-4 text-xs text-gray-400">
-                    <div className="flex items-center justify-center space-x-1">
-                      <span>📄</span>
-                      <span>Ingen filer lastet opp ennå</span>
+                ) : (
+                  // Private view - upload interface
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
+                    <DocumentTextIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                    <div className="text-sm text-gray-600 mb-2">
+                      <span className="font-medium">Last opp tilleggsmateriale</span>
                     </div>
-                  </div>
-                  
-                  {!isPublicView && (
+                    <p className="text-xs text-gray-500">
+                      CV, portefølje, vitnemål, sertifikater, prosjekteksempler
+                    </p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      PDF, DOC, DOCX, JPG, PNG • Maks 10MB per fil
+                    </p>
+                    
+                    {/* Show uploaded files if any */}
+                    {profile.documents && profile.documents.length > 0 ? (
+                      <div className="mt-4 space-y-2">
+                        {profile.documents.map((doc, index) => (
+                          <div key={doc.id || index} className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+                            <DocumentTextIcon className="h-4 w-4" />
+                            <span>{doc.fileName}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-4 text-xs text-gray-400">
+                        <div className="flex items-center justify-center space-x-1">
+                          <span>📄</span>
+                          <span>Ingen filer lastet opp ennå</span>
+                        </div>
+                      </div>
+                    )}
+                    
                     <button
                       type="button" 
                       disabled
@@ -790,8 +820,8 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       <DocumentArrowUpIcon className="h-4 w-4 mr-1" />
                       Velg filer (kommer snart)
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </dd>
               </div>
             )}
@@ -860,11 +890,6 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               )}
             </div>
             
-            {!profile.degree && !profile.education && !profile.certifications && !editingField && (
-              <p className="text-sm text-gray-500 italic">
-                Ingen utdanningsinformasjon lagt til enda.
-              </p>
-            )}
           </dl>
         </div>
       </div>

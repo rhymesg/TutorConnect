@@ -81,7 +81,7 @@ function createVerificationEmailTemplate(name: string, verificationToken: string
         
         <p style="color: #666; font-size: 14px;">
           Med vennlig hilsen,<br>
-          TutorConnect-teamet
+          TutorConnect
         </p>
       </body>
       </html>
@@ -96,7 +96,7 @@ function createVerificationEmailTemplate(name: string, verificationToken: string
       Denne lenken utløper om 24 timer. Hvis du ikke ba om denne e-posten, kan du ignorere den.
 
       Med vennlig hilsen,
-      TutorConnect-teamet
+      TutorConnect
     `
   };
 }
@@ -147,7 +147,7 @@ function createPasswordResetEmailTemplate(name: string, resetToken: string): Ema
         
         <p style="color: #666; font-size: 14px;">
           Med vennlig hilsen,<br>
-          TutorConnect-teamet
+          TutorConnect
         </p>
       </body>
       </html>
@@ -165,7 +165,7 @@ function createPasswordResetEmailTemplate(name: string, resetToken: string): Ema
       • Passordet ditt endres ikke før du klikker på lenken og oppretter et nytt passord
 
       Med vennlig hilsen,
-      TutorConnect-teamet
+      TutorConnect
     `
   };
 }
@@ -273,7 +273,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
         
         <p style="color: #666; font-size: 14px;">
           Med vennlig hilsen,<br>
-          TutorConnect-teamet
+          TutorConnect
         </p>
       </body>
       </html>
@@ -294,7 +294,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
       Har du spørsmål? Ta gjerne kontakt med oss på contact@tutorconnect.no
 
       Med vennlig hilsen,
-      TutorConnect-teamet
+      TutorConnect
     `
   };
 

@@ -3,8 +3,9 @@
 This command handles git commits for TutorConnect project with proper staging and commit message formatting.
 
 ## Commit Message Format
-- **One line only** - Keep commit messages concise and to a single line
-- **Title**: `[CATEGORY, CATEGORY2, ...] Brief description of change` (multiple categories allowed)
+- **SINGLE LINE ONLY** - Never use multi-line commit messages
+- **NO DETAILED BODY** - Only write the title line, never add detailed explanations
+- **Format**: `[CATEGORY, CATEGORY2, ...] Brief description of change`
 - **NO SIGNATURES**: Do not include "Generated with Claude Code" or similar signatures
 
 ### Task ID Guidelines
@@ -29,8 +30,9 @@ git commit -m "[ARCH] Setup Next.js 14 project foundation"
 ## Files to Stage
 The command should:
 1. Check git status for untracked and modified files
-2. Stage relevant project files
-3. **EXCLUDE**: temporary files, secret files, .env files, API keys, passwords
+2. **Stage ALL relevant changed files together** - Don't commit files one by one
+3. **EXCLUDE**: temporary files, secret files, .env files, API keys, passwords, example data
 4. Respect .gitignore patterns
-5. Create descriptive commit message based on completed task
-6. Never add signatures like "Generated with Claude Code"
+5. Use `git add .` for all files or selectively add multiple files at once
+6. Create descriptive commit message based on all completed changes
+7. Never add signatures like "Generated with Claude Code"
