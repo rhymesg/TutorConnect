@@ -49,7 +49,6 @@ export default async function PostsPage({
               Finn din perfekte lærer eller student
             </h1>
             <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
-              Søk blant tusenvis av kvalifiserte lærere og motiverte studenter i hele Norge. 
               Fra matematikk til musikk - finn den perfekte matchen for dine behov.
             </p>
           </div>

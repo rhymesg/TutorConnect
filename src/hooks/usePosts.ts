@@ -73,7 +73,7 @@ export function usePosts(options: UsePostsOptions = {}): UsePostsReturn {
   const observer = useRef<IntersectionObserver>();
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const { apiCall, isLoading } = useApiCall();
+  const { execute: apiCall, isLoading } = useApiCall();
 
   // Cache utilities
   const getCachedPosts = useCallback((key: string): PaginatedPosts | null => {
@@ -116,32 +116,38 @@ export function usePosts(options: UsePostsOptions = {}): UsePostsReturn {
         }
       }
 
-      const response = await apiCall<PaginatedPosts>({
-        method: 'GET',
-        endpoint: '/api/posts',
-        params: filters,
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
       });
+      
+      const url = `/api/posts?${queryParams.toString()}`;
+      const response = await apiCall(url, { method: 'GET' });
 
-      if (response.success && response.data) {
+      if (response) {
+        const data = response as PaginatedPosts;
         if (append) {
-          setPosts(prev => [...prev, ...response.data.data]);
+          setPosts(prev => [...prev, ...data.data]);
         } else {
-          setPosts(response.data.data);
+          setPosts(data.data);
           // Smooth scroll to top when filters change
           if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
         
-        setPagination(response.data.pagination);
+        setPagination(data.pagination);
         setRetryCount(0);
 
         // Cache the result
         if (cacheKeyForRequest && !append) {
-          setCachedPosts(cacheKeyForRequest, response.data);
+          setCachedPosts(cacheKeyForRequest, data);
         }
       } else {
-        throw new Error(response.error || 'Failed to fetch posts');
+        throw new Error('Failed to fetch posts');
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -246,19 +252,16 @@ export function usePosts(options: UsePostsOptions = {}): UsePostsReturn {
 // Hook for individual post data
 export function usePost(postId: string) {
   const [post, setPost] = useState<PostWithDetails | null>(null);
-  const { apiCall, isLoading } = useApiCall();
+  const { execute: apiCall, isLoading } = useApiCall();
 
   const fetchPost = useCallback(async () => {
     if (!postId) return;
 
     try {
-      const response = await apiCall<PostWithDetails>({
-        method: 'GET',
-        endpoint: `/api/posts/${postId}`,
-      });
+      const response = await apiCall(`/api/posts/${postId}`, { method: 'GET' });
 
-      if (response.success && response.data) {
-        setPost(response.data);
+      if (response) {
+        setPost(response as PostWithDetails);
       }
     } catch (error) {
       console.error('Error fetching post:', error);

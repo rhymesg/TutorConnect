@@ -62,7 +62,7 @@ export default function PostListEnhanced({
   const lastPostElementRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
-  const { apiCall, isLoading } = useApiCall();
+  const { execute: apiCall, isLoading } = useApiCall();
 
   // Load search history from localStorage
   useEffect(() => {
@@ -105,26 +105,40 @@ export default function PostListEnhanced({
     try {
       setHasError(false);
       
-      const response = await apiCall<PaginatedPosts>({
-        method: 'GET',
-        endpoint: '/api/posts',
-        params: newFilters,
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+      Object.entries(newFilters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
       });
+      
+      const url = `/api/posts?${queryParams.toString()}`;
+      const response = await apiCall(url, { method: 'GET' });
 
-      if (response.success && response.data) {
+      if (response) {
+        const data = response as PaginatedPosts;
+        const postsData = data.data || [];
         if (append) {
-          setPosts(prev => [...prev, ...response.data.data]);
+          setPosts(prev => [...(prev || []), ...postsData]);
         } else {
-          setPosts(response.data.data);
+          setPosts(postsData);
           // Scroll to top when filters change (not on initial load)
           if (newFilters !== filters && typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
-        setPagination(response.data.pagination);
+        setPagination(data.pagination || {
+          page: 1,
+          limit: POSTS_PER_PAGE,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        });
         setRetryCount(0);
       } else {
-        throw new Error(response.error || 'Failed to fetch posts');
+        throw new Error('Failed to fetch posts');
       }
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -143,10 +157,10 @@ export default function PostListEnhanced({
 
   // Load more posts for infinite scroll
   const loadMorePosts = useCallback(async () => {
-    if (isLoadingMore || !pagination.hasNext || isLoading || hasError) return;
+    if (isLoadingMore || !pagination?.hasNext || isLoading || hasError) return;
     
     setIsLoadingMore(true);
-    const nextFilters = { ...filters, page: pagination.page + 1 };
+    const nextFilters = { ...filters, page: (pagination?.page || 1) + 1 };
     await fetchPosts(nextFilters, true);
     setIsLoadingMore(false);
   }, [filters, pagination, isLoadingMore, isLoading, hasError, fetchPosts]);
@@ -157,7 +171,7 @@ export default function PostListEnhanced({
     if (observer.current) observer.current.disconnect();
     
     observer.current = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && pagination.hasNext && !hasError) {
+      if (entries[0].isIntersecting && pagination?.hasNext && !hasError) {
         loadMorePosts();
       }
     }, { 
@@ -165,7 +179,7 @@ export default function PostListEnhanced({
     });
     
     if (node) observer.current.observe(node);
-  }, [isLoading, isLoadingMore, pagination.hasNext, loadMorePosts, hasError]);
+  }, [isLoading, isLoadingMore, pagination?.hasNext, loadMorePosts, hasError]);
 
   // Handle filter changes
   const handleFiltersChange = (newFilters: PostFilters) => {
@@ -282,7 +296,7 @@ export default function PostListEnhanced({
         <div className="flex items-center justify-between">
           {/* Results count */}
           <div className="text-sm text-neutral-600">
-            {isLoading && posts.length === 0 ? (
+            {isLoading && (posts?.length || 0) === 0 ? (
               <div className="flex items-center">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 {messages.no.loading}
@@ -300,8 +314,8 @@ export default function PostListEnhanced({
               </div>
             ) : (
               <span>
-                {pagination.total > 0 
-                  ? `${pagination.total} resultater funnet`
+                {(pagination?.total || 0) > 0 
+                  ? `${pagination?.total || 0} resultater funnet`
                   : messages.no.noResults
                 }
               </span>
@@ -394,7 +408,7 @@ export default function PostListEnhanced({
               {actions.no.retry}
             </button>
           </div>
-        ) : posts.length === 0 && !isLoading ? (
+        ) : (posts?.length || 0) === 0 && !isLoading ? (
           /* Empty State */
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -419,10 +433,10 @@ export default function PostListEnhanced({
                 : 'space-y-4'
               }
             `}>
-              {posts.map((post, index) => (
+              {(posts || []).map((post, index) => (
                 <div
                   key={post.id}
-                  ref={index === posts.length - 1 ? lastPostRef : undefined}
+                  ref={index === (posts?.length || 0) - 1 ? lastPostRef : undefined}
                   className={viewMode === 'list' ? 'max-w-4xl mx-auto' : ''}
                 >
                   <PostCard
@@ -449,10 +463,10 @@ export default function PostListEnhanced({
             )}
 
             {/* End of results indicator */}
-            {!pagination.hasNext && posts.length > 0 && !isLoading && (
+            {!pagination?.hasNext && (posts?.length || 0) > 0 && !isLoading && (
               <div className="text-center py-8 border-t border-neutral-200 mt-8">
                 <p className="text-neutral-500">
-                  Du har sett alle {posts.length} annonser
+                  Du har sett alle {(posts?.length || 0)} annonser
                 </p>
               </div>
             )}
@@ -460,7 +474,7 @@ export default function PostListEnhanced({
         )}
 
         {/* Loading skeletons for initial load */}
-        {isLoading && posts.length === 0 && (
+        {isLoading && (posts?.length || 0) === 0 && (
           <div className={`
             ${viewMode === 'grid' 
               ? `grid gap-4 ${compactMode 
@@ -480,7 +494,7 @@ export default function PostListEnhanced({
         )}
 
         {/* Load more trigger for infinite scroll (fallback) */}
-        {pagination.hasNext && !isLoadingMore && posts.length > 0 && !isLoading && (
+        {pagination?.hasNext && !isLoadingMore && (posts?.length || 0) > 0 && !isLoading && (
           <div className="text-center mt-8">
             <button
               onClick={loadMorePosts}
