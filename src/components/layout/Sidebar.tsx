@@ -114,21 +114,11 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      {/* Sidebar header */}
-      <div className="flex h-16 items-center justify-between px-6 border-b border-neutral-200">
-        <Link href="/" className="flex items-center space-x-2" onClick={onClose}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold text-sm">
-            TC
-          </div>
-          <span className="text-lg font-semibold text-neutral-900">
-            TutorConnect
-          </span>
-        </Link>
-        
-        {/* Close button for mobile */}
+      {/* Mobile close button - only show on mobile */}
+      <div className="lg:hidden flex h-12 items-center justify-end px-6 border-b border-neutral-200">
         <button
           type="button"
-          className="lg:hidden rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
+          className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
           onClick={onClose}
           aria-label="Lukk sidemeny"
         >
@@ -139,7 +129,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Quick action button */}
       <div className="px-6 py-4 border-b border-neutral-200">
         <Link
-          href="/posts/create"
+          href="/posts/new"
           className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
           onClick={onClose}
         >

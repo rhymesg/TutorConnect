@@ -63,26 +63,27 @@ model User {
 }
 
 model Post {
-  id                String          @id @default(cuid())
-  type              PostType
-  subject           Subject
-  ageGroups         AgeGroup[]
-  title             String
-  description       String
-  availableDays     String[]
-  availableTimes    String[]
-  preferredSchedule String?
-  location          NorwegianRegion
-  specificLocation  String?
-  hourlyRate        Decimal?        @db.Decimal(8, 2)
-  hourlyRateMin     Decimal?        @db.Decimal(8, 2)
-  hourlyRateMax     Decimal?        @db.Decimal(8, 2)
-  currency          String          @default("NOK")
-  isActive          Boolean         @default(true)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  userId            String
-  chats             Chat[]
+  id               String          @id @default(cuid())
+  type             PostType
+  title            String
+  subject          Subject
+  customSubject    String?
+  ageGroups        AgeGroup[]
+  description      String
+  availableDays    String[]
+  startTime        String
+  endTime          String
+  location         NorwegianRegion
+  postnummer       String?
+  hourlyRate       Decimal?        @db.Decimal(8, 2)
+  hourlyRateMin    Decimal?        @db.Decimal(8, 2)
+  hourlyRateMax    Decimal?        @db.Decimal(8, 2)
+  currency         String          @default("NOK")
+  isActive         Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  userId           String
+  chats            Chat[]
   user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([type, subject, location, isActive])
@@ -278,27 +279,23 @@ enum PostType {
 }
 
 enum Subject {
-  MATHEMATICS
-  ENGLISH
-  NORWEGIAN
-  SCIENCE
-  PHYSICS
-  CHEMISTRY
-  BIOLOGY
-  HISTORY
-  GEOGRAPHY
-  PROGRAMMING
-  SPORTS
-  MUSIC
-  ART
-  OTHER
+  math
+  english
+  norwegian
+  science
+  programming
+  sports
+  art
+  other
 }
 
 enum AgeGroup {
-  CHILDREN_7_12
-  TEENAGERS_13_15
-  YOUTH_16_18
-  ADULTS_19_PLUS
+  PRESCHOOL_3_6
+  PRIMARY_7_10
+  MIDDLE_11_13
+  SECONDARY_14_16
+  HIGH_SCHOOL_17_19
+  ADULTS_20_PLUS
 }
 
 enum AppointmentStatus {

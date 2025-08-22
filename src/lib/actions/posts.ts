@@ -21,8 +21,10 @@ export type PostFormState = {
  * Get current user from JWT token
  */
 async function getCurrentUser() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const accessToken = cookieStore.get('accessToken')?.value;
+  
+  console.log('AccessToken exists:', !!accessToken);
   
   if (!accessToken) {
     throw new Error('Ikke autorisert. Vennligst logg inn.');
@@ -30,8 +32,10 @@ async function getCurrentUser() {
 
   try {
     const payload = await verifyAccessToken(accessToken);
+    console.log('JWT payload fields:', Object.keys(payload));
     return payload;
   } catch (error) {
+    console.error('JWT verification error:', error);
     throw new Error('Ugyldig autentisering. Vennligst logg inn på nytt.');
   }
 }
@@ -50,15 +54,16 @@ export async function createPostAction(
     // Extract form data
     const rawData = {
       type: formData.get('type') as string,
-      subject: formData.get('subject') as string,
-      ageGroups: formData.getAll('ageGroups') as string[],
       title: formData.get('title') as string,
+      subject: formData.get('subject') as string,
+      customSubject: formData.get('customSubject') as string || undefined,
+      ageGroups: formData.getAll('ageGroups') as string[],
       description: formData.get('description') as string,
       availableDays: formData.getAll('availableDays') as string[],
-      availableTimes: formData.getAll('availableTimes') as string[],
-      preferredSchedule: formData.get('preferredSchedule') as string || undefined,
+      startTime: formData.get('startTime') as string,
+      endTime: formData.get('endTime') as string,
       location: formData.get('location') as string,
-      specificLocation: formData.get('specificLocation') as string || undefined,
+      postnummer: formData.get('postnummer') as string || undefined,
       hourlyRate: formData.get('hourlyRate') ? Number(formData.get('hourlyRate')) : undefined,
       hourlyRateMin: formData.get('hourlyRateMin') ? Number(formData.get('hourlyRateMin')) : undefined,
       hourlyRateMax: formData.get('hourlyRateMax') ? Number(formData.get('hourlyRateMax')) : undefined,
@@ -71,7 +76,7 @@ export async function createPostAction(
     const post = await prisma.post.create({
       data: {
         ...validatedData,
-        userId: user.userId,
+        userId: user.sub || user.userId, // Try both sub and userId fields
         isActive: true,
       },
       include: {
@@ -86,6 +91,8 @@ export async function createPostAction(
         }
       }
     });
+
+    console.log(`Post created successfully: ID=${post.id}, User=${user.sub}, Type=${post.type}`);
 
     // Revalidate relevant paths
     revalidatePath('/posts');
@@ -162,15 +169,16 @@ export async function updatePostAction(
     // Extract form data
     const rawData = {
       type: formData.get('type') as string,
-      subject: formData.get('subject') as string,
-      ageGroups: formData.getAll('ageGroups') as string[],
       title: formData.get('title') as string,
+      subject: formData.get('subject') as string,
+      customSubject: formData.get('customSubject') as string || undefined,
+      ageGroups: formData.getAll('ageGroups') as string[],
       description: formData.get('description') as string,
       availableDays: formData.getAll('availableDays') as string[],
-      availableTimes: formData.getAll('availableTimes') as string[],
-      preferredSchedule: formData.get('preferredSchedule') as string || undefined,
+      startTime: formData.get('startTime') as string,
+      endTime: formData.get('endTime') as string,
       location: formData.get('location') as string,
-      specificLocation: formData.get('specificLocation') as string || undefined,
+      postnummer: formData.get('postnummer') as string || undefined,
       hourlyRate: formData.get('hourlyRate') ? Number(formData.get('hourlyRate')) : undefined,
       hourlyRateMin: formData.get('hourlyRateMin') ? Number(formData.get('hourlyRateMin')) : undefined,
       hourlyRateMax: formData.get('hourlyRateMax') ? Number(formData.get('hourlyRateMax')) : undefined,

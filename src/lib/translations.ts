@@ -38,7 +38,7 @@ export const forms = {
     cancel: 'Avbryt',
     submit: 'Send inn',
     required: 'Påkrevd',
-    searchPlaceholder: 'Søk etter fag, lærer eller område...',
+    searchPlaceholder: 'Søk etter fag eller område...',
     subject: 'Fag',
     location: 'Sted',
     selectSubject: 'Velg fag',

@@ -9,20 +9,30 @@ export default function SimpleLoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
-  const { login, isLoading } = useAuth();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-
-    const result = await login(email, password);
+    e.stopPropagation();
     
-    if (result.success) {
-      // Redirect to profile
-      router.push('/profile');
-    } else {
-      setError(result.error || 'Login failed');
+    setError('');
+    setIsSubmitting(true);
+
+    try {
+      const result = await login(email, password);
+      
+      if (result.success) {
+        // Redirect to profile
+        router.push('/profile');
+      } else {
+        setError(result.error || 'Login failed');
+      }
+    } catch (error) {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -37,7 +47,7 @@ export default function SimpleLoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} method="POST" action="#" className="space-y-6">
         {error && (
           <div className="rounded-md bg-red-50 p-4">
             <div className="text-sm text-red-700 flex items-center">
@@ -95,10 +105,10 @@ export default function SimpleLoginForm() {
 
         <button
           type="submit"
-          disabled={isLoading}
+          disabled={isSubmitting}
           className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
         >
-          {isLoading ? 'Logger inn...' : 'Logg inn'}
+          {isSubmitting ? 'Logger inn...' : 'Logg inn'}
         </button>
       </form>
 

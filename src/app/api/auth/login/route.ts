@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
-import { SignJWT } from 'jose';
+import { generateAccessToken, generateRefreshToken } from '@/lib/jwt';
 
 const prisma = new PrismaClient();
 
@@ -47,21 +47,37 @@ export async function POST(request: NextRequest) {
       data: { lastActive: new Date() }
     });
 
-    // Generate token
-    const secret = new TextEncoder().encode(process.env.JWT_ACCESS_SECRET);
-    const accessToken = await new SignJWT({ sub: user.id })
-      .setProtectedHeader({ alg: 'HS256' })
-      .setExpirationTime('7d')
-      .setIssuedAt()
-      .sign(secret);
+    // Generate tokens with all required fields
+    const accessToken = await generateAccessToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      isActive: user.isActive,
+      region: user.region || 'OSLO', // Default if null
+    });
+    
+    const refreshToken = await generateRefreshToken({
+      userId: user.id,
+      email: user.email,
+      name: user.name,
+      version: 1, // Token version for future invalidation
+    });
 
     // Set cookie
-    const cookieStore = cookies();
-    cookieStore.set('access_token', accessToken, {
+    const cookieStore = await cookies();
+    cookieStore.set('accessToken', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Also set refresh token cookie
+    cookieStore.set('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 30, // 30 days
     });
 
     // Return user data and tokens for localStorage
@@ -72,7 +88,7 @@ export async function POST(request: NextRequest) {
       data: {
         user: userWithoutPassword,
         accessToken,
-        refreshToken: accessToken, // simplified
+        refreshToken,
       }
     });
 
