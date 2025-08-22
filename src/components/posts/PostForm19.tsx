@@ -149,18 +149,6 @@ export default function PostForm19({
 
           {/* Status indicators */}
           <div className="flex items-center space-x-4 text-sm">
-            {/* Network status */}
-            <div className="flex items-center">
-              {isOnline ? (
-                <Wifi className="w-4 h-4 text-green-600 mr-1" />
-              ) : (
-                <WifiOff className="w-4 h-4 text-red-600 mr-1" />
-              )}
-              <span className={isOnline ? 'text-green-700' : 'text-red-700'}>
-                {isOnline ? 'Tilkoblet' : 'Frakoblet'}
-              </span>
-            </div>
-
             {/* Form state */}
             {isPending && (
               <div className="flex items-center">
@@ -280,15 +268,8 @@ export default function PostForm19({
                   </div>
                   <div className="flex items-start">
                     <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Inkluder dine kvalifikasjoner</span>
+                    <span>Oppdater profilen din før du publiserer</span>
                   </div>
-                </div>
-                
-                <div className="mt-6 p-4 bg-blue-50 rounded-lg">
-                  <p className="text-sm text-blue-800 font-medium mb-1">React 19 Actions</p>
-                  <p className="text-xs text-blue-600">
-                    Optimistiske oppdateringer og automatisk tilstandshåndtering aktivert.
-                  </p>
                 </div>
               </div>
             )}

@@ -11,7 +11,7 @@ interface PostFormFields19Props {
 }
 
 export default function PostFormFields19({ defaultValues, errors }: PostFormFields19Props) {
-  const [formData, setFormData] = useState(defaultValues || {});
+  const [postType, setPostType] = useState(defaultValues?.type || 'TEACHER');
 
   // Norwegian regions for location selector
   const norwegianRegions = [
@@ -30,25 +30,18 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
 
   // Subjects
   const subjects = [
-    { value: 'MATHEMATICS', label: 'Matematikk' },
-    { value: 'ENGLISH', label: 'Engelsk' },
-    { value: 'NORWEGIAN', label: 'Norsk' },
-    { value: 'SCIENCE', label: 'Naturfag' },
-    { value: 'PHYSICS', label: 'Fysikk' },
-    { value: 'CHEMISTRY', label: 'Kjemi' },
-    { value: 'BIOLOGY', label: 'Biologi' },
-    { value: 'HISTORY', label: 'Historie' },
-    { value: 'PROGRAMMING', label: 'Programmering' },
-    { value: 'OTHER', label: 'Annet' },
+    { value: 'math', label: 'Matematikk' },
+    { value: 'english', label: 'Engelsk' },
+    { value: 'norwegian', label: 'Norsk' },
+    { value: 'science', label: 'Naturfag' },
+    { value: 'programming', label: 'Programmering' },
+    { value: 'sports', label: 'Sport' },
+    { value: 'art', label: 'Kunst' },
+    { value: 'other', label: 'Annet' },
   ];
 
-  // Age groups
-  const ageGroups = [
-    { value: 'CHILDREN_7_12', label: 'Barn (7-12 år)' },
-    { value: 'TEENAGERS_13_15', label: 'Ungdom (13-15 år)' },
-    { value: 'YOUTH_16_18', label: 'Ungdom (16-18 år)' },
-    { value: 'ADULTS_19_PLUS', label: 'Voksne (19+ år)' },
-  ];
+  const [selectedSubject, setSelectedSubject] = useState(defaultValues?.subject || '');
+  const [customSubject, setCustomSubject] = useState(defaultValues?.customSubject || '');
 
   // Available days
   const availableDays = [
@@ -63,10 +56,10 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
 
   return (
     <div className="space-y-6">
-      {/* Post Type */}
+      {/* Post Type - Teacher or Student */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
-          Type annonse *
+        <label className="block text-sm font-medium text-neutral-700 mb-3">
+          Jeg er en... *
         </label>
         <div className="grid grid-cols-2 gap-4">
           <label className="flex items-center p-4 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
@@ -74,12 +67,13 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
               type="radio"
               name="type"
               value="TEACHER"
-              defaultChecked={defaultValues?.type === 'TEACHER'}
+              checked={postType === 'TEACHER'}
+              onChange={(e) => setPostType(e.target.value)}
               className="mr-3 h-4 w-4 text-brand-600"
             />
             <div>
-              <div className="font-medium text-neutral-900">Jeg tilbyr undervisning</div>
-              <div className="text-sm text-neutral-500">Som lærer/tutor</div>
+              <div className="font-medium text-neutral-900">Lærer</div>
+              <div className="text-sm text-neutral-500">Jeg tilbyr undervisning</div>
             </div>
           </label>
           <label className="flex items-center p-4 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
@@ -87,28 +81,18 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
               type="radio"
               name="type"
               value="STUDENT"
-              defaultChecked={defaultValues?.type === 'STUDENT'}
+              checked={postType === 'STUDENT'}
+              onChange={(e) => setPostType(e.target.value)}
               className="mr-3 h-4 w-4 text-brand-600"
             />
             <div>
-              <div className="font-medium text-neutral-900">Jeg søker lærer</div>
-              <div className="text-sm text-neutral-500">Som student</div>
+              <div className="font-medium text-neutral-900">Student</div>
+              <div className="text-sm text-neutral-500">Jeg søker lærer</div>
             </div>
           </label>
         </div>
         {errors?.type && <FormError error={errors.type} />}
       </div>
-
-      {/* Title */}
-      <FormField
-        label="Tittel *"
-        name="title"
-        type="text"
-        placeholder="Kort, beskrivende tittel for annonsen din"
-        defaultValue={defaultValues?.title}
-        required
-        error={errors?.title}
-      />
 
       {/* Subject */}
       <div>
@@ -118,7 +102,8 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
         <select
           name="subject"
           id="subject"
-          defaultValue={defaultValues?.subject}
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
           required
           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
         >
@@ -130,51 +115,99 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
           ))}
         </select>
         {errors?.subject && <FormError error={errors.subject} />}
-      </div>
-
-      {/* Description */}
-      <div>
-        <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
-          Beskrivelse *
-        </label>
-        <textarea
-          name="description"
-          id="description"
-          rows={6}
-          defaultValue={defaultValues?.description}
-          placeholder="Beskriv din erfaring, undervisningsmetoder, og hva du kan tilby..."
-          required
-          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
-        />
-        {errors?.description && <FormError error={errors.description} />}
+        
+        {/* Custom subject input when "other" is selected */}
+        {selectedSubject === 'other' && (
+          <div className="mt-3">
+            <FormField
+              label="Spesifiser fag"
+              name="customSubject"
+              type="text"
+              placeholder="Skriv inn fagområdet"
+              value={customSubject}
+              onChange={(e) => setCustomSubject(e.target.value)}
+              required
+              error={errors?.customSubject}
+              maxLength={50}
+            />
+          </div>
+        )}
       </div>
 
       {/* Age Groups */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
-          Aldersgrupper *
+        <label className="block text-sm font-medium text-neutral-700 mb-3">
+          {postType === 'TEACHER' ? 'Aldersgrupper jeg kan undervise *' : 'Min aldersgruppe *'}
         </label>
         <div className="grid grid-cols-2 gap-3">
-          {ageGroups.map((group) => (
-            <label key={group.value} className="flex items-center">
-              <input
-                type="checkbox"
-                name="ageGroups"
-                value={group.value}
-                defaultChecked={defaultValues?.ageGroups?.includes(group.value)}
-                className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-              />
-              <span className="ml-2 text-sm text-neutral-700">{group.label}</span>
-            </label>
-          ))}
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="PRESCHOOL_3_6"
+              defaultChecked={defaultValues?.ageGroups?.includes('PRESCHOOL_3_6')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Førskolebarn (3-6 år)</span>
+          </label>
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="PRIMARY_7_10"
+              defaultChecked={defaultValues?.ageGroups?.includes('PRIMARY_7_10')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Barneskole (7-10 år)</span>
+          </label>
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="MIDDLE_11_13"
+              defaultChecked={defaultValues?.ageGroups?.includes('MIDDLE_11_13')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Mellomtrinnet (11-13 år)</span>
+          </label>
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="SECONDARY_14_16"
+              defaultChecked={defaultValues?.ageGroups?.includes('SECONDARY_14_16')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Ungdomsskole (14-16 år)</span>
+          </label>
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="HIGH_SCHOOL_17_19"
+              defaultChecked={defaultValues?.ageGroups?.includes('HIGH_SCHOOL_17_19')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Videregående (17-19 år)</span>
+          </label>
+          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+            <input
+              type={postType === 'STUDENT' ? "radio" : "checkbox"}
+              name="ageGroups"
+              value="ADULTS_20_PLUS"
+              defaultChecked={defaultValues?.ageGroups?.includes('ADULTS_20_PLUS')}
+              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+            />
+            <span className="ml-2 text-sm text-neutral-700">Voksne (20+ år)</span>
+          </label>
         </div>
         {errors?.ageGroups && <FormError error={errors.ageGroups} />}
       </div>
 
-      {/* Location */}
+      {/* Location/Region */}
       <div>
         <label htmlFor="location" className="block text-sm font-medium text-neutral-700 mb-2">
-          Lokasjon *
+          Region *
         </label>
         <select
           name="location"
@@ -193,24 +226,26 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
         {errors?.location && <FormError error={errors.location} />}
       </div>
 
-      {/* Specific Location */}
+      {/* Postnummer */}
       <FormField
-        label="Spesifikk lokasjon"
-        name="specificLocation"
+        label="Postnummer"
+        name="postnummer"
         type="text"
-        placeholder="F.eks. Sentrum, Grünerløkka, etc."
-        defaultValue={defaultValues?.specificLocation}
-        error={errors?.specificLocation}
+        placeholder={postType === 'STUDENT' ? "Fra profilen din" : "Ikke oppgitt"}
+        defaultValue={postType === 'STUDENT' ? defaultValues?.postnummer : ''}
+        error={errors?.postnummer}
+        maxLength={4}
       />
+
 
       {/* Available Days */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-2">
-          Tilgjengelige dager
+        <label className="block text-sm font-medium text-neutral-700 mb-3">
+          Tilgjengelige dager *
         </label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {availableDays.map((day) => (
-            <label key={day.value} className="flex items-center">
+            <label key={day.value} className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
               <input
                 type="checkbox"
                 name="availableDays"
@@ -225,60 +260,130 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
         {errors?.availableDays && <FormError error={errors.availableDays} />}
       </div>
 
-      {/* Hourly Rate */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <FormField
-          label="Timelønn (NOK)"
-          name="hourlyRate"
-          type="number"
-          placeholder="500"
-          defaultValue={defaultValues?.hourlyRate}
-          error={errors?.hourlyRate}
-          min={0}
-          step={50}
-        />
-        <div className="text-sm text-neutral-500 pt-8">
-          <p>Eller angi et prisintervall:</p>
+      {/* Available Time Range */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="startTime" className="block text-sm font-medium text-neutral-700 mb-2">
+            Tilgjengelig fra tid *
+          </label>
+          <input
+            type="time"
+            name="startTime"
+            id="startTime"
+            defaultValue={defaultValues?.startTime || '09:00'}
+            required
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+          />
+          {errors?.startTime && <FormError error={errors.startTime} />}
+        </div>
+        <div>
+          <label htmlFor="endTime" className="block text-sm font-medium text-neutral-700 mb-2">
+            Tilgjengelig til tid *
+          </label>
+          <input
+            type="time"
+            name="endTime"
+            id="endTime"
+            defaultValue={defaultValues?.endTime || '17:00'}
+            required
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+          />
+          {errors?.endTime && <FormError error={errors.endTime} />}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
-        <FormField
-          label="Fra (NOK)"
-          name="hourlyRateMin"
-          type="number"
-          placeholder="300"
-          defaultValue={defaultValues?.hourlyRateMin}
-          error={errors?.hourlyRateMin}
-          min={0}
-          step={50}
-        />
-        <FormField
-          label="Til (NOK)"
-          name="hourlyRateMax"
-          type="number"
-          placeholder="700"
-          defaultValue={defaultValues?.hourlyRateMax}
-          error={errors?.hourlyRateMax}
-          min={0}
-          step={50}
-        />
-      </div>
+      {/* Price Range - Different logic for Teacher vs Student */}
+      {postType === 'TEACHER' ? (
+        <div>
+          <label htmlFor="hourlyRate" className="block text-sm font-medium text-neutral-700 mb-2">
+            Timelønn (NOK) *
+          </label>
+          <input
+            type="number"
+            name="hourlyRate"
+            id="hourlyRate"
+            placeholder="300"
+            defaultValue={defaultValues?.hourlyRate || 300}
+            required
+            min={0}
+            step={50}
+            className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+          />
+          <p className="text-sm text-neutral-500 mt-1">Lærere setter fast pris per time</p>
+          {errors?.hourlyRate && <FormError error={errors.hourlyRate} />}
+        </div>
+      ) : (
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-2">
+            Prisområde (NOK per time) *
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <input
+                type="number"
+                name="hourlyRateMin"
+                placeholder="200"
+                defaultValue={defaultValues?.hourlyRateMin || 200}
+                required
+                min={0}
+                step={50}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+              />
+              <p className="text-xs text-neutral-500 mt-1">Minimum pris</p>
+            </div>
+            <div>
+              <input
+                type="number"
+                name="hourlyRateMax"
+                placeholder="400"
+                defaultValue={defaultValues?.hourlyRateMax || 400}
+                required
+                min={0}
+                step={50}
+                className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+              />
+              <p className="text-xs text-neutral-500 mt-1">Maksimum pris</p>
+            </div>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">Studenter kan angi prisområde</p>
+          {errors?.hourlyRateMin && <FormError error={errors.hourlyRateMin} />}
+          {errors?.hourlyRateMax && <FormError error={errors.hourlyRateMax} />}
+        </div>
+      )}
 
-      {/* Preferred Schedule */}
+      {/* Title */}
+      <FormField
+        label="Tittel"
+        name="title"
+        type="text"
+        placeholder="Kort, beskrivende tittel for annonsen din"
+        defaultValue={defaultValues?.title}
+        required
+        error={errors?.title}
+        maxLength={100}
+      />
+
+      {/* Description */}
       <div>
-        <label htmlFor="preferredSchedule" className="block text-sm font-medium text-neutral-700 mb-2">
-          Foretrukket tidspunkt
+        <label htmlFor="description" className="block text-sm font-medium text-neutral-700 mb-2">
+          Beskrivelse *
         </label>
         <textarea
-          name="preferredSchedule"
-          id="preferredSchedule"
-          rows={3}
-          defaultValue={defaultValues?.preferredSchedule}
-          placeholder="F.eks. Formiddager, ettermiddager på ukedager, helger..."
+          name="description"
+          id="description"
+          rows={6}
+          defaultValue={defaultValues?.description}
+          placeholder={postType === 'TEACHER' 
+            ? "Beskriv din erfaring, undervisningsmetoder og hva du kan tilby..." 
+            : "Beskriv hva du søker etter, ditt nivå, spesielle behov og forventninger..."
+          }
+          required
           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
         />
-        {errors?.preferredSchedule && <FormError error={errors.preferredSchedule} />}
+        <p className="text-sm text-neutral-500 mt-1">
+          Jo mer detaljert beskrivelse, desto lettere å finne riktig match
+        </p>
+        {errors?.description && <FormError error={errors.description} />}
       </div>
     </div>
   );
