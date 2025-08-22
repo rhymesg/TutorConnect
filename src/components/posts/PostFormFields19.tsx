@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { PostWithDetails } from '@/types/database';
 import FormField from '../auth/FormField';
 import FormError from '../auth/FormError';
@@ -12,8 +12,22 @@ interface PostFormFields19Props {
 
 export default function PostFormFields19({ defaultValues, errors }: PostFormFields19Props) {
   const [postType, setPostType] = useState(defaultValues?.type || 'TEACHER');
+  const [selectedLocation, setSelectedLocation] = useState(defaultValues?.location || '');
+  const [postnummer, setPostnummer] = useState(defaultValues?.postnummer || '');
 
-  // Norwegian regions for location selector
+  // defaultValues가 변경될 때마다 state 업데이트
+  React.useEffect(() => {
+    if (defaultValues?.location) {
+      setSelectedLocation(defaultValues.location);
+    }
+    if (defaultValues?.postnummer) {
+      setPostnummer(defaultValues.postnummer);
+    }
+  }, [defaultValues]);
+
+  // Debug logs removed for production
+
+  // Norwegian regions for location selector (Prisma enum과 일치)
   const norwegianRegions = [
     { value: 'OSLO', label: 'Oslo' },
     { value: 'BERGEN', label: 'Bergen' },
@@ -21,11 +35,15 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
     { value: 'STAVANGER', label: 'Stavanger' },
     { value: 'KRISTIANSAND', label: 'Kristiansand' },
     { value: 'FREDRIKSTAD', label: 'Fredrikstad' },
+    { value: 'SANDNES', label: 'Sandnes' },
+    { value: 'TROMSOE', label: 'Tromsø' },
     { value: 'DRAMMEN', label: 'Drammen' },
+    { value: 'ASKER', label: 'Asker' },
+    { value: 'BAERUM', label: 'Bærum' },
     { value: 'AKERSHUS', label: 'Akershus' },
+    { value: 'OESTFOLD', label: 'Østfold' },
+    { value: 'BUSKERUD', label: 'Buskerud' },
     { value: 'VESTFOLD', label: 'Vestfold' },
-    { value: 'ROGALAND', label: 'Rogaland' },
-    { value: 'HORDALAND', label: 'Hordaland' },
   ];
 
   // Subjects
@@ -212,7 +230,10 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
         <select
           name="location"
           id="location"
-          defaultValue={defaultValues?.location}
+          value={selectedLocation}
+          onChange={(e) => {
+            setSelectedLocation(e.target.value);
+          }}
           required
           className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
         >
@@ -227,15 +248,22 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
       </div>
 
       {/* Postnummer */}
-      <FormField
-        label="Postnummer"
-        name="postnummer"
-        type="text"
-        placeholder={postType === 'STUDENT' ? "Fra profilen din" : "Ikke oppgitt"}
-        defaultValue={postType === 'STUDENT' ? defaultValues?.postnummer : ''}
-        error={errors?.postnummer}
-        maxLength={4}
-      />
+      <div>
+        <label htmlFor="postnummer" className="block text-sm font-medium text-neutral-700 mb-2">
+          Postnummer
+        </label>
+        <input
+          type="text"
+          name="postnummer"
+          id="postnummer"
+          value={postType === 'STUDENT' ? postnummer : ''}
+          onChange={(e) => setPostnummer(e.target.value)}
+          placeholder={postType === 'STUDENT' ? "Fra profilen din" : "Ikke oppgitt"}
+          maxLength={4}
+          className="w-full px-3 py-2 border border-neutral-300 rounded-lg focus:ring-brand-500 focus:border-brand-500"
+        />
+        {errors?.postnummer && <FormError error={errors.postnummer} />}
+      </div>
 
 
       {/* Available Days */}

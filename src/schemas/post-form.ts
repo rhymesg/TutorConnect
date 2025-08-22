@@ -19,19 +19,50 @@ const norMsg = (key: string, params?: Record<string, any>) => {
 };
 
 // Base schemas with Norwegian error messages
-export const PostTypeFormSchema = z.nativeEnum(PostType, {
+export const PostTypeFormSchema = z.enum(['TEACHER', 'STUDENT'], {
   errorMap: () => ({ message: 'Ugyldig annonse-type' })
 });
 
-export const SubjectFormSchema = z.nativeEnum(Subject, {
+// Updated subjects to match form options
+export const SubjectFormSchema = z.enum([
+  'math',
+  'english', 
+  'norwegian',
+  'science',
+  'programming',
+  'sports',
+  'art',
+  'other'
+], {
   errorMap: () => ({ message: 'Ugyldig fagområde' })
 });
 
-export const AgeGroupFormSchema = z.nativeEnum(AgeGroup, {
+// Updated age groups to match Norwegian education system
+export const AgeGroupFormSchema = z.enum([
+  'PRESCHOOL_3_6',
+  'PRIMARY_7_10', 
+  'MIDDLE_11_13',
+  'SECONDARY_14_16',
+  'HIGH_SCHOOL_17_19',
+  'ADULTS_20_PLUS'
+], {
   errorMap: () => ({ message: 'Ugyldig aldersgruppe' })
 });
 
-export const NorwegianRegionFormSchema = z.nativeEnum(NorwegianRegion, {
+// Updated Norwegian regions to match form options
+export const NorwegianRegionFormSchema = z.enum([
+  'OSLO',
+  'BERGEN', 
+  'TRONDHEIM',
+  'STAVANGER',
+  'KRISTIANSAND',
+  'FREDRIKSTAD',
+  'DRAMMEN',
+  'AKERSHUS',
+  'VESTFOLD',
+  'ROGALAND',
+  'HORDALAND'
+], {
   errorMap: () => ({ message: 'Ugyldig region' })
 });
 
@@ -134,41 +165,48 @@ export const SpecificLocationFormSchema = z.string()
 // Enhanced create post schema with Norwegian validation
 export const CreatePostFormSchema = z.object({
   type: PostTypeFormSchema,
+  title: TitleFormSchema,
   subject: SubjectFormSchema,
+  customSubject: z.string()
+    .min(1, 'Spesifiser fagområdet')
+    .max(50, 'Fagområdet kan ikke være lengre enn 50 tegn')
+    .optional(),
   ageGroups: z.array(AgeGroupFormSchema)
     .min(1, norMsg('atLeastOne'))
-    .max(4, norMsg('maxSelections', { max: 4 })),
+    .max(6, norMsg('maxSelections', { max: 6 })),
   
-  title: TitleFormSchema,
   description: DescriptionFormSchema,
   
-  availableDays: z.array(WeekdayFormSchema)
+  availableDays: z.array(z.string())
     .min(1, norMsg('atLeastOne'))
     .max(7, 'Du kan ikke velge mer enn 7 dager'),
   
-  availableTimes: z.array(TimeSlotFormSchema)
-    .min(1, 'Minst ett tidspunkt må oppgis')
-    .max(10, 'Maksimum 10 tidspunkter tillatt')
-    .refine(times => {
-      // Ensure no duplicate times
-      return new Set(times).size === times.length;
-    }, {
-      message: 'Kan ikke ha identiske tidspunkter'
-    }),
+  // Time range
+  startTime: TimeSlotFormSchema,
+  endTime: TimeSlotFormSchema,
   
-  preferredSchedule: z.string()
-    .max(500, norMsg('maxLength', { max: 500 }))
-    .trim()
-    .optional(),
+  location: NorwegianRegionFormSchema,
   
-  location: LocationFormSchema,
-  specificLocation: SpecificLocationFormSchema,
+  // Postnummer (optional for teachers, required for students)
+  postnummer: z.string()
+    .regex(/^\d{4}$/, 'Postnummer må være 4 siffer')
+    .optional()
+    .or(z.literal('')),
   
   // Enhanced pricing validation
   hourlyRate: PriceFormSchema,
   hourlyRateMin: PriceFormSchema,
   hourlyRateMax: PriceFormSchema,
 }).superRefine((data, ctx) => {
+  // Validate customSubject when subject is 'other'
+  if (data.subject === 'other' && (!data.customSubject || data.customSubject.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Du må spesifisere fagområdet når du velger "Annet"',
+      path: ['customSubject']
+    });
+  }
+
   // Complex pricing validation with Norwegian messages
   const hasFixedRate = data.hourlyRate !== undefined && data.hourlyRate !== null;
   const hasMinRate = data.hourlyRateMin !== undefined && data.hourlyRateMin !== null;
@@ -217,30 +255,61 @@ export const CreatePostFormSchema = z.object({
     });
   }
   
-  // Validate time slots don't overlap or are too close
-  if (data.availableTimes && data.availableTimes.length > 1) {
-    const sortedTimes = data.availableTimes
-      .map(time => {
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours * 60 + minutes;
-      })
-      .sort((a, b) => a - b);
+  // Validate time range
+  if (data.startTime && data.endTime) {
+    const [startHours, startMinutes] = data.startTime.split(':').map(Number);
+    const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
     
-    for (let i = 1; i < sortedTimes.length; i++) {
-      if (sortedTimes[i] - sortedTimes[i - 1] < 30) { // 30 minutes minimum gap
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Tidspunkter må ha minst 30 minutters mellomrom',
-          path: ['availableTimes']
-        });
-        break;
-      }
+    if (startTotalMinutes >= endTotalMinutes) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Sluttid må være etter starttid',
+        path: ['endTime']
+      });
     }
   }
 });
 
 // Update schema (similar validation but all fields optional)
-export const UpdatePostFormSchema = CreatePostFormSchema.partial().superRefine((data, ctx) => {
+export const UpdatePostFormSchema = z.object({
+  type: PostTypeFormSchema.optional(),
+  title: TitleFormSchema.optional(),
+  subject: SubjectFormSchema.optional(),
+  customSubject: z.string()
+    .min(1, 'Spesifiser fagområdet')
+    .max(50, 'Fagområdet kan ikke være lengre enn 50 tegn')
+    .optional(),
+  ageGroups: z.array(AgeGroupFormSchema)
+    .min(1, norMsg('atLeastOne'))
+    .max(6, norMsg('maxSelections', { max: 6 }))
+    .optional(),
+  
+  description: DescriptionFormSchema.optional(),
+  
+  availableDays: z.array(z.string())
+    .min(1, norMsg('atLeastOne'))
+    .max(7, 'Du kan ikke velge mer enn 7 dager')
+    .optional(),
+  
+  // Time range
+  startTime: TimeSlotFormSchema.optional(),
+  endTime: TimeSlotFormSchema.optional(),
+  
+  location: NorwegianRegionFormSchema.optional(),
+  
+  // Postnummer (optional for teachers, required for students)
+  postnummer: z.string()
+    .regex(/^\d{4}$/, 'Postnummer må være 4 siffer')
+    .optional()
+    .or(z.literal('')),
+  
+  // Enhanced pricing validation
+  hourlyRate: PriceFormSchema,
+  hourlyRateMin: PriceFormSchema,
+  hourlyRateMax: PriceFormSchema,
+}).superRefine((data, ctx) => {
   // Apply same pricing validation if any pricing field is provided
   const hasPricing = data.hourlyRate !== undefined || data.hourlyRateMin !== undefined || data.hourlyRateMax !== undefined;
   
@@ -266,24 +335,28 @@ export const UpdatePostFormSchema = CreatePostFormSchema.partial().superRefine((
     }
   }
   
-  // Validate available times if provided
-  if (data.availableTimes && data.availableTimes.length > 1) {
-    const sortedTimes = data.availableTimes
-      .map(time => {
-        const [hours, minutes] = time.split(':').map(Number);
-        return hours * 60 + minutes;
-      })
-      .sort((a, b) => a - b);
+  // Validate customSubject when subject is 'other'
+  if (data.subject === 'other' && (!data.customSubject || data.customSubject.trim() === '')) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Du må spesifisere fagområdet når du velger "Annet"',
+      path: ['customSubject']
+    });
+  }
+
+  // Validate time range if provided
+  if (data.startTime && data.endTime) {
+    const [startHours, startMinutes] = data.startTime.split(':').map(Number);
+    const [endHours, endMinutes] = data.endTime.split(':').map(Number);
+    const startTotalMinutes = startHours * 60 + startMinutes;
+    const endTotalMinutes = endHours * 60 + endMinutes;
     
-    for (let i = 1; i < sortedTimes.length; i++) {
-      if (sortedTimes[i] - sortedTimes[i - 1] < 30) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: 'Tidspunkter må ha minst 30 minutters mellomrom',
-          path: ['availableTimes']
-        });
-        break;
-      }
+    if (startTotalMinutes >= endTotalMinutes) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Sluttid må være etter starttid',
+        path: ['endTime']
+      });
     }
   }
 });

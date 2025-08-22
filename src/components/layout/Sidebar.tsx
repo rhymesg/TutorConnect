@@ -129,7 +129,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Quick action button */}
       <div className="px-6 py-4 border-b border-neutral-200">
         <Link
-          href="/posts/create"
+          href="/posts/new"
           className="flex w-full items-center justify-center rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors"
           onClick={onClose}
         >

@@ -118,6 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Login function
   const login = useCallback(async (email: string, password: string, remember: boolean = false) => {
+    // Set loading state
+    setState(prev => ({ ...prev, isLoading: true }));
+    
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -130,6 +133,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
 
       if (!response.ok) {
+        setState(prev => ({ ...prev, isLoading: false }));
         return {
           success: false,
           error: data.message || 'Login failed',
@@ -142,6 +146,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { success: true };
     } catch (error) {
       console.error('Login error:', error);
+      setState(prev => ({ ...prev, isLoading: false }));
       return {
         success: false,
         error: 'Network error occurred',

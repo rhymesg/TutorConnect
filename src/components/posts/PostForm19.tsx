@@ -21,6 +21,7 @@ import { education, forms, actions, posts } from '@/lib/translations';
 interface PostForm19Props {
   mode: 'create' | 'edit';
   post?: PostWithDetails;
+  defaultValues?: any; // For create mode default values from profile
   onSuccess?: (post: PostWithDetails) => void;
   onCancel?: () => void;
   className?: string;
@@ -29,6 +30,7 @@ interface PostForm19Props {
 export default function PostForm19({ 
   mode, 
   post, 
+  defaultValues,
   onSuccess, 
   onCancel, 
   className = '' 
@@ -169,7 +171,7 @@ export default function PostForm19({
           <form action={handleSubmitWithOptimistic} className="space-y-8">
             {/* Form Fields */}
             <PostFormFields19 
-              defaultValues={post}
+              defaultValues={post || defaultValues}
               errors={state?.fieldErrors}
             />
 

@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   try {
     // Get token from cookies
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_token')?.value;
+    const accessToken = cookieStore.get('accessToken')?.value;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -130,7 +130,7 @@ export async function PUT(request: NextRequest) {
   try {
     // Get token from cookies
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_token')?.value;
+    const accessToken = cookieStore.get('accessToken')?.value;
 
     if (!accessToken) {
       return NextResponse.json(
@@ -190,7 +190,7 @@ export async function PATCH(request: NextRequest) {
   try {
     // Get token from cookies
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get('access_token')?.value;
+    const accessToken = cookieStore.get('accessToken')?.value;
 
     if (!accessToken) {
       return NextResponse.json(
