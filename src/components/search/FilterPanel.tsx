@@ -214,9 +214,9 @@ export default function FilterPanel({
               {expandedSections.type && (
                 <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
-                    onClick={() => updateFilter('type', filters.type === 'TUTOR_OFFERING' ? undefined : 'TUTOR_OFFERING')}
+                    onClick={() => updateFilter('type', filters.type === 'TEACHER' ? undefined : 'TEACHER')}
                     className={`p-4 rounded-lg border text-left transition-all duration-200 ${
-                      filters.type === 'TUTOR_OFFERING'
+                      filters.type === 'TEACHER'
                         ? 'bg-brand-50 border-brand-200 text-brand-700 shadow-sm'
                         : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100'
                     }`}
@@ -226,15 +226,15 @@ export default function FilterPanel({
                         <div className="font-medium">Tilbyr undervisning</div>
                         <div className="text-sm text-neutral-500 mt-1">Lærere som tilbyr timer</div>
                       </div>
-                      {filters.type === 'TUTOR_OFFERING' && (
+                      {filters.type === 'TEACHER' && (
                         <Check className="w-5 h-5 text-brand-600" />
                       )}
                     </div>
                   </button>
                   <button
-                    onClick={() => updateFilter('type', filters.type === 'STUDENT_SEEKING' ? undefined : 'STUDENT_SEEKING')}
+                    onClick={() => updateFilter('type', filters.type === 'STUDENT' ? undefined : 'STUDENT')}
                     className={`p-4 rounded-lg border text-left transition-all duration-200 ${
-                      filters.type === 'STUDENT_SEEKING'
+                      filters.type === 'STUDENT'
                         ? 'bg-brand-50 border-brand-200 text-brand-700 shadow-sm'
                         : 'bg-neutral-50 border-neutral-200 text-neutral-700 hover:bg-neutral-100'
                     }`}
@@ -244,7 +244,7 @@ export default function FilterPanel({
                         <div className="font-medium">Søker lærer</div>
                         <div className="text-sm text-neutral-500 mt-1">Studenter som søker hjelp</div>
                       </div>
-                      {filters.type === 'STUDENT_SEEKING' && (
+                      {filters.type === 'STUDENT' && (
                         <Check className="w-5 h-5 text-brand-600" />
                       )}
                     </div>

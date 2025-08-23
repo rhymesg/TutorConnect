@@ -60,6 +60,8 @@ export default function PostListEnhanced({
   const [isOnline, setIsOnline] = useState(true);
   const [retryCount, setRetryCount] = useState(0);
   const [compactMode, setCompactMode] = useState(false);
+  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   
   const observer = useRef<IntersectionObserver>();
   const lastPostElementRef = useRef<HTMLDivElement>(null);
@@ -87,9 +89,8 @@ export default function PostListEnhanced({
 
     const handleOnline = () => {
       setIsOnline(true);
-      if (hasError && retryCount < 3) {
-        fetchPosts(filters);
-      }
+      // Don't automatically refetch on reconnect to avoid loops
+      // Let user manually retry if needed
     };
     
     const handleOffline = () => setIsOnline(false);
@@ -101,7 +102,7 @@ export default function PostListEnhanced({
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [enableOfflineMode, hasError, retryCount, filters]);
+  }, [enableOfflineMode]); // Simplified dependencies
 
   // Fetch posts function with retry logic
   const fetchPosts = useCallback(async (newFilters: PostFilters, append: boolean = false) => {
@@ -112,7 +113,12 @@ export default function PostListEnhanced({
       const queryParams = new URLSearchParams();
       Object.entries(newFilters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
-          queryParams.append(key, value.toString());
+          // Handle arrays (like ageGroups) as multiple parameters
+          if (Array.isArray(value)) {
+            value.forEach(item => queryParams.append(key, item.toString()));
+          } else {
+            queryParams.append(key, value.toString());
+          }
         }
       });
       
@@ -144,8 +150,8 @@ export default function PostListEnhanced({
           setPosts(prev => [...(prev || []), ...postsData]);
         } else {
           setPosts(postsData);
-          // Scroll to top when filters change (not on initial load)
-          if (newFilters !== filters && typeof window !== 'undefined') {
+          // Scroll to top when filters change
+          if (typeof window !== 'undefined') {
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
@@ -174,7 +180,7 @@ export default function PostListEnhanced({
         }, timeout);
       }
     }
-  }, [apiCall, retryCount, isOnline]);
+  }, [apiCall, retryCount, isOnline]); // Removed filters dependency
 
   // Load more posts for infinite scroll
   const loadMorePosts = useCallback(async () => {
@@ -288,8 +294,6 @@ export default function PostListEnhanced({
 
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: 'createdAt', label: 'Dato opprettet' },
-    { value: 'hourlyRate', label: 'Pris' },
-    { value: 'rating', label: 'Vurdering' },
   ];
 
   return (
@@ -314,10 +318,16 @@ export default function PostListEnhanced({
           searchHistory={searchHistory}
           onSearchHistoryAdd={handleSearchHistoryAdd}
           onSearchHistoryRemove={handleSearchHistoryRemove}
+          showDesktopFilters={showDesktopFilters}
+          setShowDesktopFilters={setShowDesktopFilters}
+          setShowMobileFilters={setShowMobileFilters}
         />
         <ActiveFiltersEnhanced 
           filters={filters}
           onFiltersChange={handleFiltersChange}
+          showDesktopFilters={showDesktopFilters}
+          setShowDesktopFilters={setShowDesktopFilters}
+          setShowMobileFilters={setShowMobileFilters}
         />
       </div>
 
@@ -346,7 +356,7 @@ export default function PostListEnhanced({
               <span>
                 {(pagination?.total || 0) > 0 
                   ? `${pagination?.total || 0} resultater funnet`
-                  : messages.no.noResults
+                  : ''
                 }
               </span>
             )}
@@ -375,10 +385,10 @@ export default function PostListEnhanced({
               >
                 {sortOptions.map(option => [
                   <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                    {option.label} (høyest først)
+                    {option.label} (nyeste først)
                   </option>,
                   <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                    {option.label} (lavest først)
+                    {option.label} (eldste først)
                   </option>
                 ])}
               </select>
@@ -445,7 +455,7 @@ export default function PostListEnhanced({
               <Grid className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              {messages.no.noResults}
+              Ingen annonser funnet
             </h3>
             <p className="text-neutral-600">
               Prøv å justere søkekriteriene eller fjerne noen filtre.

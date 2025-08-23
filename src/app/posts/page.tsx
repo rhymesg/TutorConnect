@@ -43,12 +43,19 @@ export default async function PostsPage({
     <div className="min-h-screen bg-neutral-50">
       {/* Page Header */}
       <div className="bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-12 sm:py-16">
           <div className="text-center">
-            <h1 className="text-3xl font-bold text-neutral-900 mb-4">
-              Finn din perfekte lærer eller student
+            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+              Finn din perfekte{' '}
+              <span className="text-green-600">
+                lærer
+              </span>{' '}
+              eller{' '}
+              <span className="text-blue-600">
+                student
+              </span>
             </h1>
-            <p className="text-lg text-neutral-600 max-w-2xl mx-auto">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-neutral-600">
               Fra matematikk til musikk - finn den perfekte matchen for dine behov.
             </p>
           </div>

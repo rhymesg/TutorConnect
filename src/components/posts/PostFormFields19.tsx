@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import { PostWithDetails } from '@/types/database';
 import FormField from '../auth/FormField';
 import FormError from '../auth/FormError';
+import { getSubjectOptions } from '@/constants/subjects';
+import { getAgeGroupOptions } from '@/constants/ageGroups';
 
 interface PostFormFields19Props {
   defaultValues?: PostWithDetails | any;
@@ -46,19 +48,11 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
     { value: 'VESTFOLD', label: 'Vestfold' },
   ];
 
-  // Subjects
-  const subjects = [
-    { value: 'math', label: 'Matematikk' },
-    { value: 'english', label: 'Engelsk' },
-    { value: 'norwegian', label: 'Norsk' },
-    { value: 'science', label: 'Naturfag' },
-    { value: 'programming', label: 'Programmering' },
-    { value: 'sports', label: 'Sport' },
-    { value: 'art', label: 'Kunst' },
-    { value: 'music', label: 'Musikk' },
-    { value: 'childcare', label: 'Barnepass og aktiviteter' },
-    { value: 'other', label: 'Annet' },
-  ];
+  // Subjects from centralized constants
+  const subjects = getSubjectOptions();
+
+  // Age groups from centralized constants
+  const ageGroups = getAgeGroupOptions();
 
   const [selectedSubject, setSelectedSubject] = useState(defaultValues?.subject || '');
   const [customSubject, setCustomSubject] = useState(defaultValues?.customSubject || '');
@@ -160,66 +154,18 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
           {postType === 'TEACHER' ? 'Aldersgrupper jeg kan undervise *' : 'Min aldersgruppe *'}
         </label>
         <div className="grid grid-cols-2 gap-3">
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="PRESCHOOL_3_6"
-              defaultChecked={defaultValues?.ageGroups?.includes('PRESCHOOL_3_6')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Førskolebarn (3-6 år)</span>
-          </label>
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="PRIMARY_7_10"
-              defaultChecked={defaultValues?.ageGroups?.includes('PRIMARY_7_10')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Barneskole (7-10 år)</span>
-          </label>
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="MIDDLE_11_13"
-              defaultChecked={defaultValues?.ageGroups?.includes('MIDDLE_11_13')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Mellomtrinnet (11-13 år)</span>
-          </label>
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="SECONDARY_14_16"
-              defaultChecked={defaultValues?.ageGroups?.includes('SECONDARY_14_16')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Ungdomsskole (14-16 år)</span>
-          </label>
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="HIGH_SCHOOL_17_19"
-              defaultChecked={defaultValues?.ageGroups?.includes('HIGH_SCHOOL_17_19')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Videregående (17-19 år)</span>
-          </label>
-          <label className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
-            <input
-              type={postType === 'STUDENT' ? "radio" : "checkbox"}
-              name="ageGroups"
-              value="ADULTS_20_PLUS"
-              defaultChecked={defaultValues?.ageGroups?.includes('ADULTS_20_PLUS')}
-              className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
-            />
-            <span className="ml-2 text-sm text-neutral-700">Voksne (20+ år)</span>
-          </label>
+          {ageGroups.map((ageGroup) => (
+            <label key={ageGroup.value} className="flex items-center p-3 border border-neutral-300 rounded-lg hover:bg-neutral-50 cursor-pointer">
+              <input
+                type={postType === 'STUDENT' ? "radio" : "checkbox"}
+                name="ageGroups"
+                value={ageGroup.value}
+                defaultChecked={defaultValues?.ageGroups?.includes(ageGroup.value)}
+                className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500"
+              />
+              <span className="ml-2 text-sm text-neutral-700">{ageGroup.label}</span>
+            </label>
+          ))}
         </div>
         {errors?.ageGroups && <FormError error={errors.ageGroups} />}
       </div>

@@ -41,21 +41,21 @@ const QUICK_FILTERS: QuickFilter[] = [
     id: 'tutor-math',
     label: 'Mattelærere',
     icon: <BookOpen className="w-4 h-4" />,
-    filters: { type: 'TUTOR_OFFERING' as PostType, subject: 'MATHEMATICS' },
+    filters: { type: 'TEACHER' as PostType, subject: 'MATHEMATICS' },
     color: 'bg-blue-50 text-blue-700 border-blue-200'
   },
   {
     id: 'tutor-norwegian',
     label: 'Norsklærere',
     icon: <BookOpen className="w-4 h-4" />,
-    filters: { type: 'TUTOR_OFFERING' as PostType, subject: 'NORWEGIAN' },
+    filters: { type: 'TEACHER' as PostType, subject: 'NORWEGIAN' },
     color: 'bg-green-50 text-green-700 border-green-200'
   },
   {
     id: 'tutor-english',
     label: 'Engelsklærere',
     icon: <BookOpen className="w-4 h-4" />,
-    filters: { type: 'TUTOR_OFFERING' as PostType, subject: 'ENGLISH' },
+    filters: { type: 'TEACHER' as PostType, subject: 'ENGLISH' },
     color: 'bg-purple-50 text-purple-700 border-purple-200'
   },
   {

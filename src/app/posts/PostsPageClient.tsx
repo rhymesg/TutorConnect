@@ -35,8 +35,8 @@ export default function PostsPageClient({
 
     if (searchParams.type) {
       const type = Array.isArray(searchParams.type) ? searchParams.type[0] : searchParams.type;
-      if (type === 'TUTOR_OFFERING' || type === 'STUDENT_SEEKING') {
-        filters.type = type;
+      if (type === 'TEACHER' || type === 'STUDENT') {
+        filters.type = type as PostType;
       }
     }
 

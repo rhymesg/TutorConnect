@@ -517,10 +517,12 @@ export const NorwegianSubjectCategories = {
 
 // Norwegian age group to grade level mapping
 export const AgeGroupToGrades = {
-  CHILDREN_7_12: ['1', '2', '3', '4', '5', '6', '7'] as const,
-  TEENAGERS_13_15: ['8', '9', '10'] as const,
-  YOUTH_16_18: ['VG1', 'VG2', 'VG3'] as const,
-  ADULTS_19_PLUS: ['University', 'Adult Education'] as const,
+  PRESCHOOL: ['Barnehage'] as const,
+  PRIMARY_LOWER: ['1', '2', '3', '4'] as const,
+  PRIMARY_UPPER: ['5', '6', '7'] as const,
+  MIDDLE: ['8', '9', '10'] as const,
+  SECONDARY: ['VG1', 'VG2', 'VG3'] as const,
+  ADULTS: ['University', 'Adult Education'] as const,
 };
 
 // Export commonly used types

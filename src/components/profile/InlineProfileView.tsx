@@ -22,6 +22,7 @@ import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
 import { RecentPosts } from './RecentPosts';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { getRegionOptions, getRegionLabel } from '@/constants/regions';
 
 interface ProfileData extends User {
   privacyGender: string;
@@ -368,19 +369,8 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
     { value: 'OTHER', label: 'Annet' }
   ];
 
-  const regionOptions = [
-    { value: 'OSLO', label: 'Oslo' },
-    { value: 'BERGEN', label: 'Bergen' },
-    { value: 'TRONDHEIM', label: 'Trondheim' },
-    { value: 'STAVANGER', label: 'Stavanger' },
-    { value: 'KRISTIANSAND', label: 'Kristiansand' },
-    { value: 'FREDRIKSTAD', label: 'Fredrikstad' },
-    { value: 'DRAMMEN', label: 'Drammen' },
-    { value: 'AKERSHUS', label: 'Akershus' },
-    { value: 'VESTFOLD', label: 'Vestfold' },
-    { value: 'ROGALAND', label: 'Rogaland' },
-    { value: 'HORDALAND', label: 'Hordaland' }
-  ];
+  // Region options from centralized constants
+  const regionOptions = getRegionOptions();
 
   const degreeOptions = [
     { value: 'BACHELOR', label: 'Bachelor' },
@@ -501,7 +491,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             {profile.region && (
               <div className="flex items-center text-sm text-gray-600 mt-1">
                 <MapPinIcon className="h-4 w-4 mr-1" />
-                <span>{profile.region}</span>
+                <span>{getRegionLabel(profile.region)}</span>
               </div>
             )}
             

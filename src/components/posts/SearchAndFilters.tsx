@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Search, Filter, X, ChevronDown, MapPin, BookOpen, Users, Banknote } from 'lucide-react';
 import { PostFilters, PostType, Subject, AgeGroup, NorwegianRegion } from '@/types/database';
 import { education, regions, forms, actions } from '@/lib/translations';
+import { getAgeGroupOptions } from '@/constants/ageGroups';
 
 interface SearchAndFiltersProps {
   filters: PostFilters;
@@ -64,15 +65,12 @@ export default function SearchAndFilters({
   };
 
   const subjects = Object.entries(education.no.subjects);
-  const ageGroups: AgeGroup[] = ['ELEMENTARY', 'MIDDLE_SCHOOL', 'HIGH_SCHOOL', 'UNIVERSITY', 'ADULT'];
+  const ageGroupOptions = getAgeGroupOptions();
+  const ageGroups: AgeGroup[] = ageGroupOptions.map(opt => opt.value as AgeGroup);
   
-  const ageGroupLabels = {
-    ELEMENTARY: education.no.levels.elementary,
-    MIDDLE_SCHOOL: education.no.levels.middleSchool,
-    HIGH_SCHOOL: education.no.levels.highSchool,
-    UNIVERSITY: education.no.levels.university,
-    ADULT: education.no.levels.adult,
-  };
+  const ageGroupLabels = Object.fromEntries(
+    ageGroupOptions.map(opt => [opt.value, opt.label])
+  );
 
   return (
     <div className={`bg-white border-b border-neutral-200 ${className}`}>
@@ -130,9 +128,9 @@ export default function SearchAndFilters({
               </label>
               <div className="grid grid-cols-2 gap-3">
                 <button
-                  onClick={() => updateFilter('type', filters.type === 'TUTOR_OFFERING' ? undefined : 'TUTOR_OFFERING')}
+                  onClick={() => updateFilter('type', filters.type === 'TEACHER' ? undefined : 'TEACHER')}
                   className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                    filters.type === 'TUTOR_OFFERING'
+                    filters.type === 'TEACHER'
                       ? 'bg-brand-50 border-brand-200 text-brand-700'
                       : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
                   }`}
@@ -140,9 +138,9 @@ export default function SearchAndFilters({
                   Tilbyr undervisning
                 </button>
                 <button
-                  onClick={() => updateFilter('type', filters.type === 'STUDENT_SEEKING' ? undefined : 'STUDENT_SEEKING')}
+                  onClick={() => updateFilter('type', filters.type === 'STUDENT' ? undefined : 'STUDENT')}
                   className={`p-3 rounded-lg border text-sm font-medium transition-colors ${
-                    filters.type === 'STUDENT_SEEKING'
+                    filters.type === 'STUDENT'
                       ? 'bg-brand-50 border-brand-200 text-brand-700'
                       : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
                   }`}
@@ -278,7 +276,7 @@ export function ActiveFilters({
   if (filters.type) {
     activeFilters.push({
       key: 'type' as keyof PostFilters,
-      label: filters.type === 'TUTOR_OFFERING' ? 'Tilbyr undervisning' : 'Søker lærer'
+      label: filters.type === 'TEACHER' ? 'Tilbyr undervisning' : 'Søker lærer'
     });
   }
 
