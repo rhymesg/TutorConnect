@@ -217,6 +217,9 @@ local-data/
 .tmp/
 tmp/
 
+# SQL migration files
+*.sql
+
 # Private Plan
 TutorConnect - Plan.pdf
 .env
