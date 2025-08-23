@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { Search, X, Clock, TrendingUp, MapPin, BookOpen, Filter, Share } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SearchSuggestion, SearchHistoryItem } from '@/lib/search-utils';
 import { forms, actions } from '@/lib/translations';
 
@@ -161,7 +162,7 @@ export default function SearchBar({
           {/* Loading Spinner */}
           {isLoading && (
             <div className="px-2">
-              <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin" />
+              <LoadingSpinner size="sm" />
             </div>
           )}
 

@@ -92,7 +92,7 @@ export function ProfileContainer() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>프로필 로딩 중...</div>
+        <LoadingSpinner />
       </div>
     );
   }
@@ -108,7 +108,7 @@ export function ProfileContainer() {
   if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>프로필 데이터를 불러오는 중...</div>
+        <LoadingSpinner />
       </div>
     );
   }
