@@ -12,6 +12,8 @@ import { useApiCall } from '@/hooks/useApiCall';
 
 interface PostListEnhancedProps {
   initialPosts?: PaginatedPosts;
+  initialFilters?: PostFilters;
+  onFiltersChange?: (filters: PostFilters) => void;
   className?: string;
   onPostContact?: (postId: string) => void;
   showSearchHistory?: boolean;
@@ -28,6 +30,8 @@ const MAX_SEARCH_HISTORY = 10;
 
 export default function PostListEnhanced({ 
   initialPosts,
+  initialFilters,
+  onFiltersChange: externalOnFiltersChange,
   className = '',
   onPostContact,
   showSearchHistory = true,
@@ -46,12 +50,21 @@ export default function PostListEnhanced({
     hasPrev: false,
   });
   
-  const [filters, setFilters] = useState<PostFilters>({
+  const [filters, setFilters] = useState<PostFilters>(initialFilters || {
     page: 1,
     limit: POSTS_PER_PAGE,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
+
+  // Update filters when initialFilters change
+  useEffect(() => {
+    if (initialFilters) {
+      setFilters(initialFilters);
+      // Directly fetch with initialFilters to ensure immediate update
+      setTimeout(() => fetchPosts(initialFilters), 0);
+    }
+  }, [initialFilters]);
   
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -213,7 +226,12 @@ export default function PostListEnhanced({
     const updatedFilters = { ...newFilters, page: 1 }; // Reset to first page
     setFilters(updatedFilters);
     fetchPosts(updatedFilters);
-  }, [fetchPosts]);
+    
+    // Call external filter change handler if provided
+    if (externalOnFiltersChange) {
+      externalOnFiltersChange(updatedFilters);
+    }
+  }, [fetchPosts, externalOnFiltersChange]);
 
   // Handle sorting changes
   const handleSortChange = (sortBy: SortOption, sortOrder?: SortOrder) => {
@@ -225,6 +243,11 @@ export default function PostListEnhanced({
     };
     setFilters(newFilters);
     fetchPosts(newFilters);
+    
+    // Call external filter change handler if provided
+    if (externalOnFiltersChange) {
+      externalOnFiltersChange(newFilters);
+    }
   };
 
   // Search history management
@@ -262,7 +285,8 @@ export default function PostListEnhanced({
 
   // Initial load if no initial posts provided
   useEffect(() => {
-    if (!initialPosts) {
+    if (!initialPosts && !initialFilters) {
+      // Only fetch with default filters if no initialFilters will be provided
       fetchPosts(filters);
     }
   }, []); // Only run on mount

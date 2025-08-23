@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PostListEnhanced from '@/components/posts/PostListEnhanced';
-import { PaginatedPosts, PostFilters } from '@/types/database';
+import { PaginatedPosts, PostFilters, PostType } from '@/types/database';
 
 interface PostsPageClientProps {
   initialPosts: PaginatedPosts | null;
@@ -35,8 +35,11 @@ export default function PostsPageClient({
 
     if (searchParams.type) {
       const type = Array.isArray(searchParams.type) ? searchParams.type[0] : searchParams.type;
-      if (type === 'TEACHER' || type === 'STUDENT') {
-        filters.type = type as PostType;
+      // Handle both lowercase and uppercase values
+      if (type === 'TEACHER' || type === 'teacher') {
+        filters.type = 'TEACHER' as PostType;
+      } else if (type === 'STUDENT' || type === 'student') {
+        filters.type = 'STUDENT' as PostType;
       }
     }
 
@@ -87,6 +90,62 @@ export default function PostsPageClient({
   };
 
   const [filters, setFilters] = useState<PostFilters>(initializeFilters);
+
+  // Update filters when URL search params change
+  useEffect(() => {
+    const filters: PostFilters = {
+      page: 1,
+      limit: 12,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    };
+
+    // Parse URL parameters from useSearchParams hook
+    const search = urlSearchParams.get('search');
+    if (search) filters.search = search;
+
+    const type = urlSearchParams.get('type');
+    if (type === 'TEACHER' || type === 'teacher') {
+      filters.type = 'TEACHER' as PostType;
+    } else if (type === 'STUDENT' || type === 'student') {
+      filters.type = 'STUDENT' as PostType;
+    }
+
+    const subject = urlSearchParams.get('subject');
+    if (subject) filters.subject = subject as any;
+
+    const location = urlSearchParams.get('location');
+    if (location) filters.location = location as any;
+
+    const ageGroups = urlSearchParams.getAll('ageGroups');
+    if (ageGroups.length > 0) filters.ageGroups = ageGroups as any[];
+
+    const minRate = urlSearchParams.get('minRate');
+    if (minRate) {
+      const parsed = parseInt(minRate);
+      if (!isNaN(parsed)) filters.minRate = parsed;
+    }
+
+    const maxRate = urlSearchParams.get('maxRate');
+    if (maxRate) {
+      const parsed = parseInt(maxRate);
+      if (!isNaN(parsed)) filters.maxRate = parsed;
+    }
+
+    const sortBy = urlSearchParams.get('sortBy');
+    if (sortBy === 'createdAt' || sortBy === 'hourlyRate' || sortBy === 'rating') {
+      filters.sortBy = sortBy;
+    }
+
+    const sortOrder = urlSearchParams.get('sortOrder');
+    if (sortOrder === 'asc' || sortOrder === 'desc') {
+      filters.sortOrder = sortOrder;
+    }
+
+    console.log('PostsPageClient - URL Search Params:', urlSearchParams.toString());
+    console.log('PostsPageClient - Parsed filters:', filters);
+    setFilters(filters);
+  }, [urlSearchParams]);
 
   // Update URL when filters change
   const updateURL = useCallback((newFilters: PostFilters) => {
@@ -146,6 +205,8 @@ export default function PostsPageClient({
   return (
     <PostListEnhanced
       initialPosts={initialPosts}
+      initialFilters={filters}
+      onFiltersChange={handleFiltersChange}
       onPostContact={handlePostContact}
       showSearchHistory={true}
       enableOfflineMode={true}

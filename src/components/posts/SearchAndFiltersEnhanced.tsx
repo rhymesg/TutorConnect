@@ -215,7 +215,7 @@ export default function SearchAndFiltersEnhanced({
   // Filter content component
   const FilterContent = ({ isMobile }: { isMobile: boolean }) => (
     <div className="space-y-6">
-      {/* Post Type Filter */}
+      {/* Post Type Filter - Hidden since route determines the type
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-3">
           Type annonse
@@ -251,6 +251,7 @@ export default function SearchAndFiltersEnhanced({
           </button>
         </div>
       </div>
+      */}
 
       {/* Subject Filter */}
       <div>

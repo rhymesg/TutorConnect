@@ -50,15 +50,15 @@ export default function ActiveFiltersEnhanced({
     });
   }
 
-  // Post type filter
-  if (filters.type) {
-    activeFilters.push({
-      key: 'type' as keyof PostFilters,
-      label: filters.type === 'TEACHER' ? 'Tilbyr undervisning' : 'Søker lærer',
-      icon: Filter,
-      onRemove: () => removeFilter('type')
-    });
-  }
+  // Post type filter - Hidden since route determines the type
+  // if (filters.type) {
+  //   activeFilters.push({
+  //     key: 'type' as keyof PostFilters,
+  //     label: filters.type === 'TEACHER' ? 'Tilbyr undervisning' : 'Søker lærer',
+  //     icon: Filter,
+  //     onRemove: () => removeFilter('type')
+  //   });
+  // }
 
   // Subject filter
   if (filters.subject) {
@@ -117,17 +117,20 @@ export default function ActiveFiltersEnhanced({
   // Show component even if no active filters to display filter buttons
 
   const clearFilters = () => {
+    // Preserve the type filter when clearing others since it's determined by route
     onFiltersChange({
       page: 1,
       limit: filters.limit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      type: filters.type, // Keep the type filter
     });
   };
 
   const getActiveFilterCount = () => {
     let count = 0;
-    if (filters.type) count++;
+    // Don't count type filter since it's determined by route
+    // if (filters.type) count++;
     if (filters.subject) count++;
     if (filters.ageGroups?.length) count++;
     if (filters.location) count++;
@@ -138,7 +141,8 @@ export default function ActiveFiltersEnhanced({
 
   const hasActiveFilters = () => {
     return !!(
-      filters.type || 
+      // Don't check type filter since it's determined by route
+      // filters.type || 
       filters.subject || 
       filters.ageGroups?.length || 
       filters.location || 
