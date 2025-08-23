@@ -7,6 +7,7 @@ import { useApiCall } from '@/hooks/useApiCall';
 import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import AuthError from '@/components/auth/AuthError';
 import { User } from '@prisma/client';
 
 interface ProfileData extends User {
@@ -44,50 +45,77 @@ interface ProfileData extends User {
 
 export function ProfileContainer() {
   const router = useRouter();
+  const { authError, clearAuthError, refreshAuth } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch profile data directly
+  // Fetch profile data with proper auth handling
+  const { execute, data, error: apiError, isLoading: apiLoading } = useApiCall<ProfileData>();
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/profile');
-        const data = await response.json();
+        const result = await execute('/api/profile', {
+          method: 'GET',
+          requireAuth: true,
+        });
         
-        if (data.success) {
+        if (result) {
           // Ensure all privacy fields have default values
           const profileWithDefaults = {
-            ...data.data,
-            privacyGender: data.data.privacyGender || 'PUBLIC',
-            privacyAge: data.data.privacyAge || 'PUBLIC',
-            privacyDocuments: data.data.privacyDocuments || 'PUBLIC',
-            privacyContact: data.data.privacyContact || 'PUBLIC',
-            privacyEducation: data.data.privacyEducation || 'PUBLIC',
-            privacyCertifications: data.data.privacyCertifications || 'PUBLIC',
-            privacyLocation: data.data.privacyLocation || 'PUBLIC',
-            privacyPostalCode: data.data.privacyPostalCode || 'PUBLIC',
-            privacyMemberSince: data.data.privacyMemberSince || 'PUBLIC',
-            privacyLastActive: data.data.privacyLastActive || 'PUBLIC',
-            privacyActivity: data.data.privacyActivity || 'PUBLIC',
-            privacyStats: data.data.privacyStats || 'PUBLIC'
+            ...result,
+            privacyGender: result.privacyGender || 'PUBLIC',
+            privacyAge: result.privacyAge || 'PUBLIC',
+            privacyDocuments: result.privacyDocuments || 'PUBLIC',
+            privacyContact: result.privacyContact || 'PUBLIC',
+            privacyEducation: result.privacyEducation || 'PUBLIC',
+            privacyCertifications: result.privacyCertifications || 'PUBLIC',
+            privacyLocation: result.privacyLocation || 'PUBLIC',
+            privacyPostalCode: result.privacyPostalCode || 'PUBLIC',
+            privacyMemberSince: result.privacyMemberSince || 'PUBLIC',
+            privacyLastActive: result.privacyLastActive || 'PUBLIC',
+            privacyActivity: result.privacyActivity || 'PUBLIC',
+            privacyStats: result.privacyStats || 'PUBLIC'
           };
           setProfileData(profileWithDefaults);
-        } else {
-          setError(data.error || 'Profile fetch failed');
+          setError(null);
+        } else if (apiError) {
+          setError(apiError);
         }
       } catch (err) {
-        setError('Network error');
         console.error('Profile fetch error:', err);
+        // Error handling is done by useApiCall and AuthContext
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, []);
+  }, [execute, apiError]);
 
+  // Handle retry after authentication error
+  const handleRetry = async () => {
+    clearAuthError();
+    const refreshed = await refreshAuth();
+    if (refreshed) {
+      // Refetch profile data
+      setLoading(true);
+      setError(null);
+      window.location.reload(); // Simple reload to refetch everything
+    }
+  };
+
+  // Show auth error if present
+  if (authError) {
+    return (
+      <AuthError
+        type={authError}
+        onRetry={handleRetry}
+      />
+    );
+  }
 
   if (loading) {
     return (

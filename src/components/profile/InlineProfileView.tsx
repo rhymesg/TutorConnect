@@ -549,10 +549,12 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             Personlige opplysninger
           </h2>
           <dl className="space-y-4">
-            <div>
-              <dt className="text-sm font-medium text-gray-500">E-post</dt>
-              <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
-            </div>
+            {!isPublicView && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">E-post</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
+              </div>
+            )}
             
             {renderEditableField('gender', 'Kjønn', formatGender(profile.gender), 'select', genderOptions, 'privacyGender')}
             
