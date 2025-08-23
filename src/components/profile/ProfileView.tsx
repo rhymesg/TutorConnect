@@ -58,8 +58,7 @@ export function ProfileView({ profile, onEditClick, isPublicView = false }: Prop
     const genderMap = {
       MALE: 'Mann',
       FEMALE: 'Kvinne',
-      OTHER: 'Annet',
-      PREFER_NOT_TO_SAY: 'Ønsker ikke å oppgi'
+      OTHER: 'Annet'
     };
     return genderMap[gender as keyof typeof genderMap] || gender;
   };
@@ -134,7 +133,9 @@ export function ProfileView({ profile, onEditClick, isPublicView = false }: Prop
             {profile.gender && isFieldVisible(profile.privacyGender) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Kjønn</dt>
-                <dd className="mt-1 text-sm text-gray-900">{formatGender(profile.gender)}</dd>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {formatGender(profile.gender) || <span className="text-gray-400 italic">Ikke oppgitt</span>}
+                </dd>
               </div>
             )}
             {profile.birthYear && isFieldVisible(profile.privacyAge) && (

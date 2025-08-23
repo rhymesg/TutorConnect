@@ -266,11 +266,14 @@ export async function PATCH(request: NextRequest) {
     // Parse request body
     const body = await request.json();
 
+    // Prepare data for database update  
+    const updateData = { ...body };
+
     // Update profile
     const updatedProfile = await prisma.user.update({
       where: { id: decoded.sub },
       data: {
-        ...body,
+        ...updateData,
         updatedAt: new Date(),
       }
     });
