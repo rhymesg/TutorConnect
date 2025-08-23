@@ -61,8 +61,6 @@ export default function PostListEnhanced({
   useEffect(() => {
     if (initialFilters) {
       setFilters(initialFilters);
-      // Directly fetch with initialFilters to ensure immediate update
-      setTimeout(() => fetchPosts(initialFilters), 0);
     }
   }, [initialFilters]);
   
@@ -193,7 +191,7 @@ export default function PostListEnhanced({
         }, timeout);
       }
     }
-  }, [apiCall, retryCount, isOnline]); // Removed filters dependency
+  }, [apiCall, isOnline]); // Removed retryCount to prevent unnecessary recreations
 
   // Load more posts for infinite scroll
   const loadMorePosts = useCallback(async () => {
@@ -225,13 +223,13 @@ export default function PostListEnhanced({
   const handleFiltersChange = useCallback((newFilters: PostFilters) => {
     const updatedFilters = { ...newFilters, page: 1 }; // Reset to first page
     setFilters(updatedFilters);
-    fetchPosts(updatedFilters);
+    // Don't call fetchPosts here - let the useEffect handle it
     
     // Call external filter change handler if provided
     if (externalOnFiltersChange) {
       externalOnFiltersChange(updatedFilters);
     }
-  }, [fetchPosts, externalOnFiltersChange]);
+  }, [externalOnFiltersChange]);
 
   // Handle sorting changes
   const handleSortChange = (sortBy: SortOption, sortOrder?: SortOrder) => {
@@ -242,7 +240,7 @@ export default function PostListEnhanced({
       page: 1,
     };
     setFilters(newFilters);
-    fetchPosts(newFilters);
+    // Don't call fetchPosts here - let the useEffect handle it
     
     // Call external filter change handler if provided
     if (externalOnFiltersChange) {
@@ -279,24 +277,21 @@ export default function PostListEnhanced({
       clearTimeout(retryTimeoutRef.current);
     }
     setRetryCount(0);
-    fetchPosts(filters);
+    setHasError(false);
+    // Force a re-fetch by updating the filters slightly
+    setFilters(prev => ({ ...prev, page: 1 }));
   };
 
 
-  // Initial load if no initial posts provided
+  // Fetch posts when filters change
   useEffect(() => {
-    if (!initialPosts && !initialFilters) {
+    if (filters.type) { // Only fetch if we have a type filter (from route)
+      fetchPosts(filters);
+    } else if (!initialPosts && !initialFilters) {
       // Only fetch with default filters if no initialFilters will be provided
       fetchPosts(filters);
     }
-  }, []); // Only run on mount
-  
-  // Disable the fetchPosts dependency to prevent infinite loops
-  useEffect(() => {
-    return () => {
-      // Cleanup any ongoing requests
-    };
-  }, []);
+  }, [filters.type, filters.subject, filters.ageGroups, filters.location, filters.minRate, filters.maxRate, filters.search, filters.sortBy, filters.sortOrder]); // Only specific filter dependencies
 
   // Cleanup
   useEffect(() => {
