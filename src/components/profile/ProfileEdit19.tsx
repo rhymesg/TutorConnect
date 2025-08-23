@@ -102,7 +102,7 @@ export function ProfileEdit19({ profile, onSave, onCancel }: Props) {
 
   const currentYear = new Date().getFullYear();
   const birthYearOptions = [];
-  for (let year = currentYear - 13; year >= 1900; year--) {
+  for (let year = currentYear; year >= currentYear - 100; year--) {
     birthYearOptions.push(year);
   }
 
@@ -280,7 +280,6 @@ export function ProfileEdit19({ profile, onSave, onCancel }: Props) {
                 <option value="MALE">Mann</option>
                 <option value="FEMALE">Kvinne</option>
                 <option value="OTHER">Annet</option>
-                <option value="PREFER_NOT_TO_SAY">Ønsker ikke å oppgi</option>
               </select>
               {profileState?.fieldErrors?.gender && (
                 <FormError error={profileState.fieldErrors.gender} />

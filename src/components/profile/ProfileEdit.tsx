@@ -145,7 +145,7 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
 
   const currentYear = new Date().getFullYear();
   const birthYearOptions = [];
-  for (let year = currentYear - 13; year >= 1900; year--) {
+  for (let year = currentYear; year >= currentYear - 100; year--) {
     birthYearOptions.push(year);
   }
 
@@ -253,14 +253,13 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
             </label>
             <select
               value={formData.gender || ''}
-              onChange={(e) => handleInputChange('gender', e.target.value || undefined)}
+              onChange={(e) => handleInputChange('gender', e.target.value === '' ? null : e.target.value || undefined)}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Velg kjønn</option>
               <option value="MALE">Mann</option>
               <option value="FEMALE">Kvinne</option>
               <option value="OTHER">Annet</option>
-              <option value="PREFER_NOT_TO_SAY">Ønsker ikke å oppgi</option>
             </select>
             {errors.gender && <FormError errors={errors.gender} />}
           </div>
@@ -271,7 +270,7 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
             </label>
             <select
               value={formData.birthYear || ''}
-              onChange={(e) => handleInputChange('birthYear', e.target.value ? parseInt(e.target.value) : undefined)}
+              onChange={(e) => handleInputChange('birthYear', e.target.value === '' ? null : (e.target.value ? parseInt(e.target.value) : undefined))}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
             >
               <option value="">Velg fødselsår</option>

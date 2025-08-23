@@ -20,6 +20,7 @@ interface AuthState {
   isAuthenticated: boolean;
   accessToken: string | null;
   refreshToken: string | null;
+  authError: 'expired' | 'invalid' | null;
 }
 
 interface AuthContextType extends AuthState {
@@ -28,6 +29,7 @@ interface AuthContextType extends AuthState {
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
   refreshAuth: () => Promise<boolean>;
   clearAuth: () => void;
+  clearAuthError: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -41,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isAuthenticated: false,
     accessToken: null,
     refreshToken: null,
+    authError: null,
   });
 
   // Load auth state from localStorage on mount
@@ -59,6 +62,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             isAuthenticated: true,
             accessToken,
             refreshToken,
+            authError: null,
           });
         } else {
           setState(prev => ({
@@ -91,6 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: true,
         accessToken,
         refreshToken,
+        authError: null,
       });
     } catch (error) {
       console.error('Error saving auth state:', error);
@@ -110,10 +115,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated: false,
         accessToken: null,
         refreshToken: null,
+        authError: null,
       });
     } catch (error) {
       console.error('Error clearing auth state:', error);
     }
+  }, []);
+
+  // Clear auth error
+  const clearAuthError = useCallback(() => {
+    setState(prev => ({ ...prev, authError: null }));
+  }, []);
+
+  // Set auth error
+  const setAuthError = useCallback((error: 'expired' | 'invalid') => {
+    setState(prev => ({ 
+      ...prev, 
+      authError: error,
+      isAuthenticated: false,
+      user: null,
+      accessToken: null 
+    }));
   }, []);
 
   // Login function
@@ -190,7 +212,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Refresh authentication
   const refreshAuth = useCallback(async (): Promise<boolean> => {
     if (!state.refreshToken) {
-      clearAuth();
+      setAuthError('expired');
       return false;
     }
 
@@ -204,7 +226,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
 
       if (!response.ok) {
-        clearAuth();
+        const data = await response.json();
+        if (response.status === 401 || data.message?.includes('expired')) {
+          setAuthError('expired');
+        } else {
+          setAuthError('invalid');
+        }
         return false;
       }
 
@@ -215,10 +242,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true;
     } catch (error) {
       console.error('Token refresh error:', error);
-      clearAuth();
+      setAuthError('expired');
       return false;
     }
-  }, [state.refreshToken, clearAuth, saveAuthState]);
+  }, [state.refreshToken, setAuthError, saveAuthState]);
 
   // Logout function
   const logout = useCallback(async () => {
@@ -248,6 +275,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     register,
     refreshAuth,
     clearAuth,
+    clearAuthError,
   };
 
   return (

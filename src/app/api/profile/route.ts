@@ -10,9 +10,18 @@ const prisma = new PrismaClient();
  */
 export async function GET(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
+    // Get token from Authorization header or cookies
+    let accessToken: string | undefined;
+    
+    // Try Authorization header first
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      accessToken = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      const cookieStore = await cookies();
+      accessToken = cookieStore.get('accessToken')?.value;
+    }
 
     if (!accessToken) {
       return NextResponse.json(
@@ -114,8 +123,24 @@ export async function GET(request: NextRequest) {
       }
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile GET error:', error);
+    
+    // Handle JWT-specific errors
+    if (error.code === 'ERR_JWT_EXPIRED' || error.claim === 'exp') {
+      return NextResponse.json(
+        { success: false, error: 'TOKEN_EXPIRED', message: 'Access token has expired' },
+        { status: 401 }
+      );
+    }
+    
+    if (error.code === 'ERR_JWS_INVALID' || error.message?.includes('invalid')) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_TOKEN', message: 'Invalid access token' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -128,9 +153,18 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
+    // Get token from Authorization header or cookies
+    let accessToken: string | undefined;
+    
+    // Try Authorization header first
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      accessToken = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      const cookieStore = await cookies();
+      accessToken = cookieStore.get('accessToken')?.value;
+    }
 
     if (!accessToken) {
       return NextResponse.json(
@@ -174,8 +208,24 @@ export async function PUT(request: NextRequest) {
       data: updatedProfile
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile PUT error:', error);
+    
+    // Handle JWT-specific errors
+    if (error.code === 'ERR_JWT_EXPIRED' || error.claim === 'exp') {
+      return NextResponse.json(
+        { success: false, error: 'TOKEN_EXPIRED', message: 'Access token has expired' },
+        { status: 401 }
+      );
+    }
+    
+    if (error.code === 'ERR_JWS_INVALID' || error.message?.includes('invalid')) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_TOKEN', message: 'Invalid access token' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }
@@ -188,9 +238,18 @@ export async function PUT(request: NextRequest) {
  */
 export async function PATCH(request: NextRequest) {
   try {
-    // Get token from cookies
-    const cookieStore = await cookies();
-    const accessToken = cookieStore.get('accessToken')?.value;
+    // Get token from Authorization header or cookies
+    let accessToken: string | undefined;
+    
+    // Try Authorization header first
+    const authHeader = request.headers.get('authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      accessToken = authHeader.substring(7);
+    } else {
+      // Fallback to cookies
+      const cookieStore = await cookies();
+      accessToken = cookieStore.get('accessToken')?.value;
+    }
 
     if (!accessToken) {
       return NextResponse.json(
@@ -207,11 +266,14 @@ export async function PATCH(request: NextRequest) {
     // Parse request body
     const body = await request.json();
 
+    // Prepare data for database update  
+    const updateData = { ...body };
+
     // Update profile
     const updatedProfile = await prisma.user.update({
       where: { id: decoded.sub },
       data: {
-        ...body,
+        ...updateData,
         updatedAt: new Date(),
       }
     });
@@ -221,8 +283,24 @@ export async function PATCH(request: NextRequest) {
       data: updatedProfile
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Profile PATCH error:', error);
+    
+    // Handle JWT-specific errors
+    if (error.code === 'ERR_JWT_EXPIRED' || error.claim === 'exp') {
+      return NextResponse.json(
+        { success: false, error: 'TOKEN_EXPIRED', message: 'Access token has expired' },
+        { status: 401 }
+      );
+    }
+    
+    if (error.code === 'ERR_JWS_INVALID' || error.message?.includes('invalid')) {
+      return NextResponse.json(
+        { success: false, error: 'INVALID_TOKEN', message: 'Invalid access token' },
+        { status: 401 }
+      );
+    }
+    
     return NextResponse.json(
       { success: false, error: 'Internal server error' },
       { status: 500 }

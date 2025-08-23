@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, MapPin, User, Star, MessageCircle, Calendar } from 'lucide-react';
+import { Clock, MapPin, User, Star, MessageCircle, Calendar, GraduationCap, BookOpen } from 'lucide-react';
 import { PostWithDetails, PostType } from '@/types/database';
-import { formatters, education } from '@/lib/translations';
+import { formatters, education, common } from '@/lib/translations';
 import { StartChatButton } from '@/components/chat';
 
 interface PostCardProps {
@@ -16,30 +16,67 @@ interface PostCardProps {
 export default function PostCard({ post, className = '', onContactClick }: PostCardProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const isTutorPost = post.type === 'TUTOR_OFFERING';
-  const subjectName = education.no.subjects[post.subject as keyof typeof education.no.subjects] || post.subject;
+  const isTutorPost = post.type === 'TEACHER';
   
-  // Format age groups
-  const ageGroupText = post.ageGroups.join(', ');
+  // Subject mappings that match PostFormFields19 options
+  const subjectMapping = {
+    'math': 'Matematikk',
+    'english': 'Engelsk',
+    'norwegian': 'Norsk', 
+    'science': 'Naturfag',
+    'programming': 'Programmering',
+    'sports': 'Sport',
+    'art': 'Kunst',
+    'music': 'Musikk',
+    'childcare': 'Barnepass og aktiviteter',
+    'other': 'Annet',
+    // Also include original mappings for backwards compatibility
+    ...education.no.subjects
+  };
   
-  // Format rate display
+  const subjectName = subjectMapping[post.subject as keyof typeof subjectMapping] || post.subject;
+  
+  // Format age groups with more readable names
+  const formatAgeGroups = (ageGroups: string[]) => {
+    const ageGroupNames = {
+      'PRESCHOOL_3_6': '3-6 år',
+      'PRIMARY_7_10': '7-10 år', 
+      'MIDDLE_11_13': '11-13 år',
+      'SECONDARY_14_16': '14-16 år',
+      'HIGH_SCHOOL_17_19': '17-19 år',
+      'ADULTS_20_PLUS': '20+ år'
+    };
+    return ageGroups.map(group => ageGroupNames[group as keyof typeof ageGroupNames] || group).join(', ');
+  };
+  
+  const ageGroupText = formatAgeGroups(post.ageGroups);
+  
+  // Format rate display - Don't show specific prices to encourage click-through
   const rateDisplay = () => {
-    if (isTutorPost) {
-      return post.hourlyRate ? formatters.currency(post.hourlyRate) : 'Pris etter avtale';
-    } else {
-      if (post.hourlyRateMin && post.hourlyRateMax) {
-        return `${formatters.currency(post.hourlyRateMin)} - ${formatters.currency(post.hourlyRateMax)}`;
-      } else if (post.hourlyRateMax) {
-        return `Opptil ${formatters.currency(post.hourlyRateMax)}`;
-      } else {
-        return 'Budsjett etter avtale';
-      }
-    }
+    return '••• kr';
   };
 
-  // Format available times
-  const availableTimesText = post.availableTimes.length > 0 
-    ? post.availableTimes.slice(0, 3).join(', ') + (post.availableTimes.length > 3 ? '...' : '')
+  // Format available days and times
+  const formatAvailableDays = (days: string[]) => {
+    // Use shortened versions of Norwegian day names (handle both cases)
+    const dayNames = {
+      'MONDAY': 'Man', 'monday': 'Man',
+      'TUESDAY': 'Tir', 'tuesday': 'Tir',
+      'WEDNESDAY': 'Ons', 'wednesday': 'Ons',
+      'THURSDAY': 'Tor', 'thursday': 'Tor',
+      'FRIDAY': 'Fre', 'friday': 'Fre',
+      'SATURDAY': 'Lør', 'saturday': 'Lør',
+      'SUNDAY': 'Søn', 'sunday': 'Søn'
+    };
+    return days.map(day => dayNames[day as keyof typeof dayNames] || day).join(', ');
+  };
+
+  const availableDaysText = post.availableDays?.length > 0 
+    ? formatAvailableDays(post.availableDays)
+    : 'Fleksible dager';
+
+  const availableTimesText = post.availableTimes?.length > 0 
+    ? post.availableTimes.slice(0, 2).join(', ') + (post.availableTimes.length > 2 ? '...' : '')
     : 'Fleksibel tid';
 
   const handleContactClick = (e: React.MouseEvent) => {
@@ -64,7 +101,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               : 'bg-blue-100 text-blue-800'
             }
           `}>
-            {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+{isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
           </span>
           <span className="text-sm text-neutral-500">
             {formatters.date(new Date(post.createdAt))}
@@ -75,14 +112,11 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
       {/* Main Content */}
       <Link href={`/posts/${post.id}`} className="block">
         <div className="px-4 pb-4">
-          {/* Title and Description */}
+          {/* Title */}
           <div className="mb-3">
             <h3 className="text-lg font-semibold text-neutral-900 group-hover:text-brand-600 transition-colors line-clamp-1">
               {post.title}
             </h3>
-            <p className="text-sm text-neutral-600 mt-1 line-clamp-2">
-              {post.description}
-            </p>
           </div>
 
           {/* Subject and Age Groups */}
@@ -95,7 +129,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
             </span>
           </div>
 
-          {/* User Info */}
+          {/* User Info with Badge */}
           <div className="flex items-center mb-3">
             <div className="relative w-8 h-8 mr-3">
               {post.user.profileImage ? (
@@ -120,18 +154,14 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               )}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-neutral-900 truncate">
                   {post.user.name}
                 </span>
-                <div className="flex items-center ml-2">
-                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                  <span className="text-xs text-neutral-600 ml-1">4.8</span>
+                {/* Badge System - TODO: Replace with actual badge system */}
+                <div className="flex items-center gap-1">
+                  {/* Placeholder for badge system */}
                 </div>
-              </div>
-              <div className="flex items-center text-xs text-neutral-500">
-                <MapPin className="w-3 h-3 mr-1" />
-                {post.user.region}
               </div>
             </div>
           </div>
@@ -139,8 +169,8 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
           {/* Availability and Location */}
           <div className="space-y-2 mb-3">
             <div className="flex items-center text-sm text-neutral-600">
-              <Clock className="w-4 h-4 mr-2 text-neutral-400" />
-              <span className="truncate">{availableTimesText}</span>
+              <Calendar className="w-4 h-4 mr-2 text-neutral-400" />
+              <span className="truncate">{availableDaysText}</span>
             </div>
             <div className="flex items-center text-sm text-neutral-600">
               <MapPin className="w-4 h-4 mr-2 text-neutral-400" />
@@ -153,12 +183,10 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
           {/* Rate and Actions */}
           <div className="flex items-center justify-between pt-3 border-t border-neutral-100">
             <div className="flex flex-col">
-              <span className="text-base sm:text-lg font-bold text-brand-600">
+              <span className="text-sm text-neutral-600 font-medium">
                 {rateDisplay()}
               </span>
-              {(post.hourlyRate || post.hourlyRateMax) && (
-                <span className="text-xs text-neutral-500">per time</span>
-              )}
+              <span className="text-xs text-neutral-500">per time</span>
             </div>
             
             <div className="flex items-center space-x-2">
@@ -169,7 +197,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               <StartChatButton
                 postId={post.id}
                 postTitle={post.title}
-                postType={post.type === 'TUTOR_OFFERING' ? 'TEACHER' : 'STUDENT'}
+                postType={post.type === 'TEACHER' ? 'STUDENT' : 'TEACHER'}
                 authorId={post.userId}
                 authorName={post.user.name}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs sm:text-sm font-medium hover:bg-brand-700 transition-colors whitespace-nowrap"

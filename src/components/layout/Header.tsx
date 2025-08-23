@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Bars3Icon, 
   UserCircleIcon,
-  BellIcon
+  BellIcon,
+  PlusCircleIcon,
+  MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
 import { 
   ChevronDownIcon 
@@ -31,6 +33,21 @@ export default function Header({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated, logout } = useAuth();
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
+      }
+    };
+
+    if (userMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [userMenuOpen]);
 
   // Main navigation items for public pages
   const publicNavigation: NavigationItem[] = [
@@ -72,13 +89,24 @@ export default function Header({
           </div>
 
           {/* Center - Navigation (desktop) */}
-          <nav className="hidden md:flex space-x-8" aria-label="Hovednavigasjon">
+          <nav className="hidden md:flex items-center space-x-6" aria-label="Hovednavigasjon">
+            {/* Create post button */}
+            {isAuthenticated && (
+              <Link
+                href="/posts/new"
+                className="flex items-center px-3 py-2 text-sm font-medium text-neutral-700 hover:text-brand-600 hover:bg-neutral-50 rounded-md transition-colors"
+              >
+                <PlusCircleIcon className="h-5 w-5 mr-1.5" aria-hidden="true" />
+                Opprett annonse
+              </Link>
+            )}
+            
             {publicNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={`
-                  px-3 py-2 text-sm font-medium rounded-md transition-colors
+                  flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                   ${item.current 
                     ? 'text-brand-600 bg-brand-50' 
                     : 'text-neutral-700 hover:text-brand-600 hover:bg-neutral-50'
@@ -86,6 +114,9 @@ export default function Header({
                 `}
                 aria-current={item.current ? 'page' : undefined}
               >
+                {(item.name === 'Finn en lærer' || item.name === 'Finn en student') && (
+                  <MagnifyingGlassIcon className="h-4 w-4 mr-1.5" aria-hidden="true" />
+                )}
                 {item.name}
               </Link>
             ))}
@@ -110,7 +141,7 @@ export default function Header({
                 </button>
 
                 {/* User menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     type="button"
                     className="flex items-center rounded-md p-2 text-neutral-700 hover:bg-neutral-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -131,13 +162,17 @@ export default function Header({
                           href="/profile"
                           className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
                           role="menuitem"
+                          onClick={() => setUserMenuOpen(false)}
                         >
                           Min side
                         </Link>
                         <hr className="my-1 border-neutral-200" />
                         <button
                           type="button"
-                          onClick={logout}
+                          onClick={() => {
+                            logout();
+                            setUserMenuOpen(false);
+                          }}
                           className="block w-full px-4 py-2 text-left text-sm text-neutral-700 hover:bg-neutral-100"
                           role="menuitem"
                         >
@@ -172,13 +207,24 @@ export default function Header({
       {/* Mobile navigation menu */}
       <div className="md:hidden border-t border-neutral-200 bg-white">
         <nav className="mx-auto max-w-7xl px-4 py-2" aria-label="Mobilnavigasjon">
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Create post button for mobile */}
+            {isAuthenticated && (
+              <Link
+                href="/posts/new"
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-neutral-700 hover:text-brand-600 rounded-md transition-colors"
+              >
+                <PlusCircleIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                Opprett
+              </Link>
+            )}
+            
             {publicNavigation.map((item) => (
               <Link
                 key={item.name}
                 href={item.href}
                 className={`
-                  px-3 py-2 text-sm font-medium rounded-md transition-colors
+                  flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors
                   ${item.current 
                     ? 'text-brand-600 bg-brand-50' 
                     : 'text-neutral-700 hover:text-brand-600'
@@ -186,6 +232,9 @@ export default function Header({
                 `}
                 aria-current={item.current ? 'page' : undefined}
               >
+                {(item.name === 'Finn en lærer' || item.name === 'Finn en student') && (
+                  <MagnifyingGlassIcon className="h-4 w-4 mr-1" aria-hidden="true" />
+                )}
                 {item.name}
               </Link>
             ))}

@@ -52,6 +52,7 @@ interface Props {
 export function PublicProfileContainer({ userId }: Props) {
   const { user: currentUser } = useAuth();
   const { execute: fetchProfile, data: profileData, isLoading: loading, error } = useApiCall<PublicProfileData>();
+  const [initialLoad, setInitialLoad] = useState(true);
 
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.id === userId;
@@ -64,13 +65,15 @@ export function PublicProfileContainer({ userId }: Props) {
       
       fetchProfile(endpoint, {
         method: 'GET',
+      }).finally(() => {
+        setInitialLoad(false);
       });
     }
   }, [userId, fetchProfile]);
 
   console.log('Debug - loading:', loading, 'error:', error, 'profileData:', profileData); // Debug log
 
-  if (loading) {
+  if (loading || initialLoad) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" />
@@ -94,7 +97,7 @@ export function PublicProfileContainer({ userId }: Props) {
     );
   }
 
-  if (!profileData) {
+  if (!profileData && !loading && !initialLoad) {
     console.log('No profile data - this is the current issue'); // Debug log
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">

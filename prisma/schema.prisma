@@ -264,7 +264,7 @@ model UserSession {
 enum Gender {
   MALE
   FEMALE
-  PREFER_NOT_TO_SAY
+  OTHER
 }
 
 enum PrivacySetting {
@@ -286,6 +286,8 @@ enum Subject {
   programming
   sports
   art
+  music
+  childcare
   other
 }
 

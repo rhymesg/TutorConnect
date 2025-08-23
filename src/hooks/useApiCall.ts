@@ -22,7 +22,7 @@ interface UseApiCallReturn<T> extends ApiCallState<T> {
 }
 
 export function useApiCall<T = any>(): UseApiCallReturn<T> {
-  const { accessToken, refreshAuth } = useAuth();
+  const { accessToken, refreshAuth, authError } = useAuth();
   
   const [state, setState] = useState<ApiCallState<T>>({
     data: null,
@@ -95,7 +95,21 @@ export function useApiCall<T = any>(): UseApiCallReturn<T> {
       const data = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.message || `HTTP error! status: ${response.status}`;
+        let errorMessage = data.message || `HTTP error! status: ${response.status}`;
+        
+        // Handle authentication-specific errors
+        if (response.status === 401) {
+          if (data.message?.includes('expired') || data.message?.includes('TOKEN_EXPIRED')) {
+            errorMessage = 'Din sesjon er utløpt. Vennligst logg inn på nytt.';
+          } else if (data.message?.includes('INVALID_TOKEN') || data.message?.includes('invalid')) {
+            errorMessage = 'Ugyldig autentisering. Vennligst logg inn på nytt.';
+          } else {
+            errorMessage = 'Du må logge inn for å få tilgang til denne funksjonen.';
+          }
+        } else if (response.status >= 500) {
+          errorMessage = 'Det oppstod en serverfeil. Prøv igjen senere.';
+        }
+        
         setState({
           data: null,
           error: errorMessage,
@@ -104,13 +118,15 @@ export function useApiCall<T = any>(): UseApiCallReturn<T> {
         return null;
       }
 
+      const returnData = data.data || data;
+      
       setState({
-        data: data.data || data,
+        data: returnData,
         error: null,
         isLoading: false,
       });
 
-      return data.data || data;
+      return returnData;
 
     } catch (error) {
       console.error('API call error:', error);

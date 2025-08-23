@@ -43,12 +43,13 @@ export const updateProfileSchema = z.object({
   
   gender: z.nativeEnum(Gender, {
     errorMap: () => ({ message: 'Invalid gender value' })
-  }).optional(),
+  }).nullable().optional(),
   
   birthYear: z.number()
     .int('Birth year must be an integer')
-    .min(1900, 'Birth year must be after 1900')
-    .max(new Date().getFullYear() - 13, 'Must be at least 13 years old')
+    .min(new Date().getFullYear() - 100, 'Birth year too old')
+    .max(new Date().getFullYear(), 'Birth year cannot be in the future')
+    .nullable()
     .optional(),
   
   school: educationFieldSchema,

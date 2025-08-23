@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Grid, List, ArrowUpDown, Loader2, AlertCircle } from 'lucide-react';
+import { Grid, List, ArrowUpDown, AlertCircle } from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import PostCard, { PostCardSkeleton } from './PostCard';
 import SearchAndFilters, { ActiveFilters } from './SearchAndFilters';
 import { PostWithDetails, PostFilters, PaginatedPosts } from '@/types/database';
@@ -115,7 +116,7 @@ export default function PostList({
           <div className="text-sm text-neutral-600">
             {isLoading ? (
               <div className="flex items-center">
-                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                <LoadingSpinner size="sm" className="mr-2" />
                 {messages.no.loading}
               </div>
             ) : hasError ? (
@@ -248,7 +249,7 @@ export default function PostList({
             {isLoadingMore && (
               <div className="col-span-full flex justify-center items-center py-8">
                 <div className="flex items-center text-neutral-600">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  <LoadingSpinner size="sm" className="mr-2" />
                   {posts.no.status.loadingMore}
                 </div>
               </div>

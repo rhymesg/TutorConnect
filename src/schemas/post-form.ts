@@ -32,6 +32,8 @@ export const SubjectFormSchema = z.enum([
   'programming',
   'sports',
   'art',
+  'music',
+  'childcare',
   'other'
 ], {
   errorMap: () => ({ message: 'Ugyldig fagområde' })

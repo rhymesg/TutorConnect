@@ -55,6 +55,8 @@ export default function PostFormFields19({ defaultValues, errors }: PostFormFiel
     { value: 'programming', label: 'Programmering' },
     { value: 'sports', label: 'Sport' },
     { value: 'art', label: 'Kunst' },
+    { value: 'music', label: 'Musikk' },
+    { value: 'childcare', label: 'Barnepass og aktiviteter' },
     { value: 'other', label: 'Annet' },
   ];
 

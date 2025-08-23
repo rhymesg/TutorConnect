@@ -83,8 +83,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
     const genderMap = {
       MALE: 'Mann',
       FEMALE: 'Kvinne',
-      OTHER: 'Annet',
-      PREFER_NOT_TO_SAY: 'Ønsker ikke å oppgi'
+      OTHER: 'Annet'
     };
     return genderMap[gender as keyof typeof genderMap] || gender;
   };
@@ -116,10 +115,12 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
     setSaving(fieldName);
     
     try {
-      // Convert birthYear to number if needed
+      // Convert birthYear to number if needed, handle empty strings as null
       let value = tempValues[fieldName];
       if (fieldName === 'birthYear' && value) {
         value = parseInt(value, 10);
+      } else if ((fieldName === 'birthYear' || fieldName === 'gender') && value === '') {
+        value = null;
       }
       
       const response = await fetch('/api/profile', {
@@ -332,7 +333,15 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
         </dt>
         <dd className="mt-1 flex items-center group">
           <span className="text-sm text-gray-900 flex-1">
-            {value || <span className="text-gray-400 italic">Ikke oppgitt</span>}
+            {(() => {
+              // Special formatting for gender field
+              if (fieldName === 'gender') {
+                const formattedGender = formatGender(value);
+                return formattedGender || <span className="text-gray-400 italic">Ikke oppgitt</span>;
+              }
+              // Default behavior for other fields
+              return value || <span className="text-gray-400 italic">Ikke oppgitt</span>;
+            })()}
           </span>
           {!isPublicView && (
             <button
@@ -349,15 +358,14 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
 
   const currentYear = new Date().getFullYear();
   const birthYearOptions = [];
-  for (let year = currentYear - 13; year >= 1900; year--) {
+  for (let year = currentYear; year >= currentYear - 100; year--) {
     birthYearOptions.push({ value: year.toString(), label: year.toString() });
   }
 
   const genderOptions = [
     { value: 'MALE', label: 'Mann' },
     { value: 'FEMALE', label: 'Kvinne' },
-    { value: 'OTHER', label: 'Annet' },
-    { value: 'PREFER_NOT_TO_SAY', label: 'Ønsker ikke å oppgi' }
+    { value: 'OTHER', label: 'Annet' }
   ];
 
   const regionOptions = [
@@ -549,12 +557,14 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             Personlige opplysninger
           </h2>
           <dl className="space-y-4">
-            <div>
-              <dt className="text-sm font-medium text-gray-500">E-post</dt>
-              <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
-            </div>
+            {!isPublicView && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">E-post</dt>
+                <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
+              </div>
+            )}
             
-            {renderEditableField('gender', 'Kjønn', formatGender(profile.gender), 'select', genderOptions, 'privacyGender')}
+            {renderEditableField('gender', 'Kjønn', profile.gender, 'select', genderOptions, 'privacyGender')}
             
             {renderEditableField('birthYear', 'Fødselsår', profile.birthYear, 'select', birthYearOptions, 'privacyAge')}
             
