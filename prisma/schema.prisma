@@ -286,6 +286,8 @@ enum Subject {
   programming
   sports
   art
+  music
+  childcare
   other
 }
 

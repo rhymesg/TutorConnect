@@ -92,7 +92,7 @@ const FormField = forwardRef<HTMLInputElement, FormFieldProps>(
     const labelClasses = `
       block text-sm font-medium mb-2
       ${hasError ? 'text-red-700' : 'text-neutral-700'}
-      ${required ? 'after:content-["*"] after:ml-1 after:text-red-500' : ''}
+      ${required ? 'after:content-["*"] after:ml-1 after:text-neutral-900' : ''}
     `.trim();
 
     return (

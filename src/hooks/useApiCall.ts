@@ -118,13 +118,15 @@ export function useApiCall<T = any>(): UseApiCallReturn<T> {
         return null;
       }
 
+      const returnData = data.data || data;
+      
       setState({
-        data: data.data || data,
+        data: returnData,
         error: null,
         isLoading: false,
       });
 
-      return data.data || data;
+      return returnData;
 
     } catch (error) {
       console.error('API call error:', error);

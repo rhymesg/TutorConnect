@@ -33,7 +33,10 @@ export default function PostListEnhanced({
   showSearchHistory = true,
   enableOfflineMode = true,
 }: PostListEnhancedProps) {
-  const [posts, setPosts] = useState<PostWithDetails[]>(initialPosts?.data || []);
+  const [posts, setPosts] = useState<PostWithDetails[]>(() => {
+    const initialData = initialPosts?.data || [];
+    return initialData;
+  });
   const [pagination, setPagination] = useState(initialPosts?.pagination || {
     page: 1,
     limit: POSTS_PER_PAGE,
@@ -117,8 +120,26 @@ export default function PostListEnhanced({
       const response = await apiCall(url, { method: 'GET' });
 
       if (response) {
-        const data = response as PaginatedPosts;
-        const postsData = data.data || [];
+        // Check if response is already the posts array
+        let postsData: PostWithDetails[] = [];
+        let paginationData: any = {};
+        
+        if (Array.isArray(response)) {
+          postsData = response;
+        } else if (response && typeof response === 'object') {
+          if (response.data && Array.isArray(response.data)) {
+            postsData = response.data;
+            paginationData = response.pagination;
+          } else if (response.success && response.data) {
+            postsData = Array.isArray(response.data) ? response.data : [];
+            paginationData = response.pagination || {};
+          } else {
+            postsData = [];
+          }
+        } else {
+          postsData = [];
+        }
+        
         if (append) {
           setPosts(prev => [...(prev || []), ...postsData]);
         } else {
@@ -128,7 +149,7 @@ export default function PostListEnhanced({
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }
         }
-        setPagination(data.pagination || {
+        setPagination(paginationData || {
           page: 1,
           limit: POSTS_PER_PAGE,
           total: 0,
@@ -153,7 +174,7 @@ export default function PostListEnhanced({
         }, timeout);
       }
     }
-  }, [apiCall, retryCount, isOnline, filters]);
+  }, [apiCall, retryCount, isOnline]);
 
   // Load more posts for infinite scroll
   const loadMorePosts = useCallback(async () => {
@@ -182,11 +203,11 @@ export default function PostListEnhanced({
   }, [isLoading, isLoadingMore, pagination?.hasNext, loadMorePosts, hasError]);
 
   // Handle filter changes
-  const handleFiltersChange = (newFilters: PostFilters) => {
+  const handleFiltersChange = useCallback((newFilters: PostFilters) => {
     const updatedFilters = { ...newFilters, page: 1 }; // Reset to first page
     setFilters(updatedFilters);
     fetchPosts(updatedFilters);
-  };
+  }, [fetchPosts]);
 
   // Handle sorting changes
   const handleSortChange = (sortBy: SortOption, sortOrder?: SortOrder) => {
@@ -232,12 +253,20 @@ export default function PostListEnhanced({
     fetchPosts(filters);
   };
 
+
   // Initial load if no initial posts provided
   useEffect(() => {
     if (!initialPosts) {
       fetchPosts(filters);
     }
   }, []); // Only run on mount
+  
+  // Disable the fetchPosts dependency to prevent infinite loops
+  useEffect(() => {
+    return () => {
+      // Cleanup any ongoing requests
+    };
+  }, []);
 
   // Cleanup
   useEffect(() => {
@@ -265,6 +294,7 @@ export default function PostListEnhanced({
 
   return (
     <div className={`bg-neutral-50 min-h-screen ${className}`}>
+      
       {/* Offline indicator */}
       {enableOfflineMode && !isOnline && (
         <div className="bg-orange-100 border-b border-orange-200 px-4 py-2">
@@ -434,22 +464,22 @@ export default function PostListEnhanced({
               }
             `}>
               {(posts || []).map((post, index) => (
-                <div
-                  key={post.id}
-                  ref={index === (posts?.length || 0) - 1 ? lastPostRef : undefined}
-                  className={viewMode === 'list' ? 'max-w-4xl mx-auto' : ''}
-                >
-                  <PostCard
-                    post={post}
-                    onContactClick={onPostContact}
-                    className={`
-                      ${compactMode && viewMode === 'grid' ? 'text-xs' : ''}
-                      ${viewMode === 'list' ? 'sm:flex sm:flex-row' : ''}
-                      hover:shadow-md transition-shadow duration-200
-                    `}
-                  />
-                </div>
-              ))}
+                  <div
+                    key={post.id}
+                    ref={index === (posts?.length || 0) - 1 ? lastPostRef : undefined}
+                    className={viewMode === 'list' ? 'max-w-4xl mx-auto' : ''}
+                  >
+                    <PostCard
+                      post={post}
+                      onContactClick={onPostContact}
+                      className={`
+                        ${compactMode && viewMode === 'grid' ? 'text-xs' : ''}
+                        ${viewMode === 'list' ? 'sm:flex sm:flex-row' : ''}
+                        hover:shadow-md transition-shadow duration-200
+                      `}
+                    />
+                  </div>
+                ))}
             </div>
 
             {/* Loading indicator for infinite scroll */}
