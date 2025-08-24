@@ -147,14 +147,14 @@ jobs:
             
             // Test "Finn en lærer" in header
             await page.click('a:has-text("Finn en lærer")');
-            await expect(page).toHaveURL('/posts?type=teacher');
+            await expect(page).toHaveURL('/posts/teachers');
             
             console.log('✅ Header "Finn en lærer" navigation works');
             
             // Test "Finn en student" in header
             await page.goto('/');
             await page.click('a:has-text("Finn en student")');
-            await expect(page).toHaveURL('/posts?type=student');
+            await expect(page).toHaveURL('/posts/students');
             
             console.log('✅ Header "Finn en student" navigation works');
             
@@ -198,7 +198,8 @@ jobs:
               { url: '/privacy', expectedElement: 'h1, h2' },
               { url: '/terms', expectedElement: 'h1, h2' },
               { url: '/om-oss', expectedElement: 'h1, h2' },
-              { url: '/posts?type=teacher', expectedElement: 'h1, h2, main' }
+              { url: '/posts/teachers', expectedElement: 'h1, h2, main' },
+              { url: '/posts/students', expectedElement: 'h1, h2, main' }
             ];
             
             for (const { url, expectedElement } of pagesToCheck) {

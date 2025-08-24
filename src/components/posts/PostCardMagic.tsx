@@ -17,7 +17,7 @@ interface PostCardMagicProps {
 export default function PostCardMagic({ post, className = '', onContactClick }: PostCardMagicProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const isTutorPost = post.type === 'TUTOR_OFFERING';
+  const isTutorPost = post.type === 'TEACHER';
   const subjectName = education.no.subjects[post.subject as keyof typeof education.no.subjects] || post.subject;
   
   // Format age groups
@@ -171,7 +171,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
               <StartChatButton
                 postId={post.id}
                 postTitle={post.title}
-                postType={post.type === 'TUTOR_OFFERING' ? 'TEACHER' : 'STUDENT'}
+                postType={post.type === 'TEACHER' ? 'TEACHER' : 'STUDENT'}
                 authorId={post.userId}
                 authorName={post.user.name}
                 className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs sm:text-sm font-medium hover:bg-brand-700 transition-colors whitespace-nowrap"

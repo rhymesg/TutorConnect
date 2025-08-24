@@ -19,6 +19,8 @@ import LocationAutocomplete from '@/components/forms/LocationAutocomplete';
 
 import { CreatePostInput, UpdatePostInput } from '@/schemas/post';
 import { education, regions, forms } from '@/lib/translations';
+import { getAgeGroupOptions } from '@/constants/ageGroups';
+import { getRegionOptions } from '@/constants/regions';
 
 interface PostFormFieldsProps {
   control: Control<CreatePostInput | UpdatePostInput>;
@@ -44,16 +46,16 @@ function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label className={`
               relative flex items-center p-4 rounded-lg border cursor-pointer transition-all
-              ${field.value === 'TUTOR_OFFERING'
+              ${field.value === 'TEACHER'
                 ? 'bg-green-50 border-green-200 ring-2 ring-green-200'
                 : 'bg-white border-neutral-200 hover:border-neutral-300'
               }
             `}>
               <input
                 type="radio"
-                value="TUTOR_OFFERING"
-                checked={field.value === 'TUTOR_OFFERING'}
-                onChange={() => field.onChange('TUTOR_OFFERING')}
+                value="TEACHER"
+                checked={field.value === 'TEACHER'}
+                onChange={() => field.onChange('TEACHER')}
                 className="sr-only"
               />
               <div className="flex-1">
@@ -64,16 +66,16 @@ function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' 
             
             <label className={`
               relative flex items-center p-4 rounded-lg border cursor-pointer transition-all
-              ${field.value === 'STUDENT_SEEKING'
+              ${field.value === 'STUDENT'
                 ? 'bg-blue-50 border-blue-200 ring-2 ring-blue-200'
                 : 'bg-white border-neutral-200 hover:border-neutral-300'
               }
             `}>
               <input
                 type="radio"
-                value="STUDENT_SEEKING"
-                checked={field.value === 'STUDENT_SEEKING'}
-                onChange={() => field.onChange('STUDENT_SEEKING')}
+                value="STUDENT"
+                checked={field.value === 'STUDENT'}
+                onChange={() => field.onChange('STUDENT')}
                 className="sr-only"
               />
               <div className="flex-1">
@@ -97,13 +99,7 @@ function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps
   }));
 
   // Age group options
-  const ageGroupOptions = [
-    { value: 'ELEMENTARY', label: education.no.levels.elementary },
-    { value: 'MIDDLE_SCHOOL', label: education.no.levels.middleSchool },
-    { value: 'HIGH_SCHOOL', label: education.no.levels.highSchool },
-    { value: 'UNIVERSITY', label: education.no.levels.university },
-    { value: 'ADULT', label: education.no.levels.adult },
-  ];
+  const ageGroupOptions = getAgeGroupOptions();
 
   return (
     <div>
@@ -191,9 +187,9 @@ function LocationFields({ register, errors }: Pick<PostFormFieldsProps, 'registe
           helperText={forms.no.locationHelp}
         >
           <option value="">{forms.no.locationPlaceholder}</option>
-          {regions.counties.map(county => (
-            <option key={county} value={county}>
-              {county}
+          {getRegionOptions().map(region => (
+            <option key={region.value} value={region.value}>
+              {region.label}
             </option>
           ))}
         </FormSelect>

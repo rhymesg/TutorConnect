@@ -81,30 +81,35 @@ export const NORWEGIAN_SUBJECTS = {
 
 // Age group labels and search terms
 export const AGE_GROUP_CONFIG = {
-  ELEMENTARY: {
-    no: 'Barneskole',
-    keywords: ['1.-7. klasse', 'småskole', 'barneskole', 'grunnskole'],
-    ageRange: '6-13'
+  PRESCHOOL: {
+    no: '0-5 år',
+    keywords: ['barnehage', 'førskole', 'småbarn'],
+    ageRange: '0-5'
   },
-  MIDDLE_SCHOOL: {
-    no: 'Ungdomsskole',
-    keywords: ['8.-10. klasse', 'ungdomsskole', 'mellomskole'],
-    ageRange: '13-16'
+  PRIMARY_LOWER: {
+    no: '6-9 år',
+    keywords: ['1.-4. klasse', 'småskole', 'barneskole lavere'],
+    ageRange: '6-9'
   },
-  HIGH_SCHOOL: {
-    no: 'Videregående',
-    keywords: ['vgs', 'videregående', 'gymnas', '1vg', '2vg', '3vg'],
-    ageRange: '16-19'
+  PRIMARY_UPPER: {
+    no: '10-12 år',
+    keywords: ['5.-7. klasse', 'barneskole øvre', 'mellomtrinn'],
+    ageRange: '10-12'
   },
-  UNIVERSITY: {
-    no: 'Universitet/Høyskole',
-    keywords: ['uni', 'høyskole', 'bachelor', 'master', 'student'],
+  MIDDLE: {
+    no: '13-15 år',
+    keywords: ['8.-10. klasse', 'ungdomsskole'],
+    ageRange: '13-15'
+  },
+  SECONDARY: {
+    no: '16-18 år',
+    keywords: ['vgs', 'videregående', '1vg', '2vg', '3vg'],
+    ageRange: '16-18'
+  },
+  ADULTS: {
+    no: '19+ år',
+    keywords: ['voksen', 'høyskole', 'universitet', 'etterutdanning'],
     ageRange: '19+'
-  },
-  ADULT: {
-    no: 'Voksenopplæring',
-    keywords: ['voksen', 'kurs', 'etterutdanning', 'livslang'],
-    ageRange: '18+'
   }
 } as const;
 
@@ -333,9 +338,9 @@ export function buildFiltersFromQuery(query: string): Partial<PostFilters> {
 
   // Check for post type keywords
   if (normalizedQuery.includes('lærer') || normalizedQuery.includes('underviser')) {
-    filters.type = 'TUTOR_OFFERING';
+    filters.type = 'TEACHER';
   } else if (normalizedQuery.includes('student') || normalizedQuery.includes('elev')) {
-    filters.type = 'STUDENT_SEEKING';
+    filters.type = 'STUDENT';
   }
 
   // Check for subject matches
@@ -372,7 +377,7 @@ export function formatFilterText(filters: PostFilters): string[] {
   const parts: string[] = [];
 
   if (filters.type) {
-    parts.push(filters.type === 'TUTOR_OFFERING' ? 'Lærere' : 'Studenter');
+    parts.push(filters.type === 'TEACHER' ? 'Lærere' : 'Studenter');
   }
 
   if (filters.subject && NORWEGIAN_SUBJECTS[filters.subject as keyof typeof NORWEGIAN_SUBJECTS]) {

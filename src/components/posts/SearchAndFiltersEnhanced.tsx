@@ -19,6 +19,9 @@ import {
 
 import { PostFilters, PostType, Subject, AgeGroup, NorwegianRegion } from '@/types/database';
 import { education, regions, forms, actions } from '@/lib/translations';
+import { getSubjectOptions } from '@/constants/subjects';
+import { getAgeGroupOptions } from '@/constants/ageGroups';
+import { getRegionOptions } from '@/constants/regions';
 
 interface SearchAndFiltersEnhancedProps {
   filters: PostFilters;
@@ -28,6 +31,10 @@ interface SearchAndFiltersEnhancedProps {
   searchHistory?: string[];
   onSearchHistoryAdd?: (search: string) => void;
   onSearchHistoryRemove?: (search: string) => void;
+  showDesktopFilters?: boolean;
+  setShowDesktopFilters?: (show: boolean) => void;
+  showMobileFilters?: boolean;
+  setShowMobileFilters?: (show: boolean) => void;
 }
 
 interface PriceRange {
@@ -52,9 +59,11 @@ export default function SearchAndFiltersEnhanced({
   searchHistory = [],
   onSearchHistoryAdd,
   onSearchHistoryRemove,
+  showDesktopFilters = false,
+  setShowDesktopFilters,
+  showMobileFilters = false,
+  setShowMobileFilters,
 }: SearchAndFiltersEnhancedProps) {
-  const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const [showDesktopFilters, setShowDesktopFilters] = useState(false);
   const [localSearch, setLocalSearch] = useState(filters.search || '');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [customPriceMode, setCustomPriceMode] = useState(false);
@@ -125,19 +134,14 @@ export default function SearchAndFiltersEnhanced({
     setCustomPriceMode(true);
   };
 
-  // Subject options with search
-  const subjectOptions = Object.entries(education.no.subjects).map(([key, name]) => ({
-    value: key.toUpperCase(),
-    label: name,
-  }));
+  // Subject options from centralized constants
+  const subjectOptions = getSubjectOptions();
 
-  const ageGroupOptions = [
-    { value: 'ELEMENTARY', label: education.no.levels.elementary },
-    { value: 'MIDDLE_SCHOOL', label: education.no.levels.middleSchool },
-    { value: 'HIGH_SCHOOL', label: education.no.levels.highSchool },
-    { value: 'UNIVERSITY', label: education.no.levels.university },
-    { value: 'ADULT', label: education.no.levels.adult },
-  ];
+  // Age group options from centralized constants
+  const ageGroupOptions = getAgeGroupOptions();
+
+  // Region options from centralized constants
+  const regionOptions = getRegionOptions();
 
   // Search suggestions component
   const SearchSuggestions = () => (
@@ -150,25 +154,29 @@ export default function SearchAndFiltersEnhanced({
           </div>
           <div className="space-y-1">
             {searchHistory.slice(0, 5).map((search, index) => (
-              <button
+              <div
                 key={index}
-                onClick={() => {
-                  setLocalSearch(search);
-                  setShowSearchSuggestions(false);
-                }}
-                className="w-full text-left px-2 py-1 text-sm text-neutral-700 hover:bg-neutral-50 rounded flex items-center justify-between group"
+                className="w-full flex items-center justify-between px-2 py-1 text-sm text-neutral-700 hover:bg-neutral-50 rounded group"
               >
-                <span>{search}</span>
+                <button
+                  onClick={() => {
+                    setLocalSearch(search);
+                    setShowSearchSuggestions(false);
+                  }}
+                  className="flex-1 text-left truncate"
+                >
+                  {search}
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onSearchHistoryRemove?.(search);
                   }}
-                  className="opacity-0 group-hover:opacity-100 p-0.5 text-neutral-400 hover:text-neutral-600"
+                  className="opacity-0 group-hover:opacity-100 p-0.5 text-neutral-400 hover:text-neutral-600 ml-1 flex-shrink-0"
                 >
                   <X className="w-3 h-3" />
                 </button>
-              </button>
+              </div>
             ))}
           </div>
         </div>
@@ -207,42 +215,43 @@ export default function SearchAndFiltersEnhanced({
   // Filter content component
   const FilterContent = ({ isMobile }: { isMobile: boolean }) => (
     <div className="space-y-6">
-      {/* Post Type Filter */}
+      {/* Post Type Filter - Hidden since route determines the type
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-3">
           Type annonse
         </label>
         <div className="grid grid-cols-1 gap-3">
           <button
-            onClick={() => updateFilter('type', filters.type === 'TUTOR_OFFERING' ? undefined : 'TUTOR_OFFERING')}
+            onClick={() => updateFilter('type', filters.type === 'TEACHER' ? undefined : 'TEACHER')}
             className={`p-3 rounded-lg border text-sm font-medium transition-colors text-left ${
-              filters.type === 'TUTOR_OFFERING'
-                ? 'bg-brand-50 border-brand-200 text-brand-700'
+              filters.type === 'TEACHER'
+                ? 'bg-green-50 border-green-200 text-green-700'
                 : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center justify-between">
               <span>Tilbyr undervisning</span>
-              {filters.type === 'TUTOR_OFFERING' && <Check className="w-4 h-4" />}
+              {filters.type === 'TEACHER' && <Check className="w-4 h-4" />}
             </div>
             <div className="text-xs text-neutral-500 mt-1">Lærere som tilbyr sine tjenester</div>
           </button>
           <button
-            onClick={() => updateFilter('type', filters.type === 'STUDENT_SEEKING' ? undefined : 'STUDENT_SEEKING')}
+            onClick={() => updateFilter('type', filters.type === 'STUDENT' ? undefined : 'STUDENT')}
             className={`p-3 rounded-lg border text-sm font-medium transition-colors text-left ${
-              filters.type === 'STUDENT_SEEKING'
-                ? 'bg-brand-50 border-brand-200 text-brand-700'
+              filters.type === 'STUDENT'
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
                 : 'bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50'
             }`}
           >
             <div className="flex items-center justify-between">
               <span>Søker lærer</span>
-              {filters.type === 'STUDENT_SEEKING' && <Check className="w-4 h-4" />}
+              {filters.type === 'STUDENT' && <Check className="w-4 h-4" />}
             </div>
             <div className="text-xs text-neutral-500 mt-1">Studenter som trenger hjelp</div>
           </button>
         </div>
       </div>
+      */}
 
       {/* Subject Filter */}
       <div>
@@ -309,9 +318,9 @@ export default function SearchAndFiltersEnhanced({
             className="w-full p-3 border border-neutral-300 rounded-lg bg-white text-neutral-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none"
           >
             <option value="">{forms.no.selectLocation}</option>
-            {regions.counties.map((county) => (
-              <option key={county} value={county}>
-                {county}
+            {regionOptions.map((region) => (
+              <option key={region.value} value={region.value}>
+                {region.label}
               </option>
             ))}
           </select>
@@ -319,7 +328,7 @@ export default function SearchAndFiltersEnhanced({
         </div>
       </div>
 
-      {/* Price Range Filter */}
+      {/* Price Range Filter - Hidden for now
       <div>
         <label className="block text-sm font-medium text-neutral-700 mb-3">
           <Banknote className="w-4 h-4 inline mr-1" />
@@ -391,12 +400,13 @@ export default function SearchAndFiltersEnhanced({
           </div>
         )}
       </div>
+      */}
     </div>
   );
 
   return (
     <div className={`bg-white border-b border-neutral-200 ${className}`}>
-      {/* Search Bar */}
+      {/* Search Bar - Hidden for now
       <div className="p-4">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
@@ -405,65 +415,48 @@ export default function SearchAndFiltersEnhanced({
             placeholder={forms.no.searchPlaceholder}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                setShowSearchSuggestions(false);
+                // Trigger immediate search instead of waiting for debounce
+                onFiltersChange({ ...filters, search: localSearch || undefined, page: 1 });
+                if (localSearch && localSearch.length >= 3 && onSearchHistoryAdd) {
+                  onSearchHistoryAdd(localSearch);
+                }
+              }
+            }}
             onFocus={() => setShowSearchSuggestions(true)}
             onBlur={() => setTimeout(() => setShowSearchSuggestions(false), 200)}
             className="w-full pl-10 pr-4 py-3 border border-neutral-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-neutral-900 placeholder-neutral-500"
           />
           
-          {/* Search suggestions */}
-          {showSearchSuggestions && (localSearch || searchHistory.length > 0) && (
-            <SearchSuggestions />
-          )}
+          <div>
+            {showSearchSuggestions && (localSearch || searchHistory.length > 0) && (
+              <SearchSuggestions />
+            )}
+          </div>
         </div>
       </div>
+      */}
 
-      {/* Filter Toggle */}
-      <div className="px-4 pb-4">
-        <div className="flex items-center justify-between">
-          {/* Desktop filter toggle */}
-          <button
-            onClick={() => setShowDesktopFilters(!showDesktopFilters)}
-            className="hidden sm:inline-flex items-center px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
-          >
-            <Sliders className="w-4 h-4 mr-2" />
-            Avanserte filtre
-            {getActiveFilterCount() > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-brand-500 rounded-full">
-                {getActiveFilterCount()}
-              </span>
-            )}
-            <ChevronDown className={`w-4 h-4 ml-2 transition-transform ${showDesktopFilters ? 'rotate-180' : ''}`} />
-          </button>
-
-          {/* Mobile filter toggle */}
-          <button
-            onClick={() => setShowMobileFilters(true)}
-            className="sm:hidden inline-flex items-center px-4 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
-          >
-            <Filter className="w-4 h-4 mr-2" />
-            Filtrer
-            {getActiveFilterCount() > 0 && (
-              <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-brand-500 rounded-full">
-                {getActiveFilterCount()}
-              </span>
-            )}
-          </button>
-
-          {hasActiveFilters() && (
-            <button
-              onClick={clearFilters}
-              className="inline-flex items-center px-3 py-1 text-sm text-brand-600 hover:text-brand-700 transition-colors"
-            >
-              <RotateCcw className="w-4 h-4 mr-1" />
-              Nullstill
-            </button>
-          )}
-        </div>
-      </div>
 
       {/* Desktop Filter Panel */}
       {showDesktopFilters && (
         <div className="hidden sm:block border-t border-neutral-200 bg-neutral-50">
+          {/* Header */}
+          <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-white">
+            <h3 className="text-lg font-medium text-neutral-900 flex items-center">
+              <Sliders className="w-5 h-5 mr-2" />
+              Filtrer resultater
+            </h3>
+            <button
+              onClick={() => setShowDesktopFilters && setShowDesktopFilters(false)}
+              className="p-2 text-neutral-400 hover:text-neutral-600 rounded-lg hover:bg-neutral-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
           <div className="p-6">
             <FilterContent isMobile={false} />
           </div>

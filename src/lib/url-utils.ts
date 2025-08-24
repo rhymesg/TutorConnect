@@ -118,9 +118,9 @@ export function generateSharingMetadata(
   } else if (filters.subject || filters.type || filters.location) {
     const parts: string[] = [];
     
-    if (filters.type === 'TUTOR_OFFERING') {
+    if (filters.type === 'TEACHER') {
       parts.push('Lærere');
-    } else if (filters.type === 'STUDENT_SEEKING') {
+    } else if (filters.type === 'STUDENT') {
       parts.push('Studenter');
     }
     

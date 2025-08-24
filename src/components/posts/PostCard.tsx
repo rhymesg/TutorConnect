@@ -6,6 +6,9 @@ import { Clock, MapPin, User, Star, MessageCircle, Calendar, GraduationCap, Book
 import { PostWithDetails, PostType } from '@/types/database';
 import { formatters, education, common } from '@/lib/translations';
 import { StartChatButton } from '@/components/chat';
+import { getSubjectLabel } from '@/constants/subjects';
+import { getAgeGroupLabels } from '@/constants/ageGroups';
+import { getRegionLabel } from '@/constants/regions';
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -18,38 +21,11 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
 
   const isTutorPost = post.type === 'TEACHER';
   
-  // Subject mappings that match PostFormFields19 options
-  const subjectMapping = {
-    'math': 'Matematikk',
-    'english': 'Engelsk',
-    'norwegian': 'Norsk', 
-    'science': 'Naturfag',
-    'programming': 'Programmering',
-    'sports': 'Sport',
-    'art': 'Kunst',
-    'music': 'Musikk',
-    'childcare': 'Barnepass og aktiviteter',
-    'other': 'Annet',
-    // Also include original mappings for backwards compatibility
-    ...education.no.subjects
-  };
+  // Get subject name from centralized constants
+  const subjectName = getSubjectLabel(post.subject);
   
-  const subjectName = subjectMapping[post.subject as keyof typeof subjectMapping] || post.subject;
-  
-  // Format age groups with more readable names
-  const formatAgeGroups = (ageGroups: string[]) => {
-    const ageGroupNames = {
-      'PRESCHOOL_3_6': '3-6 år',
-      'PRIMARY_7_10': '7-10 år', 
-      'MIDDLE_11_13': '11-13 år',
-      'SECONDARY_14_16': '14-16 år',
-      'HIGH_SCHOOL_17_19': '17-19 år',
-      'ADULTS_20_PLUS': '20+ år'
-    };
-    return ageGroups.map(group => ageGroupNames[group as keyof typeof ageGroupNames] || group).join(', ');
-  };
-  
-  const ageGroupText = formatAgeGroups(post.ageGroups);
+  // Get age group labels from centralized constants
+  const ageGroupText = getAgeGroupLabels(post.ageGroups);
   
   // Format rate display - Don't show specific prices to encourage click-through
   const rateDisplay = () => {
@@ -87,8 +63,11 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
 
   return (
     <div className={`
-      group bg-white rounded-xl shadow-sm border border-neutral-200 
-      hover:shadow-lg hover:border-brand-200 transition-all duration-300
+      group ${isTutorPost 
+        ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 hover:border-green-300' 
+        : 'bg-gradient-to-br from-blue-50 to-sky-50 border-blue-200 hover:border-blue-300'
+      } 
+      rounded-xl shadow-sm hover:shadow-lg transition-all duration-300
       overflow-hidden ${className}
     `}>
       {/* Post Type Badge */}
@@ -175,7 +154,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
             <div className="flex items-center text-sm text-neutral-600">
               <MapPin className="w-4 h-4 mr-2 text-neutral-400" />
               <span className="truncate">
-                {post.specificLocation || post.location}
+                {post.specificLocation || getRegionLabel(post.location)}
               </span>
             </div>
           </div>
@@ -217,7 +196,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
 // Skeleton loader for post cards
 export function PostCardSkeleton({ className = '' }: { className?: string }) {
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-neutral-200 overflow-hidden ${className}`}>
+    <div className={`bg-gradient-to-br from-neutral-50 to-gray-50 rounded-xl shadow-sm border border-neutral-200 overflow-hidden ${className}`}>
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between">
           <div className="h-6 bg-neutral-200 rounded-full w-32 animate-pulse" />

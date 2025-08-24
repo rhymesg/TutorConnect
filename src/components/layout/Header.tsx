@@ -51,8 +51,8 @@ export default function Header({
 
   // Main navigation items for public pages
   const publicNavigation: NavigationItem[] = [
-    { name: 'Finn en lærer', href: '/posts?type=teacher', current: pathname.startsWith('/posts') && pathname.includes('type=teacher') },
-    { name: 'Finn en student', href: '/posts?type=student', current: pathname.startsWith('/posts') && pathname.includes('type=student') },
+    { name: 'Finn en lærer', href: '/posts/teachers', current: pathname === '/posts/teachers' },
+    { name: 'Finn en student', href: '/posts/students', current: pathname === '/posts/students' },
     { name: 'Om oss', href: '/om-oss', current: pathname === '/om-oss' },
   ];
 

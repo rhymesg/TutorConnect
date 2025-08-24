@@ -41,12 +41,12 @@ export const SubjectFormSchema = z.enum([
 
 // Updated age groups to match Norwegian education system
 export const AgeGroupFormSchema = z.enum([
-  'PRESCHOOL_3_6',
-  'PRIMARY_7_10', 
-  'MIDDLE_11_13',
-  'SECONDARY_14_16',
-  'HIGH_SCHOOL_17_19',
-  'ADULTS_20_PLUS'
+  'PRESCHOOL',
+  'PRIMARY_LOWER',
+  'PRIMARY_UPPER',
+  'MIDDLE',
+  'SECONDARY',
+  'ADULTS'
 ], {
   errorMap: () => ({ message: 'Ugyldig aldersgruppe' })
 });

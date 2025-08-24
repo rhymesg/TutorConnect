@@ -113,7 +113,7 @@ export function usePostForm(options: UsePostFormOptions): UsePostFormReturn {
     }
     
     return {
-      type: 'TUTOR_OFFERING',
+      type: 'TEACHER',
       ageGroups: [],
       availableDays: [],
       availableTimes: ['09:00'],

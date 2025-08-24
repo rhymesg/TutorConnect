@@ -206,7 +206,28 @@ async function validateRequest(
   if (validation?.query) {
     try {
       const { searchParams } = new URL(request.url);
-      const queryObject = Object.fromEntries(searchParams.entries());
+      const queryObject: Record<string, any> = {};
+      
+      // Handle query parameters, including arrays for duplicate keys
+      for (const [key, value] of searchParams.entries()) {
+        if (queryObject[key]) {
+          // If key already exists, convert to array or add to existing array
+          if (Array.isArray(queryObject[key])) {
+            queryObject[key].push(value);
+          } else {
+            queryObject[key] = [queryObject[key], value];
+          }
+        } else {
+          // Check if there are multiple values for this key
+          const allValues = searchParams.getAll(key);
+          if (allValues.length > 1) {
+            queryObject[key] = allValues;
+          } else {
+            queryObject[key] = value;
+          }
+        }
+      }
+      
       validatedData.query = validation.query.parse(queryObject);
     } catch (error) {
       throw handleZodError(error);

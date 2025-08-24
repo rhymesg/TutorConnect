@@ -9,52 +9,52 @@ datasource db {
 }
 
 model User {
-  id                   String            @id @default(cuid())
-  email                String            @unique
-  password             String
-  emailVerified        DateTime?
-  verificationToken    String?
-  name                 String
-  region               NorwegianRegion
-  postalCode           String?
-  gender               Gender?
-  birthYear            Int?
-  profileImage         String?
-  degree               String?
-  education            String?
-  certifications       String?
-  bio                  String?
-  privacyGender        PrivacySetting    @default(PUBLIC)
-  privacyAge           PrivacySetting    @default(PUBLIC)
-  privacyDocuments     PrivacySetting    @default(PUBLIC)
-  privacyContact       PrivacySetting    @default(PUBLIC)
-  privacyEducation     PrivacySetting    @default(PUBLIC)
-  privacyCertifications PrivacySetting   @default(PUBLIC)
-  privacyLocation      PrivacySetting    @default(PUBLIC)
-  privacyPostalCode    PrivacySetting    @default(PUBLIC)
-  privacyMemberSince   PrivacySetting    @default(PUBLIC)
-  privacyLastActive    PrivacySetting    @default(PUBLIC)
-  privacyActivity      PrivacySetting    @default(PUBLIC)
-  privacyStats         PrivacySetting    @default(PUBLIC)
-  teacherSessions      Int               @default(0)
-  teacherStudents      Int               @default(0)
-  studentSessions      Int               @default(0)
-  studentTeachers      Int               @default(0)
-  isActive             Boolean           @default(true)
-  lastActive           DateTime?
-  createdAt            DateTime          @default(now())
-  updatedAt            DateTime          @updatedAt
-  failedLoginAttempts  Int?              @default(0)
-  lockedUntil          DateTime?
-  chatParticipants     ChatParticipant[]
-  reportedChats        ChatReport[]      @relation("ChatReportReporter")
-  reviewedReports      ChatReport[]      @relation("ChatReportReviewer")
-  documents            Document[]
-  receivedInfoRequests InfoRequest[]     @relation("InfoRequestReceiver")
-  sentInfoRequests     InfoRequest[]     @relation("InfoRequestSender")
-  sentMessages         Message[]
-  posts                Post[]
-  sessions             UserSession[]
+  id                    String            @id @default(cuid())
+  email                 String            @unique
+  password              String
+  emailVerified         DateTime?
+  verificationToken     String?
+  name                  String
+  region                NorwegianRegion
+  postalCode            String?
+  gender                Gender?
+  birthYear             Int?
+  profileImage          String?
+  degree                String?
+  certifications        String?
+  bio                   String?
+  privacyGender         PrivacySetting    @default(PUBLIC)
+  privacyAge            PrivacySetting    @default(PUBLIC)
+  privacyDocuments      PrivacySetting    @default(PUBLIC)
+  privacyContact        PrivacySetting    @default(PUBLIC)
+  privacyEducation      PrivacySetting    @default(PUBLIC)
+  privacyLocation       PrivacySetting    @default(PUBLIC)
+  privacyActivity       PrivacySetting    @default(PUBLIC)
+  isActive              Boolean           @default(true)
+  lastActive            DateTime?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  failedLoginAttempts   Int?              @default(0)
+  lockedUntil           DateTime?
+  privacyMemberSince    PrivacySetting    @default(PUBLIC)
+  privacyPostalCode     PrivacySetting    @default(PUBLIC)
+  privacyLastActive     PrivacySetting    @default(PUBLIC)
+  education             String?
+  privacyCertifications PrivacySetting    @default(PUBLIC)
+  studentSessions       Int               @default(0)
+  studentTeachers       Int               @default(0)
+  teacherSessions       Int               @default(0)
+  teacherStudents       Int               @default(0)
+  privacyStats          PrivacySetting    @default(PUBLIC)
+  chatParticipants      ChatParticipant[]
+  reportedChats         ChatReport[]      @relation("ChatReportReporter")
+  reviewedReports       ChatReport[]      @relation("ChatReportReviewer")
+  documents             Document[]
+  receivedInfoRequests  InfoRequest[]     @relation("InfoRequestReceiver")
+  sentInfoRequests      InfoRequest[]     @relation("InfoRequestSender")
+  sentMessages          Message[]
+  posts                 Post[]
+  sessions              UserSession[]
 
   @@index([region, isActive])
   @@index([email])
@@ -63,28 +63,28 @@ model User {
 }
 
 model Post {
-  id               String          @id @default(cuid())
-  type             PostType
-  title            String
-  subject          Subject
-  customSubject    String?
-  ageGroups        AgeGroup[]
-  description      String
-  availableDays    String[]
-  startTime        String
-  endTime          String
-  location         NorwegianRegion
-  postnummer       String?
-  hourlyRate       Decimal?        @db.Decimal(8, 2)
-  hourlyRateMin    Decimal?        @db.Decimal(8, 2)
-  hourlyRateMax    Decimal?        @db.Decimal(8, 2)
-  currency         String          @default("NOK")
-  isActive         Boolean         @default(true)
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
-  userId           String
-  chats            Chat[]
-  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String          @id @default(cuid())
+  type          PostType
+  subject       Subject
+  ageGroups     AgeGroup[]
+  title         String
+  description   String
+  availableDays String[]
+  location      NorwegianRegion
+  hourlyRate    Decimal?        @db.Decimal(8, 2)
+  hourlyRateMin Decimal?        @db.Decimal(8, 2)
+  hourlyRateMax Decimal?        @db.Decimal(8, 2)
+  currency      String          @default("NOK")
+  isActive      Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  userId        String
+  customSubject String?
+  endTime       String
+  postnummer    String?
+  startTime     String
+  chats         Chat[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([type, subject, location, isActive])
   @@index([userId, isActive])
@@ -286,18 +286,18 @@ enum Subject {
   programming
   sports
   art
+  other
   music
   childcare
-  other
 }
 
 enum AgeGroup {
-  PRESCHOOL_3_6
-  PRIMARY_7_10
-  MIDDLE_11_13
-  SECONDARY_14_16
-  HIGH_SCHOOL_17_19
-  ADULTS_20_PLUS
+  PRESCHOOL
+  PRIMARY_LOWER
+  PRIMARY_UPPER
+  MIDDLE
+  SECONDARY
+  ADULTS
 }
 
 enum AppointmentStatus {

@@ -49,10 +49,16 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           description: 'Oversikt over din aktivitet',
         },
         {
-          name: 'Finn timer',
-          href: '/posts',
+          name: 'Finn en lærer',
+          href: '/posts/teachers',
           icon: MagnifyingGlassIcon,
-          description: 'Søk etter lærere eller studenter',
+          description: 'Se lærerannonser',
+        },
+        {
+          name: 'Finn en student',
+          href: '/posts/students', 
+          icon: MagnifyingGlassIcon,
+          description: 'Se studentannonser',
         },
         {
           name: 'Mine samtaler',
