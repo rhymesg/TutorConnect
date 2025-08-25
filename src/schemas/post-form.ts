@@ -91,7 +91,7 @@ export const WeekdayFormSchema = z.enum([
 // Enhanced pricing validation for Norwegian market
 export const PriceFormSchema = z.number()
   .min(0, 'Prisen kan ikke være negativ')
-  .max(10000, 'Prisen kan ikke overstige 10 000 NOK per time')
+  .max(1500, 'Prisen kan ikke overstige 1 500 NOK per time')
   .multipleOf(0.01, 'Prisen må være til nærmeste øre')
   .optional()
   .or(z.literal(0))

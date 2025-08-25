@@ -349,7 +349,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
             name="hourlyRate"
             type="number"
             min={0}
-            max={10000}
+            max={1500}
             step={10}
             placeholder="500"
             {...register('hourlyRate', { valueAsNumber: true })}
@@ -360,7 +360,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
             name="hourlyRateMin"
             type="number"
             min={0}
-            max={10000}
+            max={1500}
             step={10}
             placeholder="300"
             {...register('hourlyRateMin', { valueAsNumber: true })}
@@ -371,7 +371,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
             name="hourlyRateMax"
             type="number"
             min={0}
-            max={10000}
+            max={1500}
             step={10}
             placeholder="800"
             {...register('hourlyRateMax', { valueAsNumber: true })}
