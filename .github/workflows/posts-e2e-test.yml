@@ -136,17 +136,18 @@ jobs:
               await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
               console.log('✅ Post details are visible');
               
-              // Test 5: Look for username/profile elements to click
-              const profileElements = page.locator('span:has-text(/^[A-Za-zÀ-ÿ가-힣]+( [A-Za-zÀ-ÿ가-힣]+)*$/), [class*="name"], [class*="user"]');
-              const profileElementsCount = await profileElements.count();
+              // Test 5: Look for username button to click for profile popup
+              // The username is a button with font-medium class in the post detail page
+              const profileButton = page.locator('button[class*="font-medium"]').first();
+              const profileButtonVisible = await profileButton.isVisible();
               
-              if (profileElementsCount > 0) {
-                console.log(`Found ${profileElementsCount} potential profile elements`);
+              if (profileButtonVisible) {
+                console.log('✅ Found username button for profile popup');
                 
-                // Try to click the first profile element
+                // Try to click the username button to open profile popup
                 try {
                   const popupPromise = page.waitForEvent('popup', { timeout: 3000 }).catch(() => null);
-                  await profileElements.first().click();
+                  await profileButton.click();
                   
                   const popup = await popupPromise;
                   if (popup) {
@@ -158,10 +159,10 @@ jobs:
                     console.log('⚠️  Profile popup not detected - might use different interaction pattern');
                   }
                 } catch (e) {
-                  console.log('⚠️  Could not interact with profile element');
+                  console.log('⚠️  Could not interact with username button');
                 }
               } else {
-                console.log('⚠️  No profile elements found');
+                console.log('⚠️  No username button found');
               }
             } else {
               console.log('⚠️  No posts or empty state found - page might still be loading');
@@ -221,17 +222,18 @@ jobs:
               await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
               console.log('✅ Post details are visible');
               
-              // Test 5: Look for username/profile elements to click
-              const profileElements = page.locator('span:has-text(/^[A-Za-zÀ-ÿ가-힣]+( [A-Za-zÀ-ÿ가-힣]+)*$/), [class*="name"], [class*="user"]');
-              const profileElementsCount = await profileElements.count();
+              // Test 5: Look for username button to click for profile popup
+              // The username is a button with font-medium class in the post detail page
+              const profileButton = page.locator('button[class*="font-medium"]').first();
+              const profileButtonVisible = await profileButton.isVisible();
               
-              if (profileElementsCount > 0) {
-                console.log(`Found ${profileElementsCount} potential profile elements`);
+              if (profileButtonVisible) {
+                console.log('✅ Found username button for profile popup');
                 
-                // Try to click the first profile element
+                // Try to click the username button to open profile popup
                 try {
                   const popupPromise = page.waitForEvent('popup', { timeout: 3000 }).catch(() => null);
-                  await profileElements.first().click();
+                  await profileButton.click();
                   
                   const popup = await popupPromise;
                   if (popup) {
@@ -243,10 +245,10 @@ jobs:
                     console.log('⚠️  Profile popup not detected - might use different interaction pattern');
                   }
                 } catch (e) {
-                  console.log('⚠️  Could not interact with profile element');
+                  console.log('⚠️  Could not interact with username button');
                 }
               } else {
-                console.log('⚠️  No profile elements found');
+                console.log('⚠️  No username button found');
               }
             } else {
               console.log('⚠️  No posts or empty state found - page might still be loading');
