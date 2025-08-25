@@ -5,10 +5,10 @@ import Link from 'next/link';
 import { Clock, MapPin, User, Star, MessageCircle, Calendar, GraduationCap, BookOpen } from 'lucide-react';
 import { PostWithDetails, PostType } from '@/types/database';
 import { formatters, education, common } from '@/lib/translations';
-import { StartChatButton } from '@/components/chat';
 import { getSubjectLabel } from '@/constants/subjects';
 import { getAgeGroupLabels } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
+import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -137,10 +137,32 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
                 <span className="text-sm font-medium text-neutral-900 truncate">
                   {post.user.name}
                 </span>
-                {/* Badge System - TODO: Replace with actual badge system */}
-                <div className="flex items-center gap-1">
-                  {/* Placeholder for badge system */}
-                </div>
+                {/* User Badges */}
+                {(() => {
+                  const badge = isTutorPost 
+                    ? getTeacherBadge(post.user.teacherSessions || 0, post.user.teacherStudents || 0)
+                    : getStudentBadge(post.user.studentSessions || 0, post.user.studentTeachers || 0);
+                  
+                  if (!badge) return null;
+                  
+                  const typeIcon = isTutorPost ? '👨‍🏫' : '🎓';
+                  const title = `${isTutorPost ? 'Lærer' : 'Student'} ${badge.level} - Klikk for mer info`;
+                  
+                  return (
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.location.href = '/badges';
+                      }}
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${badge.color}`}
+                      title={title}
+                    >
+                      <span className="mr-1">{typeIcon}</span>
+                      <span>{badge.icon}</span>
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -168,23 +190,9 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               <span className="text-xs text-neutral-500">per time</span>
             </div>
             
-            <div className="flex items-center space-x-2">
-              <div className="hidden sm:flex items-center text-sm text-neutral-500">
-                <MessageCircle className="w-4 h-4 mr-1" />
-                <span>{post._count.chats}</span>
-              </div>
-              <StartChatButton
-                postId={post.id}
-                postTitle={post.title}
-                postType={post.type === 'TEACHER' ? 'STUDENT' : 'TEACHER'}
-                authorId={post.userId}
-                authorName={post.user.name}
-                className="inline-flex items-center px-2 sm:px-3 py-1.5 rounded-lg bg-brand-600 text-white text-xs sm:text-sm font-medium hover:bg-brand-700 transition-colors whitespace-nowrap"
-                onChatStarted={(chatId) => {
-                  // Optional: Handle chat started event
-                  console.log('Chat started:', chatId);
-                }}
-              />
+            <div className="flex items-center text-sm text-neutral-500">
+              <MessageCircle className="w-4 h-4 mr-1" />
+              <span>{post._count.chats}</span>
             </div>
           </div>
         </div>

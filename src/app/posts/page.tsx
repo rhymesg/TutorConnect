@@ -64,7 +64,7 @@ export default async function PostsPage() {
               Finn en lærer
             </h2>
             <p className="text-neutral-600 mb-4">
-              Søk blant lærere som kan hjelpe deg med undervisning
+              Søk blant erfarne lærere i ditt fagområde
             </p>
             <div className="inline-flex items-center text-green-600 font-medium group-hover:text-green-700">
               Se alle lærere

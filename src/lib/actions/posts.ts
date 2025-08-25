@@ -43,6 +43,54 @@ async function getCurrentUser() {
 /**
  * React 19 Server Action for creating posts
  */
+/**
+ * Get a single post by ID
+ */
+export async function getPostById(postId: string): Promise<PostWithDetails | null> {
+  try {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            isActive: true,
+            region: true,
+            teacherSessions: true,
+            teacherStudents: true,
+            studentSessions: true,
+            studentTeachers: true,
+          },
+        },
+        _count: {
+          select: {
+            chats: true,
+          },
+        },
+      },
+    });
+
+    if (!post) {
+      return null;
+    }
+
+    // Convert Decimal to number for client component compatibility
+    const serializedPost = {
+      ...post,
+      hourlyRate: post.hourlyRate ? Number(post.hourlyRate) : null,
+      hourlyRateMin: post.hourlyRateMin ? Number(post.hourlyRateMin) : null,
+      hourlyRateMax: post.hourlyRateMax ? Number(post.hourlyRateMax) : null,
+    };
+
+    return serializedPost as PostWithDetails;
+  } catch (error) {
+    console.error('Error fetching post:', error);
+    return null;
+  }
+}
+
 export async function createPostAction(
   prevState: PostFormState,
   formData: FormData

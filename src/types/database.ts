@@ -68,6 +68,10 @@ export interface PostWithDetails extends Post {
     profileImage: string | null;
     isActive: boolean;
     region: NorwegianRegion;
+    teacherSessions?: number;
+    teacherStudents?: number;
+    studentSessions?: number;
+    studentTeachers?: number;
   };
   _count: {
     chats: number;

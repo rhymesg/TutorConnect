@@ -23,6 +23,7 @@ import { DocumentsList } from './DocumentsList';
 import { RecentPosts } from './RecentPosts';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getRegionOptions, getRegionLabel } from '@/constants/regions';
+import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 
 interface ProfileData extends User {
   privacyGender: string;
@@ -94,18 +95,6 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
     return privacySetting === 'PUBLIC'; // Only show public fields on public view
   };
 
-  const getBadge = (sessions: number, students: number) => {
-    if (sessions >= 200 && students >= 10) {
-      return { level: 'Platina', color: 'text-purple-600 bg-purple-100', icon: '🏆' };
-    } else if (sessions >= 50 && students >= 5) {
-      return { level: 'Gull', color: 'text-yellow-600 bg-yellow-100', icon: '🥇' };
-    } else if (sessions >= 10 && students >= 2) {
-      return { level: 'Sølv', color: 'text-slate-500 bg-slate-200', icon: '🥈' };
-    } else if (sessions >= 2 && students >= 1) {
-      return { level: 'Bronse', color: 'text-orange-800 bg-orange-200', icon: '🥉' };
-    }
-    return null;
-  };
 
   const handleFieldEdit = (fieldName: string, currentValue: any) => {
     setEditingField(fieldName);
@@ -402,7 +391,10 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
       {!isPublicView && (
         <div className="absolute top-4 right-4">
           <button
-            onClick={() => window.open(`/profile/${profile.id}`, '_blank', 'width=850,height=700,scrollbars=yes,resizable=yes')}
+            onClick={() => {
+              const { openProfilePopup } = require('@/constants/ui');
+              openProfilePopup(profile.id);
+            }}
             className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-300 transition-colors shadow-sm"
           >
             <span>👁️</span>
@@ -506,8 +498,8 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 {/* Badges */}
                 <div className="flex items-center space-x-2">
                   {(() => {
-                    const teacherBadge = getBadge(profile.teacherSessions || 0, profile.teacherStudents || 0);
-                    const studentBadge = getBadge(profile.studentSessions || 0, profile.studentTeachers || 0);
+                    const teacherBadge = getTeacherBadge(profile.teacherSessions || 0, profile.teacherStudents || 0);
+                    const studentBadge = getStudentBadge(profile.studentSessions || 0, profile.studentTeachers || 0);
                     
                     return (
                       <>

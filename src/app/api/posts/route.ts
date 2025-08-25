@@ -130,6 +130,10 @@ async function handleCreatePost(
             profileImage: true,
             isActive: true,
             region: true,
+            teacherSessions: true,
+            teacherStudents: true,
+            studentSessions: true,
+            studentTeachers: true,
           },
         },
         _count: {
@@ -379,6 +383,10 @@ async function handleSearchPosts(
               profileImage: true,
               isActive: true,
               region: true,
+              teacherSessions: true,
+              teacherStudents: true,
+              studentSessions: true,
+              studentTeachers: true,
             },
           },
           _count: {
