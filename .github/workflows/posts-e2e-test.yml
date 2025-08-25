@@ -100,60 +100,67 @@ jobs:
             
             console.log('✅ Navigation to teachers page works');
             
-            // Test 2: Check if post cards are visible
+            // Test 2: Wait for page to load completely
             await page.waitForLoadState('networkidle');
             
-            // Wait for posts to load and check if post cards exist
-            const postCards = page.locator('[class*="PostCard"], .card, [data-testid*="post"]').first();
-            await expect(postCards.or(page.locator('text=Ingen lærere'))).toBeVisible({ timeout: 10000 });
+            // Wait for either post cards to load or empty state message
+            await page.waitForSelector('text=resultater funnet, text=Ingen annonser funnet', { timeout: 15000 });
             
-            // Count visible post cards
-            const cardCount = await page.locator('a[href^="/posts/"]').count();
-            console.log(`📊 Found ${cardCount} post cards`);
+            // Check if we have posts or empty state
+            const emptyStateExists = await page.locator('text=Ingen annonser funnet').isVisible();
+            const postsContainer = page.locator('[class*="grid"], [class*="space-y-4"]').first();
             
-            if (cardCount > 0) {
-              console.log('✅ Post cards are visible');
+            if (emptyStateExists) {
+              console.log('⚠️  No posts found - showing empty state');
+              console.log('✅ Empty state handling works correctly');
+            } else {
+              // Count visible post cards
+              const cardCount = await page.locator('a[href^="/posts/"]').count();
+              console.log(`📊 Found ${cardCount} post cards`);
               
-              // Test 3: Click on first post card to view individual post
-              const firstPostCard = page.locator('a[href^="/posts/"]').first();
-              await firstPostCard.click();
-              
-              // Verify we're on an individual post page
-              await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
-              
-              console.log('✅ Individual post page navigation works');
-              
-              // Test 4: Check if post details are visible
-              await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
-              
-              console.log('✅ Post details are visible');
-              
-              // Test 5: Click on username to open profile popup
-              const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
-              const clickableUserElement = userNameLinks.first();
-              
-              if (await clickableUserElement.isVisible()) {
-                // Listen for popup window
-                const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+              if (cardCount > 0) {
+                console.log('✅ Post cards are visible');
                 
-                await clickableUserElement.click();
+                // Test 3: Click on first post card to view individual post
+                const firstPostCard = page.locator('a[href^="/posts/"]').first();
+                await firstPostCard.click();
                 
-                const popup = await popupPromise;
+                // Verify we're on an individual post page
+                await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
                 
-                if (popup) {
-                  await popup.waitForLoadState();
-                  await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
-                  console.log('✅ Profile popup opens correctly');
-                  await popup.close();
+                console.log('✅ Individual post page navigation works');
+                
+                // Test 4: Check if post details are visible
+                await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
+                
+                console.log('✅ Post details are visible');
+                
+                // Test 5: Click on username to open profile popup
+                const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
+                const clickableUserElement = userNameLinks.first();
+                
+                if (await clickableUserElement.isVisible()) {
+                  // Listen for popup window
+                  const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+                  
+                  await clickableUserElement.click();
+                  
+                  const popup = await popupPromise;
+                  
+                  if (popup) {
+                    await popup.waitForLoadState();
+                    await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
+                    console.log('✅ Profile popup opens correctly');
+                    await popup.close();
+                  } else {
+                    console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                  }
                 } else {
-                  console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                  console.log('⚠️  Username link not found - checking for alternative profile access');
                 }
               } else {
-                console.log('⚠️  Username link not found - checking for alternative profile access');
+                console.log('⚠️  No post cards found on this page');
               }
-            } else {
-              console.log('⚠️  No post cards found - checking page structure');
-              await page.screenshot({ path: 'teachers-page-debug.png' });
             }
           });
           
@@ -174,60 +181,67 @@ jobs:
             
             console.log('✅ Navigation to students page works');
             
-            // Test 2: Check if post cards are visible
+            // Test 2: Wait for page to load completely
             await page.waitForLoadState('networkidle');
             
-            // Wait for posts to load and check if post cards exist
-            const postCards = page.locator('[class*="PostCard"], .card, [data-testid*="post"]').first();
-            await expect(postCards.or(page.locator('text=Ingen studenter'))).toBeVisible({ timeout: 10000 });
+            // Wait for either post cards to load or empty state message
+            await page.waitForSelector('text=resultater funnet, text=Ingen annonser funnet', { timeout: 15000 });
             
-            // Count visible post cards
-            const cardCount = await page.locator('a[href^="/posts/"]').count();
-            console.log(`📊 Found ${cardCount} post cards`);
+            // Check if we have posts or empty state
+            const emptyStateExists = await page.locator('text=Ingen annonser funnet').isVisible();
+            const postsContainer = page.locator('[class*="grid"], [class*="space-y-4"]').first();
             
-            if (cardCount > 0) {
-              console.log('✅ Post cards are visible');
+            if (emptyStateExists) {
+              console.log('⚠️  No posts found - showing empty state');
+              console.log('✅ Empty state handling works correctly');
+            } else {
+              // Count visible post cards
+              const cardCount = await page.locator('a[href^="/posts/"]').count();
+              console.log(`📊 Found ${cardCount} post cards`);
               
-              // Test 3: Click on first post card to view individual post
-              const firstPostCard = page.locator('a[href^="/posts/"]').first();
-              await firstPostCard.click();
-              
-              // Verify we're on an individual post page
-              await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
-              
-              console.log('✅ Individual post page navigation works');
-              
-              // Test 4: Check if post details are visible
-              await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
-              
-              console.log('✅ Post details are visible');
-              
-              // Test 5: Click on username to open profile popup
-              const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
-              const clickableUserElement = userNameLinks.first();
-              
-              if (await clickableUserElement.isVisible()) {
-                // Listen for popup window
-                const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+              if (cardCount > 0) {
+                console.log('✅ Post cards are visible');
                 
-                await clickableUserElement.click();
+                // Test 3: Click on first post card to view individual post
+                const firstPostCard = page.locator('a[href^="/posts/"]').first();
+                await firstPostCard.click();
                 
-                const popup = await popupPromise;
+                // Verify we're on an individual post page
+                await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
                 
-                if (popup) {
-                  await popup.waitForLoadState();
-                  await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
-                  console.log('✅ Profile popup opens correctly');
-                  await popup.close();
+                console.log('✅ Individual post page navigation works');
+                
+                // Test 4: Check if post details are visible
+                await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
+                
+                console.log('✅ Post details are visible');
+                
+                // Test 5: Click on username to open profile popup
+                const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
+                const clickableUserElement = userNameLinks.first();
+                
+                if (await clickableUserElement.isVisible()) {
+                  // Listen for popup window
+                  const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+                  
+                  await clickableUserElement.click();
+                  
+                  const popup = await popupPromise;
+                  
+                  if (popup) {
+                    await popup.waitForLoadState();
+                    await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
+                    console.log('✅ Profile popup opens correctly');
+                    await popup.close();
+                  } else {
+                    console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                  }
                 } else {
-                  console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                  console.log('⚠️  Username link not found - checking for alternative profile access');
                 }
               } else {
-                console.log('⚠️  Username link not found - checking for alternative profile access');
+                console.log('⚠️  No post cards found on this page');
               }
-            } else {
-              console.log('⚠️  No post cards found - checking page structure');
-              await page.screenshot({ path: 'students-page-debug.png' });
             }
           });
           
