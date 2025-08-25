@@ -27,8 +27,23 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
   // Get age group labels from centralized constants
   const ageGroupText = getAgeGroupLabels(post.ageGroups);
   
-  // Format rate display - Don't show specific prices to encourage click-through
+  // Format rate display
   const rateDisplay = () => {
+    if (post.type === 'TEACHER') {
+      // Teachers have a fixed hourly rate
+      if (post.hourlyRate) {
+        return `${post.hourlyRate} kr`;
+      }
+    } else {
+      // Students have a price range
+      if (post.hourlyRateMin && post.hourlyRateMax) {
+        return `${post.hourlyRateMin} - ${post.hourlyRateMax} kr`;
+      } else if (post.hourlyRateMin) {
+        return `Fra ${post.hourlyRateMin} kr`;
+      } else if (post.hourlyRateMax) {
+        return `Opp til ${post.hourlyRateMax} kr`;
+      }
+    }
     return '••• kr';
   };
 
