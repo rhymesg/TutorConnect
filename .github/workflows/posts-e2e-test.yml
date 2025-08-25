@@ -116,7 +116,7 @@ jobs:
             const hasResultsText = await page.locator('text=resultater funnet').isVisible();
             const postLinks = await page.locator('a[href^="/posts/"]').count();
             
-            console.log(`📊 Posts loaded - Links: ${postLinks}, Empty: ${hasEmptyState}, Results: ${hasResultsText}, Complete: ${hasCompletionText}`);
+            console.log(`📊 Posts status - Has posts: ${postLinks > 0}, Empty state: ${hasEmptyState}, Results text: ${hasResultsText}, Complete: ${hasCompletionText}`);
             
             if (hasEmptyState) {
               console.log('⚠️  No posts found - empty state displayed');
@@ -202,7 +202,7 @@ jobs:
             const hasResultsText = await page.locator('text=resultater funnet').isVisible();
             const postLinks = await page.locator('a[href^="/posts/"]').count();
             
-            console.log(`📊 Posts loaded - Links: ${postLinks}, Empty: ${hasEmptyState}, Results: ${hasResultsText}, Complete: ${hasCompletionText}`);
+            console.log(`📊 Posts status - Has posts: ${postLinks > 0}, Empty state: ${hasEmptyState}, Results text: ${hasResultsText}, Complete: ${hasCompletionText}`);
             
             if (hasEmptyState) {
               console.log('⚠️  No posts found - empty state displayed');
