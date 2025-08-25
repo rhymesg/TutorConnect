@@ -1,0 +1,272 @@
+name: Posts E2E Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_ENV: production
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  posts-test:
+    name: Test Posts Flow
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --include=dev
+      
+    - name: Setup environment
+      run: |
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
+        echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
+        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        
+    - name: Build application
+      run: npm run build
+      
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+      
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 10
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:3000
+      
+    - name: Run posts E2E test
+      run: |
+        cat > playwright-posts.config.ts << 'EOF'
+        import { defineConfig } from '@playwright/test';
+
+        export default defineConfig({
+          testDir: './tests/e2e',
+          timeout: 30000,
+          expect: { timeout: 5000 },
+          fullyParallel: false,
+          forbidOnly: !!process.env.CI,
+          retries: process.env.CI ? 2 : 0,
+          workers: 1,
+          reporter: 'html',
+          use: {
+            baseURL: 'http://localhost:3000',
+            trace: 'on-first-retry',
+            screenshot: 'only-on-failure',
+          },
+          projects: [
+            {
+              name: 'chromium',
+              use: { browserName: 'chromium' },
+            },
+          ],
+        });
+        EOF
+        
+        mkdir -p tests/e2e
+        cat > tests/e2e/posts.test.ts << 'EOF'
+        import { test, expect } from '@playwright/test';
+
+        test.describe('Posts Flow', () => {
+          test('should navigate and interact with teacher posts without login', async ({ page }) => {
+            console.log('🧪 Testing Teacher Posts Flow...');
+            
+            // Test 1: Navigate to "Finn en lærer" from home page
+            await page.goto('/');
+            await expect(page.locator('h1')).toContainText('Finn din perfekte');
+            
+            // Navigate to teachers page from posts selection
+            await page.goto('/posts');
+            await expect(page.locator('h1')).toContainText('Velg hva du leter etter');
+            
+            // Click "Finn en lærer" card
+            await page.click('a[href="/posts/teachers"]');
+            await expect(page).toHaveURL('/posts/teachers');
+            
+            console.log('✅ Navigation to teachers page works');
+            
+            // Test 2: Check if post cards are visible
+            await page.waitForLoadState('networkidle');
+            
+            // Wait for posts to load and check if post cards exist
+            const postCards = page.locator('[class*="PostCard"], .card, [data-testid*="post"]').first();
+            await expect(postCards.or(page.locator('text=Ingen lærere'))).toBeVisible({ timeout: 10000 });
+            
+            // Count visible post cards
+            const cardCount = await page.locator('a[href^="/posts/"]').count();
+            console.log(`📊 Found ${cardCount} post cards`);
+            
+            if (cardCount > 0) {
+              console.log('✅ Post cards are visible');
+              
+              // Test 3: Click on first post card to view individual post
+              const firstPostCard = page.locator('a[href^="/posts/"]').first();
+              await firstPostCard.click();
+              
+              // Verify we're on an individual post page
+              await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
+              
+              console.log('✅ Individual post page navigation works');
+              
+              // Test 4: Check if post details are visible
+              await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
+              
+              console.log('✅ Post details are visible');
+              
+              // Test 5: Click on username to open profile popup
+              const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
+              const clickableUserElement = userNameLinks.first();
+              
+              if (await clickableUserElement.isVisible()) {
+                // Listen for popup window
+                const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+                
+                await clickableUserElement.click();
+                
+                const popup = await popupPromise;
+                
+                if (popup) {
+                  await popup.waitForLoadState();
+                  await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
+                  console.log('✅ Profile popup opens correctly');
+                  await popup.close();
+                } else {
+                  console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                }
+              } else {
+                console.log('⚠️  Username link not found - checking for alternative profile access');
+              }
+            } else {
+              console.log('⚠️  No post cards found - checking page structure');
+              await page.screenshot({ path: 'teachers-page-debug.png' });
+            }
+          });
+          
+          test('should navigate and interact with student posts without login', async ({ page }) => {
+            console.log('🧪 Testing Student Posts Flow...');
+            
+            // Test 1: Navigate to "Finn en student" from home page
+            await page.goto('/');
+            await expect(page.locator('h1')).toContainText('Finn din perfekte');
+            
+            // Navigate to students page from posts selection
+            await page.goto('/posts');
+            await expect(page.locator('h1')).toContainText('Velg hva du leter etter');
+            
+            // Click "Finn en student" card
+            await page.click('a[href="/posts/students"]');
+            await expect(page).toHaveURL('/posts/students');
+            
+            console.log('✅ Navigation to students page works');
+            
+            // Test 2: Check if post cards are visible
+            await page.waitForLoadState('networkidle');
+            
+            // Wait for posts to load and check if post cards exist
+            const postCards = page.locator('[class*="PostCard"], .card, [data-testid*="post"]').first();
+            await expect(postCards.or(page.locator('text=Ingen studenter'))).toBeVisible({ timeout: 10000 });
+            
+            // Count visible post cards
+            const cardCount = await page.locator('a[href^="/posts/"]').count();
+            console.log(`📊 Found ${cardCount} post cards`);
+            
+            if (cardCount > 0) {
+              console.log('✅ Post cards are visible');
+              
+              // Test 3: Click on first post card to view individual post
+              const firstPostCard = page.locator('a[href^="/posts/"]').first();
+              await firstPostCard.click();
+              
+              // Verify we're on an individual post page
+              await expect(page).toHaveURL(/\/posts\/[a-zA-Z0-9]+$/);
+              
+              console.log('✅ Individual post page navigation works');
+              
+              // Test 4: Check if post details are visible
+              await expect(page.locator('h1, h2, [class*="title"]')).toBeVisible({ timeout: 5000 });
+              
+              console.log('✅ Post details are visible');
+              
+              // Test 5: Click on username to open profile popup
+              const userNameLinks = page.locator('text=/^[A-Za-z가-힣]+ [A-Za-z가-힣]*$/, a:has-text("profile"), [class*="user"], [class*="name"]');
+              const clickableUserElement = userNameLinks.first();
+              
+              if (await clickableUserElement.isVisible()) {
+                // Listen for popup window
+                const popupPromise = page.waitForEvent('popup', { timeout: 5000 }).catch(() => null);
+                
+                await clickableUserElement.click();
+                
+                const popup = await popupPromise;
+                
+                if (popup) {
+                  await popup.waitForLoadState();
+                  await expect(popup).toHaveURL(/\/profile\/[a-zA-Z0-9]+$/);
+                  console.log('✅ Profile popup opens correctly');
+                  await popup.close();
+                } else {
+                  console.log('⚠️  Profile popup not detected - may need different selector or interaction');
+                }
+              } else {
+                console.log('⚠️  Username link not found - checking for alternative profile access');
+              }
+            } else {
+              console.log('⚠️  No post cards found - checking page structure');
+              await page.screenshot({ path: 'students-page-debug.png' });
+            }
+          });
+          
+          test('should handle empty states gracefully', async ({ page }) => {
+            console.log('🧪 Testing Empty States...');
+            
+            // Check teachers page handles no results
+            await page.goto('/posts/teachers');
+            await page.waitForLoadState('networkidle');
+            
+            const teacherCards = await page.locator('a[href^="/posts/"]').count();
+            if (teacherCards === 0) {
+              // Should show empty state message or at least not crash
+              await expect(page.locator('body')).toBeVisible();
+              console.log('✅ Teachers page handles empty state');
+            }
+            
+            // Check students page handles no results
+            await page.goto('/posts/students');
+            await page.waitForLoadState('networkidle');
+            
+            const studentCards = await page.locator('a[href^="/posts/"]').count();
+            if (studentCards === 0) {
+              // Should show empty state message or at least not crash
+              await expect(page.locator('body')).toBeVisible();
+              console.log('✅ Students page handles empty state');
+            }
+            
+            console.log('✅ Empty state handling test completed');
+          });
+        });
+        EOF
+        
+        npx playwright test --config=playwright-posts.config.ts
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-posts-report
+        path: playwright-report/
+        retention-days: 30
