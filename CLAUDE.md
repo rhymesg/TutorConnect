@@ -67,6 +67,12 @@ Each agent continuously records the following in the `documents/decisions/` fold
 - **Minimal Implementation**: Implement only the exact requirements, nothing more
 - **Ask Before Adding**: Always ask before adding any functionality not explicitly requested
 
+## Debugging Workflow
+**Add debug messages during development, remove before commit.**
+
+- **Debug During Development**: Add console.log messages in related areas when fixing bugs or implementing features
+- **Clean Before Commit**: Remove debug messages before committing, keep only essential error logs
+
 ## Implementation Principles
 **Focus on simplicity and reusability in all implementations.**
 
