@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 
 // Initiate chat schema
 const initiateChatSchema = z.object({
-  message: z.string().min(1).max(1000),
+  message: z.string().min(1).max(1000).optional(), // Make message optional
   includeProfile: z.boolean().optional().default(false),
 });
 
@@ -64,15 +64,8 @@ async function validatePostChatAccess(postId: string, userId: string) {
  * Helper function to check if users can communicate based on post type
  */
 function validatePostTypeCompatibility(postType: string, initiatorType: 'TEACHER' | 'STUDENT') {
-  // Teachers can contact student posts, students can contact teacher posts
-  if (postType === 'TEACHER' && initiatorType === 'TEACHER') {
-    return { compatible: false, reason: 'Teachers cannot contact other teacher posts' };
-  }
-  
-  if (postType === 'STUDENT' && initiatorType === 'STUDENT') {
-    return { compatible: false, reason: 'Students cannot contact other student posts' };
-  }
-
+  // TutorConnect allows flexible roles - anyone can teach or learn
+  // Users can be both teachers and students depending on the subject
   return { compatible: true };
 }
 
@@ -104,15 +97,11 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     },
   });
 
-  // Validate post type compatibility
-  if (initiatorRecentPost) {
-    const compatibility = validatePostTypeCompatibility(post.type, initiatorRecentPost.type);
-    if (!compatibility.compatible) {
-      throw new BadRequestError(compatibility.reason);
-    }
-  }
+  // TutorConnect supports flexible learning/teaching roles - anyone can contact anyone
+  // Users can be both teachers and students depending on the subject
 
   // Check for existing chat between these users for this post
+  console.log(`Looking for existing chat between user ${user.id} and post owner ${post.userId} for post ${postId}`);
   const existingChat = await prisma.chat.findFirst({
     where: {
       relatedPostId: postId,
@@ -138,6 +127,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       },
     },
   });
+
+  console.log('Existing chat found:', existingChat ? `Chat ID: ${existingChat.id}` : 'None');
 
   // If chat exists and both users are participants, return existing chat
   if (existingChat && existingChat.participants.length === 2) {
@@ -188,14 +179,16 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     throw new BadRequestError('Too many chat requests in the last hour. Please wait before initiating more chats.');
   }
 
-  // Content filtering for initial message
-  const bannedWords = ['spam', 'scam', 'fake', 'money transfer', 'urgent payment'];
-  const containsBannedContent = bannedWords.some(word => 
-    message.toLowerCase().includes(word.toLowerCase())
-  );
+  // Content filtering for initial message (only if message exists)
+  if (message) {
+    const bannedWords = ['spam', 'scam', 'fake', 'money transfer', 'urgent payment'];
+    const containsBannedContent = bannedWords.some(word => 
+      message.toLowerCase().includes(word.toLowerCase())
+    );
 
-  if (containsBannedContent) {
-    throw new BadRequestError('Message contains inappropriate content');
+    if (containsBannedContent) {
+      throw new BadRequestError('Message contains inappropriate content');
+    }
   }
 
   // Create chat and send initial message in transaction
@@ -215,34 +208,40 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     });
 
     // Add both participants
-    await tx.chatParticipant.createMany({
-      data: [
-        {
-          chatId: chat.id,
-          userId: user.id,
-          joinedAt: new Date(),
-          isActive: true,
-          unreadCount: 0,
-        },
-        {
-          chatId: chat.id,
-          userId: post.userId,
-          joinedAt: new Date(),
-          isActive: true,
-          unreadCount: 1, // Post owner has one unread message
-        },
-      ],
-    });
-
-    // Send initial message
-    await tx.message.create({
-      data: {
-        content: message,
-        type: MessageType.TEXT,
+    const participantData = [
+      {
         chatId: chat.id,
-        senderId: user.id,
+        userId: user.id,
+        joinedAt: new Date(),
+        isActive: true,
+        unreadCount: 0,
       },
+      {
+        chatId: chat.id,
+        userId: post.userId,
+        joinedAt: new Date(),
+        isActive: true,
+        unreadCount: message ? 1 : 0, // Post owner has unread count only if message was sent
+      },
+    ];
+    
+    console.log('Creating chat participants:', participantData);
+    const participantResult = await tx.chatParticipant.createMany({
+      data: participantData,
     });
+    console.log('Participants created:', participantResult);
+
+    // Send initial message if provided
+    if (message) {
+      await tx.message.create({
+        data: {
+          content: message,
+          type: MessageType.TEXT,
+          chatId: chat.id,
+          senderId: user.id,
+        },
+      });
+    }
 
     // Add system message about chat creation
     await tx.message.create({

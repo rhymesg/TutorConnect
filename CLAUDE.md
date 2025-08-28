@@ -67,6 +67,12 @@ Each agent continuously records the following in the `documents/decisions/` fold
 - **Minimal Implementation**: Implement only the exact requirements, nothing more
 - **Ask Before Adding**: Always ask before adding any functionality not explicitly requested
 
+## Implementation Principles
+**Focus on simplicity and reusability in all implementations.**
+
+- **Simple Solutions**: Use simple approaches for implementing features - avoid complex methods when simpler ones will work
+- **Define Once, Use Many**: Define constants, enums, lists, and modules in a centralized location and import them wherever needed to avoid duplication
+
 ## Technology Standards and Best Practices
 **ALWAYS prioritize latest stable versions and avoid deprecated technologies.**
 
@@ -121,7 +127,7 @@ TutorConnect/
 
 ## Test Account Information
 - **Email**: tester@tutorconnect.no
-- **Password**: Qmffor1802!
+- **Password**: Use `secret.TESTER_PASSWORD`
 - **Purpose**: Development testing, E2E tests, manual testing
 - **Note**: Password stored in .env.local as TEST_EMAIL and TEST_PASSWORD
 

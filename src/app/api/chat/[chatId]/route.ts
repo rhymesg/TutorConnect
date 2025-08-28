@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser, requireResourceOwnership } from '@/middleware/auth';
@@ -15,10 +15,10 @@ const updateChatSchema = z.object({
 
 // Message listing schema
 const listMessagesSchema = z.object({
-  page: z.string().optional().transform(val => val ? parseInt(val) : 1),
-  limit: z.string().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
-  before: z.string().optional(), // Message ID for pagination
-  after: z.string().optional(), // Message ID for pagination
+  page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
+  limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
+  before: z.string().nullable().optional(), // Message ID for pagination
+  after: z.string().nullable().optional(), // Message ID for pagination
 });
 
 interface RouteParams {
@@ -55,9 +55,9 @@ async function validateChatAccess(chatId: string, userId: string) {
 /**
  * GET /api/chat/[chatId] - Get chat details with messages
  */
-async function handleGET(request: NextRequest, { params }: { params: RouteParams }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
-  const { chatId } = params;
+  const { chatId } = await params;
   const { searchParams } = new URL(request.url);
 
   // Validate access
@@ -214,7 +214,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
     });
   }
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       chat: {
@@ -233,15 +233,15 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
         newestMessageId: messages.length > 0 ? messages[messages.length - 1].id : null,
       },
     },
-  };
+  });
 }
 
 /**
  * PATCH /api/chat/[chatId] - Update chat settings
  */
-async function handlePATCH(request: NextRequest, { params }: { params: RouteParams }) {
+async function handlePATCH(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
-  const { chatId } = params;
+  const { chatId } = await params;
   const body = await request.json();
 
   // Validate access
@@ -292,20 +292,20 @@ async function handlePATCH(request: NextRequest, { params }: { params: RoutePara
       });
     }
 
-    return {
+    return NextResponse.json({
       success: true,
       data: {
         message: 'Left chat successfully',
       },
-    };
+    });
   }
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       message: 'No changes made',
     },
-  };
+  });
 }
 
 /**
@@ -369,28 +369,34 @@ async function handleDELETE(request: NextRequest, { params }: { params: RoutePar
     });
   });
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       message: 'Chat deleted successfully',
     },
-  };
+  });
 }
 
-export const GET = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handleGET,
+export const GET = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const chatId = pathSegments[pathSegments.length - 1];
+  return handleGET(request, { params: Promise.resolve({ chatId }) });
 });
 
-export const PATCH = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handlePATCH,
+export const PATCH = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const chatId = pathSegments[pathSegments.length - 1];
+  return handlePATCH(request, { params: Promise.resolve({ chatId }) });
 });
 
-export const DELETE = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handleDELETE,
+export const DELETE = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const chatId = pathSegments[pathSegments.length - 1];
+  return handleDELETE(request, { params: { chatId } });
 });

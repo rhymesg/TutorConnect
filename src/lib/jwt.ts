@@ -155,13 +155,15 @@ export async function verifyAccessToken(token: string): Promise<AccessTokenPaylo
     return payload as AccessTokenPayload;
   } catch (error) {
     if (error instanceof Error) {
+      console.error('Token verification error:', error.message);
       if (error.message.includes('expired')) {
         throw new Error('TOKEN_EXPIRED');
       }
-      if (error.message.includes('invalid')) {
+      if (error.message.includes('invalid') || error.message.includes('malformed')) {
         throw new Error('INVALID_TOKEN');
       }
     }
+    console.error('Unexpected token verification error:', error);
     throw new Error('TOKEN_VERIFICATION_FAILED');
   }
 }

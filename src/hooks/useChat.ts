@@ -1,506 +1,416 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  ChatListItem, 
-  Chat, 
-  Message, 
-  TypingIndicator, 
-  ChatFilter,
-  UseChatReturn,
-  MessageStatus
-} from '@/types/chat';
-import { useLanguage } from '@/lib/translations';
+import { Chat, ChatListItem, Message } from '@/types/chat';
 
 interface UseChatOptions {
+  chatId?: string;
+  autoLoad?: boolean;
   enableRealtime?: boolean;
-  enableTyping?: boolean;
   enablePresence?: boolean;
-  autoMarkAsRead?: boolean;
+  enableTyping?: boolean;
 }
 
-interface ChatState {
-  chats: ChatListItem[];
-  selectedChat: Chat | null;
+interface UseChatReturn {
+  // Single chat data
+  chat: Chat | null;
   messages: Message[];
-  typingUsers: TypingIndicator[];
-  onlineUsers: string[];
-  unreadCount: number;
-}
-
-interface LoadingState {
-  chatsLoading: boolean;
-  messagesLoading: boolean;
-  sendingMessage: boolean;
-}
-
-interface ErrorState {
+  
+  // Chat list data
+  chats: ChatListItem[];
+  
+  // Loading states
+  isLoadingChat: boolean;
+  isLoadingMessages: boolean;
+  isLoadingChats: boolean;
+  
+  // Error states
+  chatError: string | null;
+  messageError: string | null;
   chatsError: string | null;
-  messagesError: string | null;
-  connectionError: string | null;
-}
-
-interface PaginationState {
-  hasMoreChats: boolean;
-  hasMoreMessages: boolean;
-  chatsPage: number;
-  messagesPage: number;
+  
+  // Real-time states
+  isConnected: boolean;
+  typingUsers: string[];
+  
+  // Actions
+  loadChat: (chatId: string) => Promise<void>;
+  loadChats: () => Promise<void>;
+  sendMessage: (content: string, type?: Message['type']) => Promise<void>;
+  retryLastAction: () => Promise<void>;
+  
+  // Real-time actions
+  startTyping: () => Promise<void>;
+  stopTyping: () => Promise<void>;
+  
+  // Utilities
+  refreshAuth: () => Promise<boolean>;
+  clearErrors: () => void;
 }
 
 export function useChat(options: UseChatOptions = {}): UseChatReturn {
-  const { user, token } = useAuth();
-  const language = useLanguage();
-  
-  const {
-    enableRealtime = true,
-    enableTyping = true,
-    enablePresence = true,
-    autoMarkAsRead = true,
+  const { 
+    chatId, 
+    autoLoad = true, 
+    enableRealtime = false, 
+    enablePresence = false, 
+    enableTyping = false 
   } = options;
-
-  // State
-  const [chatState, setChatState] = useState<ChatState>({
-    chats: [],
-    selectedChat: null,
-    messages: [],
-    typingUsers: [],
-    onlineUsers: [],
-    unreadCount: 0,
-  });
-
-  const [loadingState, setLoadingState] = useState<LoadingState>({
-    chatsLoading: true,
-    messagesLoading: false,
-    sendingMessage: false,
-  });
-
-  const [errorState, setErrorState] = useState<ErrorState>({
-    chatsError: null,
-    messagesError: null,
-    connectionError: null,
-  });
-
-  const [paginationState, setPaginationState] = useState<PaginationState>({
-    hasMoreChats: false,
-    hasMoreMessages: false,
-    chatsPage: 1,
-    messagesPage: 1,
-  });
-
-  // Filters and search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ChatFilter>({ type: 'all' });
+  const { user, refreshAuth: authRefresh } = useAuth();
   
-  // Refs for cleanup
-  const realtimeSubscription = useRef<any>(null);
-  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+  // State
+  const [chat, setChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<ChatListItem[]>([]);
+  
+  // Loading states
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  
+  // Error states
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [chatsError, setChatsError] = useState<string | null>(null);
+  
+  // Real-time states
+  const [isConnected, setIsConnected] = useState(false);
+  const [typingUsers, setTypingUsers] = useState<string[]>([]);
+  
+  // Last action for retry
+  const [lastAction, setLastAction] = useState<(() => Promise<void>) | null>(null);
 
-  // Load chats
-  const loadChats = useCallback(async (page = 1, append = false) => {
-    if (!token || !user) return;
-
+  // Centralized auth refresh
+  const refreshAuth = useCallback(async (): Promise<boolean> => {
     try {
-      setLoadingState(prev => ({ ...prev, chatsLoading: !append }));
-      setErrorState(prev => ({ ...prev, chatsError: null }));
+      const result = await authRefresh();
+      return result;
+    } catch (error) {
+      console.error('Auth refresh failed:', error);
+      return false;
+    }
+  }, [authRefresh]);
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20',
-        search: searchQuery,
-        filter: activeFilter.type,
-      });
-
-      const response = await fetch(`/api/chat?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load chats: ${response.statusText}`);
+  // Get headers with auth token
+  const getAuthHeaders = useCallback(async () => {
+    const accessToken = localStorage.getItem('accessToken');
+    if (!accessToken) {
+      const refreshed = await refreshAuth();
+      if (!refreshed) {
+        throw new Error('Authentication required');
       }
+      return {
+        'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+        'Content-Type': 'application/json',
+      };
+    }
+    return {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+  }, [refreshAuth]);
 
-      const data = await response.json();
-      
-      // Transform chats to ChatListItem format
-      const chatList: ChatListItem[] = data.data.chats.map((chat: Chat) => {
-        const otherParticipant = chat.participants.find(
-          p => p.userId !== user.id && p.isActive
-        );
+  // Load specific chat with messages
+  const loadChat = useCallback(async (targetChatId: string) => {
+    console.log('loadChat called with chatId:', targetChatId);
+    setIsLoadingChat(true);
+    setIsLoadingMessages(true);
+    setChatError(null);
+    setMessageError(null);
+    
+    const action = async () => {
+      try {
+        const headers = await getAuthHeaders();
         
-        if (!otherParticipant) {
-          console.warn('Chat without other participant:', chat.id);
-          return null;
+        const response = await fetch(`/api/chat/${targetChatId}`, { headers });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Failed to load chat: ${response.status}`);
         }
 
-        const isOnline = otherParticipant.user.isActive && 
-          otherParticipant.user.lastActive &&
-          new Date().getTime() - new Date(otherParticipant.user.lastActive).getTime() < 300000; // 5 minutes
+        const data = await response.json();
+        console.log('Chat API response:', data);
         
-        let lastSeenText = '';
-        if (otherParticipant.user.lastActive && !isOnline) {
-          const diffMs = new Date().getTime() - new Date(otherParticipant.user.lastActive).getTime();
-          const diffMinutes = Math.floor(diffMs / (1000 * 60));
-          
-          if (diffMinutes < 60) {
-            lastSeenText = `${diffMinutes}m ${language === 'no' ? 'siden' : 'ago'}`;
-          } else {
-            const diffHours = Math.floor(diffMinutes / 60);
-            if (diffHours < 24) {
-              lastSeenText = `${diffHours}t ${language === 'no' ? 'siden' : 'ago'}`;
-            } else {
-              const diffDays = Math.floor(diffHours / 24);
-              lastSeenText = `${diffDays}d ${language === 'no' ? 'siden' : 'ago'}`;
-            }
-          }
-        } else if (isOnline) {
-          lastSeenText = language === 'no' ? 'Aktiv nå' : 'Active now';
-        }
+        const chatData = data.data?.chat || data.data;
+        const messagesData = data.data?.messages || [];
         
-        return {
-          ...chat,
-          otherParticipant,
-          displayName: otherParticipant.user.name,
-          displayImage: otherParticipant.user.profileImage,
-          isOnline,
-          lastSeenText,
-          unreadCount: otherParticipant.unreadCount || 0,
+        // Transform chat data
+        const transformedChat: Chat = {
+          id: chatData.id,
+          relatedPostId: chatData.relatedPostId,
+          isActive: chatData.isActive,
+          lastMessageAt: chatData.lastMessageAt ? new Date(chatData.lastMessageAt) : new Date(),
+          createdAt: new Date(chatData.createdAt),
+          updatedAt: new Date(chatData.updatedAt),
+          participants: chatData.participants || [],
+          relatedPost: chatData.relatedPost,
         };
-      }).filter(Boolean);
-      
-      setChatState(prev => ({
-        ...prev,
-        chats: append ? [...prev.chats, ...chatList] : chatList,
-        unreadCount: chatList.reduce((sum, chat) => sum + chat.unreadCount, 0),
-      }));
-      
-      setPaginationState(prev => ({
-        ...prev,
-        hasMoreChats: data.data.hasMore || false,
-        chatsPage: page,
-      }));
-      
-    } catch (error) {
-      console.error('Failed to load chats:', error);
-      setErrorState(prev => ({
-        ...prev,
-        chatsError: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    } finally {
-      setLoadingState(prev => ({ ...prev, chatsLoading: false }));
-    }
-  }, [token, user, searchQuery, activeFilter, language]);
-
-  // Load chat details
-  const loadChatDetails = useCallback(async (chatId: string) => {
-    if (!token) return null;
-
+        
+        // Transform messages
+        const transformedMessages: Message[] = messagesData.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          type: msg.type || 'TEXT',
+          chatId: msg.chatId,
+          senderId: msg.senderId,
+          isEdited: msg.isEdited || false,
+          sentAt: new Date(msg.sentAt),
+          sender: msg.sender,
+        }));
+        
+        setChat(transformedChat);
+        setMessages(transformedMessages);
+        
+        // Also add to chats list if not present
+        const otherParticipants = chatData.otherParticipants || 
+          chatData.participants?.filter((p: any) => p.userId !== user?.id) || [];
+        const otherParticipant = otherParticipants[0];
+        
+        const chatItem: ChatListItem = {
+          id: chatData.id,
+          relatedPostId: chatData.relatedPostId,
+          isActive: chatData.isActive,
+          lastMessageAt: chatData.lastMessageAt ? new Date(chatData.lastMessageAt) : new Date(),
+          createdAt: new Date(chatData.createdAt),
+          updatedAt: new Date(chatData.updatedAt),
+          participants: chatData.participants || [],
+          unreadCount: chatData.unreadCount || 0,
+          otherParticipant,
+          displayName: otherParticipant?.user?.name || chatData.relatedPost?.user?.name || 'Unknown',
+          lastMessagePreview: transformedMessages[0]?.content || 'Chat started',
+          relatedPost: chatData.relatedPost,
+        };
+        
+        setChats(prev => {
+          const existing = prev.find(c => c.id === chatItem.id);
+          if (existing) {
+            return prev.map(c => c.id === chatItem.id ? chatItem : c);
+          }
+          return [chatItem, ...prev];
+        });
+        
+      } catch (error) {
+        console.error('Error loading chat:', error);
+        setChatError(error instanceof Error ? error.message : 'Failed to load chat');
+        throw error;
+      }
+    };
+    
+    setLastAction(() => action);
+    
     try {
-      const response = await fetch(`/api/chat/${chatId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load chat details');
-      }
-
-      const data = await response.json();
-      const chat = data.data.chat;
-      
-      setChatState(prev => ({ ...prev, selectedChat: chat }));
-      return chat;
-      
-    } catch (error) {
-      console.error('Failed to load chat details:', error);
-      return null;
-    }
-  }, [token]);
-
-  // Load messages
-  const loadMessages = useCallback(async (chatId: string, page = 1, append = false) => {
-    if (!token) return;
-
-    try {
-      if (!append) {
-        setLoadingState(prev => ({ ...prev, messagesLoading: true }));
-        setErrorState(prev => ({ ...prev, messagesError: null }));
-      }
-
-      const response = await fetch(`/api/chat/${chatId}/messages?page=${page}&limit=50`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load messages');
-      }
-
-      const data = await response.json();
-      
-      setChatState(prev => ({
-        ...prev,
-        messages: append ? [...data.data.messages, ...prev.messages] : data.data.messages,
-      }));
-      
-      setPaginationState(prev => ({
-        ...prev,
-        hasMoreMessages: data.data.hasMore || false,
-        messagesPage: page,
-      }));
-
-      // Auto mark as read if enabled
-      if (autoMarkAsRead && !append) {
-        markAsRead(chatId);
-      }
-      
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      setErrorState(prev => ({
-        ...prev,
-        messagesError: error instanceof Error ? error.message : 'Unknown error',
-      }));
+      await action();
     } finally {
-      setLoadingState(prev => ({ ...prev, messagesLoading: false }));
+      setIsLoadingChat(false);
+      setIsLoadingMessages(false);
     }
-  }, [token, autoMarkAsRead]);
+  }, [getAuthHeaders, user]);
+
+  // Load all chats
+  const loadChats = useCallback(async () => {
+    setIsLoadingChats(true);
+    setChatsError(null);
+    
+    const action = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        
+        const response = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
+          headers
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to load chats');
+        }
+
+        const data = await response.json();
+        const chatsData = data.data.chats || [];
+        
+        console.log('Raw chats data from server:', chatsData);
+        console.log('Number of chats received:', chatsData.length);
+        
+        const transformedChats: ChatListItem[] = chatsData.map((chat: any) => ({
+          id: chat.id,
+          relatedPostId: chat.relatedPostId,
+          isActive: chat.isActive,
+          lastMessageAt: new Date(chat.lastMessageAt),
+          createdAt: new Date(chat.createdAt),
+          updatedAt: new Date(chat.updatedAt),
+          participants: chat.participants || [],
+          unreadCount: chat.unreadCount || 0,
+          otherParticipant: chat.otherParticipant,
+          displayName: chat.otherParticipant?.user?.name || 'Unknown',
+          lastMessagePreview: chat.lastMessage?.content || 'Chat started',
+          relatedPost: chat.relatedPost,
+        }));
+        
+        console.log('Transformed chats:', transformedChats);
+        setChats(transformedChats);
+      } catch (error) {
+        console.error('Error loading chats:', error);
+        setChatsError(error instanceof Error ? error.message : 'Failed to load chats');
+        throw error;
+      }
+    };
+    
+    setLastAction(() => action);
+    
+    try {
+      await action();
+    } finally {
+      setIsLoadingChats(false);
+    }
+  }, [getAuthHeaders]);
 
   // Send message
-  const sendMessage = useCallback(async (chatId: string, content: string, type: Message['type'] = 'TEXT'): Promise<Message | null> => {
-    if (!token || !user || !content.trim()) return null;
-
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+  const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT') => {
+    if (!chatId || !content.trim()) {
+      console.log('SendMessage aborted - chatId:', chatId, 'content:', content);
+      return;
+    }
     
-    // Create optimistic message
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: content.trim(),
-      type,
-      chatId,
-      senderId: user.id,
-      isEdited: false,
-      sentAt: new Date(),
-      sender: {
-        id: user.id,
-        name: user.name,
-        profileImage: user.profileImage,
-      },
-      status: 'sending',
-      isOptimistic: true,
-      tempId,
-    };
-
-    // Add optimistic message immediately
-    setChatState(prev => ({
-      ...prev,
-      messages: [...prev.messages, optimisticMessage],
-    }));
-
+    console.log('Sending message to chatId:', chatId, 'content:', content);
+    setMessageError(null);
+    
     try {
-      setLoadingState(prev => ({ ...prev, sendingMessage: true }));
-
+      const headers = await getAuthHeaders();
+      
       const response = await fetch(`/api/chat/${chatId}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: content.trim(),
-          type,
-        }),
+        headers,
+        body: JSON.stringify({ content: content.trim(), type }),
       });
 
+      console.log('API response status:', response.status);
+      
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to send message');
       }
 
       const data = await response.json();
-      const sentMessage = data.data.message;
+      const newMessage = data.data.message;
       
-      // Replace optimistic message with real message
-      setChatState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.tempId === tempId ? sentMessage : msg
-        ),
-        chats: prev.chats.map(chat => 
-          chat.id === chatId 
-            ? { ...chat, lastMessage: sentMessage, lastMessageAt: sentMessage.sentAt }
-            : chat
-        ),
-      }));
-
-      return sentMessage;
+      // Transform and add the new message
+      const transformedMessage: Message = {
+        id: newMessage.id,
+        content: newMessage.content,
+        type: newMessage.type,
+        chatId: newMessage.chatId,
+        senderId: newMessage.senderId,
+        isEdited: newMessage.isEdited || false,
+        sentAt: new Date(newMessage.sentAt),
+        sender: newMessage.sender,
+      };
+      
+      setMessages(prev => [...prev, transformedMessage]);
       
     } catch (error) {
-      console.error('Failed to send message:', error);
-      
-      // Update optimistic message to failed state
-      setChatState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.tempId === tempId 
-            ? { ...msg, status: 'failed' as MessageStatus, error: error instanceof Error ? error.message : 'Failed to send' }
-            : msg
-        ),
-      }));
-      
-      return null;
-    } finally {
-      setLoadingState(prev => ({ ...prev, sendingMessage: false }));
+      console.error('Error sending message:', error);
+      setMessageError(error instanceof Error ? error.message : 'Failed to send message');
+      throw error;
     }
-  }, [token, user]);
+  }, [chatId, getAuthHeaders]);
 
-  // Retry failed message
-  const retryMessage = useCallback(async (messageId: string) => {
-    const message = chatState.messages.find(m => m.id === messageId || m.tempId === messageId);
-    if (!message || !chatState.selectedChat) return;
+  // Retry last action
+  const retryLastAction = useCallback(async () => {
+    if (lastAction) {
+      await lastAction();
+    }
+  }, [lastAction]);
 
-    await sendMessage(chatState.selectedChat.id, message.content, message.type);
+  // Start typing indicator
+  const startTyping = useCallback(async () => {
+    if (!enableTyping || !chatId) return;
     
-    // Remove the failed message
-    setChatState(prev => ({
-      ...prev,
-      messages: prev.messages.filter(m => m.id !== messageId && m.tempId !== messageId),
-    }));
-  }, [chatState.messages, chatState.selectedChat, sendMessage]);
-
-  // Mark as read
-  const markAsRead = useCallback(async (chatId: string) => {
-    if (!token) return;
-
     try {
-      await fetch(`/api/chat/${chatId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      // Update unread count in chat list
-      setChatState(prev => ({
-        ...prev,
-        chats: prev.chats.map(chat => 
-          chat.id === chatId 
-            ? { ...chat, unreadCount: 0 }
-            : chat
-        ),
-        unreadCount: prev.unreadCount - (prev.chats.find(c => c.id === chatId)?.unreadCount || 0),
-      }));
-      
+      console.log('Start typing - TODO: Implement real-time typing');
+      // TODO: Implement real-time typing with Supabase
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      console.error('Failed to start typing:', error);
     }
-  }, [token]);
+  }, [enableTyping, chatId]);
 
-  // Search chats
-  const searchChats = useCallback((query: string) => {
-    setSearchQuery(query);
-    // Reload chats with new search query
-    loadChats(1, false);
-  }, [loadChats]);
-
-  // Filter chats
-  const filterChats = useCallback((filter: ChatFilter) => {
-    setActiveFilter(filter);
-    // Reload chats with new filter
-    loadChats(1, false);
-  }, [loadChats]);
-
-  // Load more chats
-  const loadMoreChats = useCallback(() => {
-    if (paginationState.hasMoreChats && !loadingState.chatsLoading) {
-      loadChats(paginationState.chatsPage + 1, true);
+  // Stop typing indicator
+  const stopTyping = useCallback(async () => {
+    if (!enableTyping || !chatId) return;
+    
+    try {
+      console.log('Stop typing - TODO: Implement real-time typing');
+      // TODO: Implement real-time typing with Supabase
+    } catch (error) {
+      console.error('Failed to stop typing:', error);
     }
-  }, [loadChats, paginationState.hasMoreChats, paginationState.chatsPage, loadingState.chatsLoading]);
+  }, [enableTyping, chatId]);
 
-  // Load more messages
-  const loadMoreMessages = useCallback(() => {
-    if (paginationState.hasMoreMessages && !loadingState.messagesLoading && chatState.selectedChat) {
-      loadMessages(chatState.selectedChat.id, paginationState.messagesPage + 1, true);
-    }
-  }, [loadMessages, paginationState.hasMoreMessages, paginationState.messagesPage, loadingState.messagesLoading, chatState.selectedChat]);
+  // Clear errors
+  const clearErrors = useCallback(() => {
+    setChatError(null);
+    setMessageError(null);
+    setChatsError(null);
+  }, []);
 
-  // Select chat
-  const selectChat = useCallback(async (chatId: string) => {
-    const chat = await loadChatDetails(chatId);
-    if (chat) {
-      await loadMessages(chatId);
-    }
-  }, [loadChatDetails, loadMessages]);
-
-  // Refresh
-  const refresh = useCallback(() => {
-    loadChats(1, false);
-    if (chatState.selectedChat) {
-      loadMessages(chatState.selectedChat.id, 1, false);
-    }
-  }, [loadChats, loadMessages, chatState.selectedChat]);
-
-  // Initialize
+  // Auto-load on mount
   useEffect(() => {
-    if (user && token) {
-      loadChats();
-    }
-  }, [user, token, loadChats]);
-
-  // TODO: Setup real-time subscriptions
-  useEffect(() => {
-    if (!enableRealtime || !user) return;
-
-    // Setup WebSocket or Supabase subscriptions here
-    console.log('Setting up real-time subscriptions...');
-
-    return () => {
-      if (realtimeSubscription.current) {
-        realtimeSubscription.current.unsubscribe();
+    if (autoLoad) {
+      if (chatId) {
+        loadChat(chatId);
+      } else {
+        loadChats();
       }
-    };
-  }, [enableRealtime, user]);
+    }
+  }, [chatId, autoLoad, loadChat, loadChats]);
+
+  // Real-time connection (placeholder for future implementation)
+  useEffect(() => {
+    if (enableRealtime && chatId) {
+      console.log('Real-time connection - TODO: Implement Supabase real-time');
+      setIsConnected(true);
+      
+      return () => {
+        setIsConnected(false);
+        setTypingUsers([]);
+      };
+    }
+  }, [enableRealtime, chatId]);
 
   return {
     // Data
-    chats: chatState.chats,
-    selectedChat: chatState.selectedChat,
-    messages: chatState.messages,
-    typingUsers: chatState.typingUsers,
-    onlineUsers: chatState.onlineUsers,
-    unreadCount: chatState.unreadCount,
+    chat,
+    messages,
+    chats,
     
     // Loading states
-    isLoading: loadingState.chatsLoading || loadingState.messagesLoading,
-    chatsLoading: loadingState.chatsLoading,
-    messagesLoading: loadingState.messagesLoading,
-    sendingMessage: loadingState.sendingMessage,
+    isLoadingChat,
+    isLoadingMessages,
+    isLoadingChats,
     
     // Error states
-    error: errorState.chatsError || errorState.messagesError || errorState.connectionError,
-    chatsError: errorState.chatsError,
-    messagesError: errorState.messagesError,
-    connectionError: errorState.connectionError,
+    chatError,
+    messageError,
+    chatsError,
     
-    // Pagination
-    hasMore: paginationState.hasMoreChats,
-    hasMoreChats: paginationState.hasMoreChats,
-    hasMoreMessages: paginationState.hasMoreMessages,
+    // Real-time states
+    isConnected,
+    typingUsers,
     
     // Actions
-    loadChats: () => loadChats(1, false),
-    selectChat,
+    loadChat,
+    loadChats,
     sendMessage,
-    retryMessage,
-    loadMore: loadMoreChats,
-    loadMoreMessages,
-    markAsRead,
-    searchChats,
-    filterChats,
-    refresh,
+    retryLastAction,
     
-    // Clear functions
-    clearChatsError: () => setErrorState(prev => ({ ...prev, chatsError: null })),
-    clearMessagesError: () => setErrorState(prev => ({ ...prev, messagesError: null })),
-    clearConnectionError: () => setErrorState(prev => ({ ...prev, connectionError: null })),
-  } as UseChatReturn;
+    // Real-time actions
+    startTyping,
+    stopTyping,
+    
+    // Utilities
+    refreshAuth,
+    clearErrors,
+  };
 }
+
+export default useChat;

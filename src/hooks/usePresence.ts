@@ -305,7 +305,7 @@ export function usePresence(options: UsePresenceOptions = {}) {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [mergedOptions.enableVisibilityTracking, currentUserStatus, updateUserStatus, updateActivity]);
+  }, [mergedOptions.enableVisibilityTracking]); // Simplified dependencies
 
   // Setup network status tracking
   useEffect(() => {
@@ -333,11 +333,13 @@ export function usePresence(options: UsePresenceOptions = {}) {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [mergedOptions.enableNetworkTracking, user, currentUserStatus, updateUserStatus]);
+  }, [mergedOptions.enableNetworkTracking]); // Simplified dependencies
 
   // Subscribe to real-time presence updates
   useEffect(() => {
     if (!user || !mergedOptions.chatId) return;
+
+    let isSubscribed = true;
 
     const setupPresenceSubscription = async () => {
       try {
@@ -345,11 +347,20 @@ export function usePresence(options: UsePresenceOptions = {}) {
         const unsubscribePresence = realtimeManager.addEventListener('presence', handlePresenceEvent);
         const unsubscribeTyping = realtimeManager.addEventListener('typing', handleTypingEvent);
         
+        // Only proceed if component is still mounted
+        if (!isSubscribed) {
+          unsubscribePresence();
+          unsubscribeTyping();
+          return;
+        }
+        
         // Subscribe to the presence channel
         await realtimeManager.subscribeToPresence(mergedOptions.chatId!, user.id, user.name || user.email || 'Bruker');
         
         // Subscribe to typing channel
         await realtimeManager.subscribeToTyping(mergedOptions.chatId!);
+
+        if (!isSubscribed) return;
 
         setIsConnected(true);
         sessionStartTimeRef.current = new Date();
@@ -364,16 +375,19 @@ export function usePresence(options: UsePresenceOptions = {}) {
         };
       } catch (error) {
         console.error('Failed to setup presence subscription:', error);
-        setIsConnected(false);
+        if (isSubscribed) {
+          setIsConnected(false);
+        }
       }
     };
 
     const cleanup = setupPresenceSubscription();
     
     return () => {
+      isSubscribed = false;
       cleanup.then(fn => fn?.());
     };
-  }, [user, mergedOptions.chatId, realtimeManager, handlePresenceEvent, handleTypingEvent, updateUserStatus, updateActivity]);
+  }, [user?.id, mergedOptions.chatId]); // Simplified dependencies
 
   // Update statistics
   useEffect(() => {
@@ -408,7 +422,7 @@ export function usePresence(options: UsePresenceOptions = {}) {
         updateUserStatus('offline');
       }
     };
-  }, []);
+  }, []); // Empty dependency - runs only on mount/unmount
 
   // Utility functions
   const getUserPresence = useCallback((userId: string): UserPresence | null => {

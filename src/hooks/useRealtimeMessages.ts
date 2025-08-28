@@ -115,20 +115,26 @@ export function useRealtimeMessages({
 
     // Set up send message function
     messageQueueRef.current.setSendMessageFunction(async (data: CreateMessageData) => {
-      const response = await fetch('/api/messages', {
+      const response = await fetch(`/api/chat/${chatId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          content: data.content,
+          type: data.type,
+          appointmentId: data.appointmentId,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to send message');
       }
 
-      return response.json();
+      const result = await response.json();
+      return result.data;
     });
 
     // Set up queue event listeners

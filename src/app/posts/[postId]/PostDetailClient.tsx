@@ -34,7 +34,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const [chatError, setChatError] = useState<string | null>(null);
   const router = useRouter();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, refreshAuth } = useAuth();
   
   const isTutorPost = post.type === 'TEACHER';
   const subjectName = getSubjectLabel(post.subject);
@@ -72,14 +72,13 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
 
   const handleStartChat = async () => {
     // Check if user is authenticated
-    if (!isAuthenticated) {
-      // Redirect to login with return URL
+    if (!isAuthenticated || !user) {
       router.push(`/auth/login?returnUrl=/posts/${post.id}`);
       return;
     }
 
     // Check if trying to chat with own post
-    if (user?.id === post.userId) {
+    if (user.id === post.userId) {
       setChatError('Du kan ikke starte en samtale med din egen annonse');
       return;
     }
@@ -88,34 +87,65 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
     setChatError(null);
 
     try {
-      // Create initial message
-      const initialMessage = `Hei! Jeg er interessert i annonsen din "${post.title}".`;
+      // Try to refresh token first to ensure we have a valid token
+      const refreshed = await refreshAuth();
+      
+      // Get the fresh token after refresh
+      const accessToken = localStorage.getItem('accessToken');
+      
+      if (!refreshed || !accessToken) {
+        // If refresh failed, redirect to login
+        router.push(`/auth/login?returnUrl=/posts/${post.id}`);
+        return;
+      }
 
-      // Create chat via API
+      // Create chat via API (without initial message)
       const response = await fetch(`/api/posts/${post.id}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
-          message: initialMessage,
+          // No initial message - let users start their own conversation
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Kunne ikke starte samtalen');
+        let errorMessage = 'Kunne ikke starte samtalen';
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error || errorMessage;
+          
+          // Handle specific authentication errors
+          if (response.status === 401) {
+            // Token is invalid or expired, redirect to login
+            localStorage.removeItem('accessToken');
+            router.push(`/auth/login?returnUrl=/posts/${post.id}`);
+            return;
+          }
+        } catch {
+          // If parsing error response fails, use status-based message
+          if (response.status === 401) {
+            errorMessage = 'Du må logge inn på nytt';
+          } else if (response.status === 400) {
+            errorMessage = 'Ugyldig forespørsel';
+          }
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
+      console.log('Chat creation response:', data);
       
       if (data.data.existing) {
         // If chat already exists, navigate to it
         router.push(`/chat?id=${data.data.chatId}`);
-      } else {
+      } else if (data.data.chat && data.data.chat.id) {
         // Navigate to the new chat
         router.push(`/chat?id=${data.data.chat.id}`);
+      } else {
+        throw new Error('Invalid response from chat creation');
       }
     } catch (error) {
       console.error('Failed to start chat:', error);
