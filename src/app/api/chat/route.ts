@@ -65,15 +65,6 @@ async function handleGET(request: NextRequest) {
     isActive: true, // Only active chats
   };
 
-  console.log('Searching chats for user:', user.id);
-  console.log('Where clause:', JSON.stringify(whereClause, null, 2));
-  
-  // Debug: Check all chat participants for this user
-  const allUserParticipants = await prisma.chatParticipant.findMany({
-    where: { userId: user.id },
-    include: { chat: { select: { id: true, isActive: true } } }
-  });
-  console.log(`User ${user.id} is participant in ${allUserParticipants.length} chats:`, allUserParticipants);
 
   // Get chats with participants, latest message, and unread count (including Norwegian context)
   const [chats, totalCount] = await Promise.all([
@@ -144,10 +135,6 @@ async function handleGET(request: NextRequest) {
     }),
   ]);
 
-  console.log(`Found ${chats.length} chats for user ${user.id}`);
-  chats.forEach(chat => {
-    console.log(`Chat ${chat.id}: participants=${chat.participants?.length}, messages=${chat.messages?.length}`);
-  });
 
   // Get unread message counts for each chat
   const chatsWithUnreadCounts = [];
@@ -192,14 +179,11 @@ async function handleGET(request: NextRequest) {
         };
         
         chatsWithUnreadCounts.push(processedChat);
-        console.log(`Successfully processed chat ${chat.id}`);
     } catch (error) {
       console.error(`Failed to process chat ${chat.id}:`, error);
       // Skip this chat and continue with others
     }
   }
-
-  console.log(`After processing unread counts: ${chatsWithUnreadCounts.length} chats`);
 
   // Apply unread filter if requested (post-processing since it's complex to do in query)
   let filteredChats = chatsWithUnreadCounts;
@@ -208,8 +192,6 @@ async function handleGET(request: NextRequest) {
       hasUnread ? chat.unreadCount > 0 : chat.unreadCount === 0
     );
   }
-
-  console.log(`After unread filtering: ${filteredChats.length} chats`);
 
   // Apply unread count sorting if requested
   if (sortBy === 'unreadCount') {
@@ -220,12 +202,6 @@ async function handleGET(request: NextRequest) {
 
   const totalPages = Math.ceil(totalCount / limit);
 
-  console.log(`Returning ${filteredChats.length} chats to client`);
-  console.log('First chat sample:', filteredChats[0] ? {
-    id: filteredChats[0].id,
-    displayName: filteredChats[0].otherParticipant?.user?.name,
-    otherParticipant: filteredChats[0].otherParticipant
-  } : 'No chats');
 
   return NextResponse.json({
     success: true,

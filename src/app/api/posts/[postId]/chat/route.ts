@@ -101,7 +101,6 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   // Users can be both teachers and students depending on the subject
 
   // Check for existing chat between these users for this post
-  console.log(`Looking for existing chat between user ${user.id} and post owner ${post.userId} for post ${postId}`);
   const existingChat = await prisma.chat.findFirst({
     where: {
       relatedPostId: postId,
@@ -128,7 +127,6 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     },
   });
 
-  console.log('Existing chat found:', existingChat ? `Chat ID: ${existingChat.id}` : 'None');
 
   // If chat exists and both users are participants, return existing chat
   if (existingChat && existingChat.participants.length === 2) {
@@ -225,11 +223,9 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       },
     ];
     
-    console.log('Creating chat participants:', participantData);
-    const participantResult = await tx.chatParticipant.createMany({
+    await tx.chatParticipant.createMany({
       data: participantData,
     });
-    console.log('Participants created:', participantResult);
 
     // Send initial message if provided
     if (message) {
@@ -357,8 +353,6 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   });
 
   // Create notification for post owner (this would integrate with notification system)
-  // For now, we'll just log it
-  console.log(`New chat notification for user ${post.userId} from ${user.id} about post "${post.title}"`);
 
   return NextResponse.json({
     success: true,

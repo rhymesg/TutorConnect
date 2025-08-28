@@ -113,7 +113,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
   // Load specific chat with messages
   const loadChat = useCallback(async (targetChatId: string) => {
-    console.log('loadChat called with chatId:', targetChatId);
     setIsLoadingChat(true);
     setIsLoadingMessages(true);
     setChatError(null);
@@ -131,7 +130,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         }
 
         const data = await response.json();
-        console.log('Chat API response:', data);
         
         const chatData = data.data?.chat || data.data;
         const messagesData = data.data?.messages || [];
@@ -228,9 +226,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         const data = await response.json();
         const chatsData = data.data.chats || [];
         
-        console.log('Raw chats data from server:', chatsData);
-        console.log('Number of chats received:', chatsData.length);
-        
         const transformedChats: ChatListItem[] = chatsData.map((chat: any) => ({
           id: chat.id,
           relatedPostId: chat.relatedPostId,
@@ -246,7 +241,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           relatedPost: chat.relatedPost,
         }));
         
-        console.log('Transformed chats:', transformedChats);
         setChats(transformedChats);
       } catch (error) {
         console.error('Error loading chats:', error);
@@ -267,11 +261,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   // Send message
   const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT') => {
     if (!chatId || !content.trim()) {
-      console.log('SendMessage aborted - chatId:', chatId, 'content:', content);
       return;
     }
-    
-    console.log('Sending message to chatId:', chatId, 'content:', content);
     setMessageError(null);
     
     try {
@@ -283,8 +274,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         body: JSON.stringify({ content: content.trim(), type }),
       });
 
-      console.log('API response status:', response.status);
-      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('API error response:', errorData);

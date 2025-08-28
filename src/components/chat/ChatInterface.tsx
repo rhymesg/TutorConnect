@@ -73,12 +73,10 @@ export default function ChatInterface({
 
   // Initialize with specific chat if provided
   useEffect(() => {
-    console.log('ChatInterface initializing with chatId:', initialChatId);
-    console.log('Current user:', user);
     if (initialChatId && initialChatId !== selectedChatId) {
       setSelectedChatId(initialChatId);
     }
-  }, [initialChatId, selectedChatId, user]);
+  }, [initialChatId, selectedChatId]);
 
   // Event handlers
   const handleSelectChat = (chatId: string) => {
@@ -100,11 +98,8 @@ export default function ChatInterface({
 
   const handleSendMessage = async (content: string, type?: Message['type']) => {
     if (!selectedChatId) {
-      console.error('No selectedChatId available for sending message');
       return;
     }
-    
-    console.log('ChatInterface handleSendMessage - selectedChatId:', selectedChatId, 'content:', content);
     
     try {
       await sendMessage(content, type || 'TEXT');
