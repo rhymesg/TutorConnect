@@ -51,6 +51,12 @@ export default function ChatInterface({
   const [isLoadingChats, setIsLoadingChats] = useState(true);
   const [chatError, setChatError] = useState<string | null>(null);
   const [hasMoreChats, setHasMoreChats] = useState(false);
+  
+  // Message state
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [selectedChat, setSelectedChat] = useState<ChatListItem | null>(null);
 
   // Check if mobile
   useEffect(() => {
@@ -65,14 +71,86 @@ export default function ChatInterface({
     return () => window.removeEventListener('resize', checkMobile);
   }, [selectedChatId]);
 
-  // Mock data loading - replace with real API calls
+  // Initialize with specific chat if provided
   useEffect(() => {
-    // Simulate loading chats
-    const loadMockChats = async () => {
-      setIsLoadingChats(true);
+    console.log('ChatInterface initializing with chatId:', initialChatId);
+    if (initialChatId) {
+      console.log('Loading specific chat:', initialChatId);
+      setSelectedChatId(initialChatId);
+      // Load the specific chat details
+      loadSpecificChat(initialChatId);
+    } else {
+      console.log('Loading all chats');
+      // Load all chats if no specific chat is provided
+      loadAllChats();
+    }
+  }, [initialChatId]);
+
+  // Load specific chat when coming from post detail
+  const loadSpecificChat = async (chatId: string) => {
+    console.log('loadSpecificChat called with chatId:', chatId);
+    setIsLoadingChats(true);
+    setIsLoadingMessages(true);
+    
+    try {
+      // This would be a real API call to get chat details
+      // For now, we'll create a mock chat based on the chatId
+      const mockChat: ChatListItem = {
+        id: chatId,
+        relatedPostId: 'post-1',
+        isActive: true,
+        lastMessageAt: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        participants: [],
+        unreadCount: 0,
+        otherParticipant: {
+          id: 'p1',
+          chatId: chatId,
+          userId: 'other-user',
+          joinedAt: new Date(),
+          isActive: true,
+          unreadCount: 0,
+          user: {
+            id: 'other-user',
+            name: 'Post Author',
+            email: 'author@example.com',
+            profileImage: undefined,
+            isActive: true,
+            lastActive: new Date(),
+          }
+        },
+        displayName: 'Post Author',
+        lastMessagePreview: 'Chat started',
+        relatedPost: {
+          id: 'post-1',
+          title: 'Mathematics Tutoring',
+          type: 'TEACHER',
+          subject: 'math',
+        }
+      };
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      setChats([mockChat]);
+      setSelectedChat(mockChat);
+      
+      // Load messages for this chat
+      await loadMessages(chatId);
+      
+    } catch (error) {
+      console.error('Error loading specific chat:', error);
+      setChatError('Failed to load chat');
+    } finally {
+      setIsLoadingChats(false);
+      setIsLoadingMessages(false);
+    }
+  };
+
+  // Mock data loading - replace with real API calls
+  const loadAllChats = async () => {
+    setIsLoadingChats(true);
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
       
       const mockChats: ChatListItem[] = [
         {
@@ -192,17 +270,8 @@ export default function ChatInterface({
       setChats(mockChats);
       setIsLoadingChats(false);
     };
-    
-    loadMockChats();
-  }, []);
 
-  // Load messages when chat is selected
-  useEffect(() => {
-    if (selectedChatId) {
-      loadMessages(selectedChatId);
-      loadChatDetails(selectedChatId);
-    }
-  }, [selectedChatId]);
+  // This useEffect has been moved to the initialization logic above
 
   const loadMessages = async (chatId: string) => {
     setIsLoadingMessages(true);
@@ -261,12 +330,7 @@ export default function ChatInterface({
     setIsLoadingMessages(false);
   };
 
-  const loadChatDetails = async (chatId: string) => {
-    const chat = chats.find(c => c.id === chatId);
-    if (chat) {
-      setSelectedChat(chat);
-    }
-  };
+  // loadChatDetails is now handled in loadSpecificChat function
 
   // Event handlers
   const handleSelectChat = (chatId: string) => {

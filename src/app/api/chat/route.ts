@@ -97,6 +97,26 @@ async function handleGET(request: NextRequest) {
     prisma.chat.findMany({
       where: whereClause,
       include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            isActive: true,
+            lastActive: true,
+            region: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            isActive: true,
+            lastActive: true,
+            region: true,
+          },
+        },
         participants: {
           where: { isActive: true },
           include: {
@@ -270,6 +290,24 @@ async function handlePOST(request: NextRequest) {
     const chatWithDetails = await prisma.chat.findUnique({
       where: { id: chatDetails.id },
       include: {
+        teacher: {
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            isActive: true,
+            region: true,
+          },
+        },
+        student: {
+          select: {
+            id: true,
+            name: true,
+            profileImage: true,
+            isActive: true,
+            region: true,
+          },
+        },
         participants: {
           where: { isActive: true },
           include: {

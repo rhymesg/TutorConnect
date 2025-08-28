@@ -21,6 +21,8 @@ export interface ChatParticipantInfo {
 export interface ChatRoomDetails {
   id: string;
   relatedPostId?: string | null;
+  teacherId?: string | null;
+  studentId?: string | null;
   isActive: boolean;
   participantCount: number;
   messageCount: number;
@@ -233,10 +235,37 @@ export async function createChatRoom(options: CreateChatRoomOptions): Promise<Ch
 
   // Create chat in transaction
   const newChat = await prisma.$transaction(async (tx) => {
+    // Get post details if relatedPostId exists
+    let teacherId: string | null = null;
+    let studentId: string | null = null;
+    
+    if (relatedPostId) {
+      const post = await tx.post.findUnique({
+        where: { id: relatedPostId },
+        select: {
+          type: true,
+          userId: true,
+        },
+      });
+      
+      if (post) {
+        // Determine teacher and student based on post type
+        if (post.type === 'TEACHER') {
+          teacherId = post.userId;
+          studentId = allParticipantIds.find(id => id !== post.userId) || null;
+        } else {
+          studentId = post.userId;
+          teacherId = allParticipantIds.find(id => id !== post.userId) || null;
+        }
+      }
+    }
+
     // Create the chat
     const chat = await tx.chat.create({
       data: {
         relatedPostId,
+        teacherId,
+        studentId,
         isActive: true,
       },
     });
@@ -335,6 +364,8 @@ export async function getChatRoomDetails(chatId: string): Promise<ChatRoomDetail
   return {
     id: chat.id,
     relatedPostId: chat.relatedPostId,
+    teacherId: chat.teacherId,
+    studentId: chat.studentId,
     isActive: chat.isActive,
     participantCount,
     messageCount: chat._count.messages,

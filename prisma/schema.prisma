@@ -47,6 +47,8 @@ model User {
   teacherStudents       Int               @default(0)
   privacyStats          PrivacySetting    @default(PUBLIC)
   chatParticipants      ChatParticipant[]
+  teacherChats          Chat[]            @relation("TeacherChats")
+  studentChats          Chat[]            @relation("StudentChats")
   reportedChats         ChatReport[]      @relation("ChatReportReporter")
   reviewedReports       ChatReport[]      @relation("ChatReportReviewer")
   documents             Document[]
@@ -96,6 +98,8 @@ model Post {
 model Chat {
   id            String            @id @default(cuid())
   relatedPostId String?
+  teacherId     String?           @map("teacher_id")
+  studentId     String?           @map("student_id")
   isActive      Boolean           @default(true)
   lastMessageAt DateTime?
   createdAt     DateTime          @default(now())
@@ -104,10 +108,14 @@ model Chat {
   participants  ChatParticipant[]
   reports       ChatReport[]
   relatedPost   Post?             @relation(fields: [relatedPostId], references: [id])
+  teacher       User?             @relation("TeacherChats", fields: [teacherId], references: [id])
+  student       User?             @relation("StudentChats", fields: [studentId], references: [id])
   messages      Message[]
 
   @@index([relatedPostId])
   @@index([lastMessageAt])
+  @@index([teacherId])
+  @@index([studentId])
   @@map("chats")
 }
 

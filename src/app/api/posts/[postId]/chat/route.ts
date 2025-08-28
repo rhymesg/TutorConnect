@@ -1,6 +1,5 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 import { MessageType } from "@prisma/client";
@@ -80,9 +79,11 @@ function validatePostTypeCompatibility(postType: string, initiatorType: 'TEACHER
 /**
  * POST /api/posts/[postId]/chat - Initiate chat with post owner
  */
-async function handlePOST(request: NextRequest, { params }: { params: RouteParams }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  // Apply authentication middleware first
+  await authMiddleware(request);
   const user = getAuthenticatedUser(request);
-  const { postId } = params;
+  const { postId } = await params;
   const body = await request.json();
 
   // Validate post access
@@ -159,14 +160,14 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
       });
     }
 
-    return {
+    return NextResponse.json({
       success: true,
       data: {
         chatId: existingChat.id,
         message: 'Chat already exists',
         existing: true,
       },
-    };
+    });
   }
 
   // Rate limiting: Check recent chat initiations by this user
@@ -199,10 +200,16 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
 
   // Create chat and send initial message in transaction
   const newChat = await prisma.$transaction(async (tx) => {
+    // Determine teacher and student IDs based on post type
+    const teacherId = post.type === 'TEACHER' ? post.userId : user.id;
+    const studentId = post.type === 'TEACHER' ? user.id : post.userId;
+
     // Create the chat
     const chat = await tx.chat.create({
       data: {
         relatedPostId: postId,
+        teacherId: teacherId,
+        studentId: studentId,
         isActive: true,
       },
     });
@@ -298,6 +305,22 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
   const chatWithDetails = await prisma.chat.findUnique({
     where: { id: newChat.id },
     include: {
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
       participants: {
         include: {
           user: {
@@ -338,25 +361,31 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
   // For now, we'll just log it
   console.log(`New chat notification for user ${post.userId} from ${user.id} about post "${post.title}"`);
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       chat: {
         ...chatWithDetails,
         messages: chatWithDetails?.messages.reverse(), // Chronological order
         otherParticipant: chatWithDetails?.participants.find(p => p.userId !== user.id),
+        teacherId: chatWithDetails?.teacherId,
+        studentId: chatWithDetails?.studentId,
+        teacher: chatWithDetails?.teacher,
+        student: chatWithDetails?.student,
       },
       message: 'Chat initiated successfully',
     },
-  };
+  });
 }
 
 /**
  * GET /api/posts/[postId]/chat - Get existing chat for this post
  */
-async function handleGET(request: NextRequest, { params }: { params: RouteParams }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  // Apply authentication middleware first
+  await authMiddleware(request);
   const user = getAuthenticatedUser(request);
-  const { postId } = params;
+  const { postId } = await params;
 
   // Validate post exists
   const post = await prisma.post.findUnique({
@@ -385,6 +414,22 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
       },
     },
     include: {
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
       participants: {
         where: { isActive: true },
         include: {
@@ -423,7 +468,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
   });
 
   if (!existingChat) {
-    return {
+    return NextResponse.json({
       success: true,
       data: {
         hasExistingChat: false,
@@ -433,7 +478,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
           canInitiateChat: post.userId !== user.id && post.isActive,
         },
       },
-    };
+    });
   }
 
   // Get unread count for current user
@@ -450,7 +495,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
     },
   }) : 0;
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       hasExistingChat: true,
@@ -459,19 +504,57 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
         unreadCount,
         lastMessage: existingChat.messages[0] || null,
         otherParticipant: existingChat.participants.find(p => p.userId !== user.id),
+        teacherId: existingChat.teacherId,
+        studentId: existingChat.studentId,
+        teacher: existingChat.teacher,
+        student: existingChat.student,
       },
     },
-  };
+  });
 }
 
-export const GET = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handleGET,
-});
+export async function GET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  try {
+    return await handleGET(request, { params });
+  } catch (error) {
+    console.error('GET /api/posts/[postId]/chat error:', error);
+    
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
-export const POST = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handlePOST,
-});
+export async function POST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  try {
+    return await handlePOST(request, { params });
+  } catch (error) {
+    console.error('POST /api/posts/[postId]/chat error:', error);
+    
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
