@@ -6,6 +6,8 @@ import { ChatListItem, ChatFilter } from '@/types/chat';
 import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { NoChatsEmptyState, NoSearchResultsEmptyState, ConnectionErrorEmptyState, ChatListLoadingState } from './EmptyStates';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSubjectLabel } from '@/constants/subjects';
 
 interface ChatRoomListProps {
   chats: ChatListItem[];
@@ -42,6 +44,7 @@ export default function ChatRoomList({
 }: ChatRoomListProps) {
   const language = useLanguage();
   const t = chatTranslations[language];
+  const { user } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [activeFilter, setActiveFilter] = useState<ChatFilter>({ type: 'all' });
@@ -273,8 +276,8 @@ export default function ChatRoomList({
                         }
                       </p>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">
-                        {language === 'no' ? 'Ingen meldinger enda' : 'No messages yet'}
+                      <p className="text-sm text-gray-500 truncate">
+                        {chat.relatedPost?.title || (language === 'no' ? 'Ingen meldinger enda' : 'No messages yet')}
                       </p>
                     )}
                     
@@ -282,17 +285,37 @@ export default function ChatRoomList({
                     {chat.relatedPost && (
                       <div className="flex items-center gap-1 mt-1">
                         <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          chat.relatedPost.type === 'TEACHER' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-blue-100 text-blue-800'
+                          (() => {
+                            const isPostOwner = chat.relatedPost.user.id === user?.id;
+                            const postType = chat.relatedPost.type;
+                            const otherUserRole = isPostOwner 
+                              ? (postType === 'TEACHER' ? 'STUDENT' : 'TEACHER')
+                              : postType;
+                            
+                            return otherUserRole === 'TEACHER'
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-blue-100 text-blue-800';
+                          })()
                         }`}>
-                          {chat.relatedPost.type === 'TEACHER' 
-                            ? (language === 'no' ? 'Lærer' : 'Teacher')
-                            : (language === 'no' ? 'Student' : 'Student')
-                          }
+                          {/* Show the role of the other user in the chat */}
+                          {(() => {
+                            const isPostOwner = chat.relatedPost.user.id === user?.id;
+                            const postType = chat.relatedPost.type;
+                            
+                            // If I own the post and it's a TEACHER post, the other person is a STUDENT
+                            // If I own the post and it's a STUDENT post, the other person is a TEACHER
+                            // If they own the post, their role matches the post type
+                            const otherUserRole = isPostOwner 
+                              ? (postType === 'TEACHER' ? 'STUDENT' : 'TEACHER')
+                              : postType;
+                            
+                            return otherUserRole === 'TEACHER' 
+                              ? (language === 'no' ? 'Lærer' : 'Teacher')
+                              : (language === 'no' ? 'Student' : 'Student');
+                          })()}
                         </div>
                         <span className="text-xs text-gray-600 font-medium">
-                          {chat.relatedPost.subject}
+                          {getSubjectLabel(chat.relatedPost.subject)}
                         </span>
                         {chat.relatedPost.hourlyRate && (
                           <span className="text-xs text-gray-500">
