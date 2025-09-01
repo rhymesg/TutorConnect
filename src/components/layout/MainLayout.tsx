@@ -21,7 +21,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Get total unread count for notifications
   const { totalUnreadCount } = useChat({
     autoLoad: isAuthenticated,
-    enableRealtime: true,
+    enablePolling: true,
   });
 
   // Close sidebar when route changes on mobile

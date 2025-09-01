@@ -43,20 +43,14 @@ export default function ChatInterface({
     chatError,
     messageError,
     chatsError,
-    isConnected,
-    typingUsers,
     loadChat,
     loadChats,
     sendMessage,
-    startTyping,
-    stopTyping,
     clearErrors,
   } = useChat({
     chatId: selectedChatId || undefined,
     autoLoad: true,
-    enableRealtime: true, // Enable real-time updates
-    enablePresence: true, // Enable online presence
-    enableTyping: true, // Enable typing indicators
+    enablePolling: true, // Enable polling for updates
   });
 
   // Check if mobile
@@ -230,12 +224,7 @@ export default function ChatInterface({
                 language={language}
                 isLoading={isLoadingMessages}
                 hasMore={false} // TODO: Implement pagination
-                typingUsers={typingUsers.map(userName => ({
-                  chatId: selectedChatId || '',
-                  userId: '',
-                  userName,
-                  timestamp: new Date()
-                }))}
+                typingUsers={[]}
                 onLoadMore={handleLoadMoreMessages}
                 onMessageAction={handleMessageAction}
                 onRetryMessage={handleRetryMessage}
@@ -245,11 +234,8 @@ export default function ChatInterface({
             {/* Message Composer */}
             <MessageComposer
               onSendMessage={handleSendMessage}
-              onStartTyping={startTyping}
-              onStopTyping={stopTyping}
               language={language}
-              disabled={false} // Never disable during polling
-              placeholder={undefined} // No loading placeholder during polling
+              disabled={false}
             />
           </>
         ) : (

@@ -196,160 +196,6 @@ export const getUserProfile = async (
   return data;
 };
 
-// Real-time subscription helpers
-export const subscribeToChat = (
-  supabase: ReturnType<typeof createClient>,
-  chatId: string,
-  onMessage: (payload: any) => void,
-  onMessageUpdate?: (payload: any) => void,
-  onMessageDelete?: (payload: any) => void
-) => {
-  const channel = supabase.channel(`chat:${chatId}`);
-  
-  // Subscribe to new messages
-  channel.on(
-    'postgres_changes',
-    {
-      event: 'INSERT',
-      schema: 'public',
-      table: 'messages',
-      filter: `chatId=eq.${chatId}`,
-    },
-    onMessage
-  );
-
-  // Subscribe to message updates (edits)
-  if (onMessageUpdate) {
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages',
-        filter: `chatId=eq.${chatId}`,
-      },
-      onMessageUpdate
-    );
-  }
-
-  // Subscribe to message deletions
-  if (onMessageDelete) {
-    channel.on(
-      'postgres_changes',
-      {
-        event: 'DELETE',
-        schema: 'public',
-        table: 'messages',
-        filter: `chatId=eq.${chatId}`,
-      },
-      onMessageDelete
-    );
-  }
-
-  return channel.subscribe();
-};
-
-// Subscribe to typing indicators
-export const subscribeToTyping = (
-  supabase: ReturnType<typeof createClient>,
-  chatId: string,
-  onTypingChange: (payload: any) => void
-) => {
-  return supabase
-    .channel(`typing:${chatId}`)
-    .on('broadcast', { event: 'typing' }, onTypingChange)
-    .subscribe();
-};
-
-// Broadcast typing indicator
-export const broadcastTyping = (
-  supabase: ReturnType<typeof createClient>,
-  chatId: string,
-  userId: string,
-  userName: string,
-  isTyping: boolean
-) => {
-  return supabase
-    .channel(`typing:${chatId}`)
-    .send({
-      type: 'broadcast',
-      event: 'typing',
-      payload: {
-        userId,
-        userName,
-        isTyping,
-        timestamp: Date.now(),
-      },
-    });
-};
-
-// Subscribe to presence (online/offline status)
-export const subscribeToPresence = (
-  supabase: ReturnType<typeof createClient>,
-  chatId: string,
-  userId: string,
-  userName: string,
-  onPresenceChange: (payload: any) => void
-) => {
-  const channel = supabase.channel(`presence:${chatId}`);
-  
-  channel
-    .on('presence', { event: 'sync' }, onPresenceChange)
-    .on('presence', { event: 'join' }, onPresenceChange)
-    .on('presence', { event: 'leave' }, onPresenceChange)
-    .subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
-        await channel.track({
-          userId,
-          userName,
-          onlineAt: new Date().toISOString(),
-        });
-      }
-    });
-
-  return channel;
-};
-
-// Subscribe to read receipts
-export const subscribeToReadReceipts = (
-  supabase: ReturnType<typeof createClient>,
-  chatId: string,
-  onReadReceiptChange: (payload: any) => void
-) => {
-  return supabase
-    .channel(`read-receipts:${chatId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'chat_participants',
-        filter: `chatId=eq.${chatId}`,
-      },
-      onReadReceiptChange
-    )
-    .subscribe();
-};
-
-export const subscribeToUserStatus = (
-  supabase: ReturnType<typeof createClient>,
-  userId: string,
-  onStatusChange: (payload: any) => void
-) => {
-  return supabase
-    .channel(`user:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'users',
-        filter: `id=eq.${userId}`,
-      },
-      onStatusChange
-    )
-    .subscribe();
-};
 
 // Database helper functions with error handling
 export const createPost = async (
@@ -426,25 +272,13 @@ export const sendMessage = async (
   return data;
 };
 
-// Enhanced message sending with real-time notifications
+// Enhanced message sending (simplified - no real-time notifications)
 export const sendMessageWithNotifications = async (
   supabase: ReturnType<typeof createClient>,
   messageData: any,
   notifyParticipants: boolean = true
 ) => {
   const message = await sendMessage(supabase, messageData);
-
-  // Send real-time notification to chat participants
-  if (notifyParticipants) {
-    await supabase
-      .channel(`chat:${messageData.chatId}`)
-      .send({
-        type: 'broadcast',
-        event: 'new_message',
-        payload: message,
-      });
-  }
-
   return message;
 };
 

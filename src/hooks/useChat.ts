@@ -3,14 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Chat, ChatListItem, Message } from '@/types/chat';
-import { createClient, subscribeToChat } from '@/lib/supabase-client';
 
 interface UseChatOptions {
   chatId?: string;
   autoLoad?: boolean;
-  enableRealtime?: boolean;
-  enablePresence?: boolean;
-  enableTyping?: boolean;
+  enablePolling?: boolean;
 }
 
 interface UseChatReturn {
@@ -32,19 +29,11 @@ interface UseChatReturn {
   messageError: string | null;
   chatsError: string | null;
   
-  // Real-time states
-  isConnected: boolean;
-  typingUsers: string[];
-  
   // Actions
   loadChat: (chatId: string) => Promise<void>;
   loadChats: () => Promise<void>;
   sendMessage: (content: string, type?: Message['type']) => Promise<void>;
   retryLastAction: () => Promise<void>;
-  
-  // Real-time actions
-  startTyping: () => Promise<void>;
-  stopTyping: () => Promise<void>;
   
   // Utilities
   refreshAuth: () => Promise<boolean>;
@@ -55,9 +44,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const { 
     chatId, 
     autoLoad = true, 
-    enableRealtime = false, 
-    enablePresence = false, 
-    enableTyping = false 
+    enablePolling = true 
   } = options;
   const { user, accessToken, refreshAuth: authRefresh } = useAuth();
   
@@ -76,10 +63,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const [chatError, setChatError] = useState<string | null>(null);
   const [messageError, setMessageError] = useState<string | null>(null);
   const [chatsError, setChatsError] = useState<string | null>(null);
-  
-  // Real-time states
-  const [isConnected, setIsConnected] = useState(false);
-  const [typingUsers, setTypingUsers] = useState<string[]>([]);
   
   // Last action for retry
   const [lastAction, setLastAction] = useState<(() => Promise<void>) | null>(null);
@@ -164,13 +147,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         
         setChat(transformedChat);
         setMessages(transformedMessages);
-        lastMessageCountRef.current = transformedMessages.length;
-        
-        // Update last message time for polling optimization
-        if (transformedMessages.length > 0) {
-          const lastMessage = transformedMessages[transformedMessages.length - 1];
-          lastMessageTimeRef.current = lastMessage.sentAt.toISOString();
-        }
         
         // Also add to chats list if not present
         const otherParticipants = chatData.otherParticipants || 
@@ -323,49 +299,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     }
   }, [lastAction]);
 
-  // Start typing indicator
-  const startTyping = useCallback(async () => {
-    if (!enableTyping || !chatId || !user || !supabaseRef.current) return;
-    
-    try {
-      await supabaseRef.current
-        .channel(`typing:${chatId}`)
-        .send({
-          type: 'broadcast',
-          event: 'typing',
-          payload: {
-            userId: user.id,
-            userName: user.name,
-            isTyping: true,
-            timestamp: Date.now(),
-          },
-        });
-    } catch (error) {
-      console.error('Failed to start typing:', error);
-    }
-  }, [enableTyping, chatId, user]);
-
-  // Stop typing indicator
-  const stopTyping = useCallback(async () => {
-    if (!enableTyping || !chatId || !user || !supabaseRef.current) return;
-    
-    try {
-      await supabaseRef.current
-        .channel(`typing:${chatId}`)
-        .send({
-          type: 'broadcast',
-          event: 'typing',
-          payload: {
-            userId: user.id,
-            userName: user.name,
-            isTyping: false,
-            timestamp: Date.now(),
-          },
-        });
-    } catch (error) {
-      console.error('Failed to stop typing:', error);
-    }
-  }, [enableTyping, chatId, user]);
 
   // Clear errors
   const clearErrors = useCallback(() => {
@@ -395,172 +328,13 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     }
   }, [chatId, autoLoad, loadChat, loadChats]);
 
-  // Real-time connection
-  const channelRef = useRef<any>(null);
+  // Polling refs
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
-  const lastMessageCountRef = useRef<number>(0);
-  const lastMessageTimeRef = useRef<string | null>(null);
   const chatListPollingRef = useRef<NodeJS.Timeout | null>(null);
   
+  // Message polling for individual chat
   useEffect(() => {
-    if (enableRealtime && chatId && user) {
-      // Create a new Supabase client instance for real-time
-      if (!supabaseRef.current) {
-        supabaseRef.current = createClient();
-      }
-      // Set up real-time subscription
-      const handleNewMessage = async (payload: any) => {
-        console.log('New message received:', payload);
-        console.log('Payload details:', {
-          chatId: payload.new?.chatId,
-          senderId: payload.new?.senderId,
-          currentChatId: chatId,
-          currentUserId: user.id
-        });
-        
-        // Don't add our own messages (they're already added optimistically)
-        if (payload.new.senderId === user.id) {
-          console.log('Skipping own message');
-          return;
-        }
-        
-        try {
-          // Fetch the complete message with sender info from API
-          const headers = await getAuthHeaders();
-          const response = await fetch(`/api/chat/${chatId}/messages?limit=20`, {
-            headers
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            const messages = data.data.messages || [];
-            
-            // Find the new message in the response
-            const messageWithSender = messages.find((m: any) => m.id === payload.new.id);
-            
-            if (messageWithSender) {
-              // Transform the new message with full sender info
-              const newMessage: Message = {
-                id: messageWithSender.id,
-                content: messageWithSender.content,
-                type: messageWithSender.type || 'TEXT',
-                chatId: messageWithSender.chatId,
-                senderId: messageWithSender.senderId,
-                isEdited: messageWithSender.isEdited || false,
-                sentAt: new Date(messageWithSender.sentAt),
-                sender: messageWithSender.sender,
-              };
-              
-              // Add the new message to the list
-              setMessages(prev => [...prev, newMessage]);
-              
-              // Update the chat's last message in the chat list
-              setChats(prev => prev.map(chat => {
-                if (chat.id === chatId) {
-                  return {
-                    ...chat,
-                    lastMessage: newMessage,
-                    lastMessageAt: new Date(messageWithSender.sentAt),
-                    unreadCount: chat.unreadCount + 1,
-                  };
-                }
-                return chat;
-              }));
-              
-              return;
-            }
-          }
-        } catch (error) {
-          console.error('Failed to fetch message details:', error);
-        }
-        
-        // Fallback: Use basic info from payload if API call fails
-        const newMessage: Message = {
-          id: payload.new.id,
-          content: payload.new.content,
-          type: payload.new.type || 'TEXT',
-          chatId: payload.new.chatId,
-          senderId: payload.new.senderId,
-          isEdited: payload.new.isEdited || false,
-          sentAt: new Date(payload.new.sentAt),
-          sender: { 
-            id: payload.new.senderId, 
-            name: 'User',
-            profileImage: null 
-          },
-        };
-        
-        // Add the new message to the list
-        setMessages(prev => [...prev, newMessage]);
-        
-        // Update the chat's last message in the chat list
-        setChats(prev => prev.map(chat => {
-          if (chat.id === chatId) {
-            return {
-              ...chat,
-              lastMessage: newMessage,
-              lastMessageAt: new Date(payload.new.sentAt),
-              unreadCount: chat.unreadCount + 1,
-            };
-          }
-          return chat;
-        }));
-      };
-      
-      const handleMessageUpdate = (payload: any) => {
-        console.log('Message updated:', payload);
-        setMessages(prev => prev.map(msg => 
-          msg.id === payload.new.id 
-            ? { ...msg, content: payload.new.content, isEdited: true }
-            : msg
-        ));
-      };
-      
-      const handleMessageDelete = (payload: any) => {
-        console.log('Message deleted:', payload);
-        setMessages(prev => prev.filter(msg => msg.id !== payload.old.id));
-      };
-      
-      // Subscribe to chat messages
-      console.log('Setting up real-time subscription for chat:', chatId);
-      
-      const setupSubscription = async () => {
-        try {
-          const channel = await subscribeToChat(
-            supabaseRef.current!,
-            chatId,
-            handleNewMessage,
-            handleMessageUpdate,
-            handleMessageDelete
-          );
-          
-          channelRef.current = channel;
-          
-          // Enhanced system event logging
-          channel.on('system', {}, (payload: any) => {
-            console.log('Supabase system event:', payload);
-            if (payload.type === 'system') {
-              console.log('System message details:', payload);
-            }
-          });
-          
-          // Listen for subscription status changes
-          channel.on('broadcast', { event: 'connection' }, (payload: any) => {
-            console.log('Connection status:', payload);
-            setIsConnected(payload.connected || false);
-          });
-          
-          console.log('Real-time subscription established for chatId:', chatId);
-          console.log('Channel state:', channel.state);
-        } catch (error) {
-          console.error('Failed to setup real-time subscription:', error);
-        }
-      };
-      
-      setupSubscription();
-      
-      // Fallback: Set up polling as backup for real-time
+    if (enablePolling && chatId && user) {
       const setupPolling = () => {
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
@@ -570,7 +344,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           try {
             // Skip polling if user is not authenticated
             if (!user || !accessToken) {
-              console.log('Skipping poll - no user or token');
               return;
             }
             
@@ -584,8 +357,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               const newMessages = data.data.messages || [];
               
               if (newMessages.length > 0) {
-                console.log('Polling detected', newMessages.length, 'new messages');
-                
                 // Filter out our own messages and duplicates
                 const filteredMessages = newMessages.filter((msg: any) => 
                   msg.senderId !== user.id && 
@@ -605,98 +376,38 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
                   }));
                   
                   setMessages(prev => [...prev, ...transformedMessages]);
-                  
-                  // Update last message time
-                  const latestMessage = transformedMessages[transformedMessages.length - 1];
-                  lastMessageTimeRef.current = latestMessage.sentAt.toISOString();
                 }
               }
             } else if (response.status === 422 || response.status === 401) {
-              console.log('Auth error in polling, attempting refresh...');
               const refreshed = await refreshAuth();
               if (!refreshed) {
-                console.log('Auth refresh failed, stopping polling');
                 if (pollingIntervalRef.current) {
                   clearInterval(pollingIntervalRef.current);
                   pollingIntervalRef.current = null;
                 }
               }
-            } else {
-              console.log('Polling response not ok:', response.status, response.statusText);
             }
           } catch (error) {
             console.error('Polling error:', error);
-            // Don't stop polling on network errors, just log them
           }
-        }, 5000); // Poll every 5 seconds - good balance between real-time feel and server load
+        }, 5000); // Poll every 5 seconds
       };
       
-      // Enable safe polling every 5 seconds
-      setTimeout(setupPolling, 3000);
-      
-      // Subscribe to typing indicators if enabled
-      let typingChannel: any = null;
-      if (enableTyping) {
-        typingChannel = supabaseRef.current!
-          .channel(`typing:${chatId}`)
-          .on('broadcast', { event: 'typing' }, (payload) => {
-            console.log('Typing event:', payload);
-            
-            // Don't show our own typing
-            if (payload.payload.userId === user.id) {
-              return;
-            }
-            
-            if (payload.payload.isTyping) {
-              // Add user to typing list
-              setTypingUsers(prev => {
-                if (!prev.includes(payload.payload.userName)) {
-                  return [...prev, payload.payload.userName];
-                }
-                return prev;
-              });
-              
-              // Remove after 3 seconds
-              setTimeout(() => {
-                setTypingUsers(prev => prev.filter(name => name !== payload.payload.userName));
-              }, 3000);
-            } else {
-              // Remove user from typing list
-              setTypingUsers(prev => prev.filter(name => name !== payload.payload.userName));
-            }
-          })
-          .subscribe();
-      }
-      
-      setIsConnected(true);
+      // Start polling after a delay
+      setTimeout(setupPolling, 1000);
       
       return () => {
-        // Clean up Supabase channels
-        if (channelRef.current && supabaseRef.current) {
-          supabaseRef.current.removeChannel(channelRef.current);
-          channelRef.current = null;
-        }
-        if (typingChannel && supabaseRef.current) {
-          supabaseRef.current.removeChannel(typingChannel);
-        }
-        
-        // Clean up polling
         if (pollingIntervalRef.current) {
           clearInterval(pollingIntervalRef.current);
           pollingIntervalRef.current = null;
         }
-        
-        setIsConnected(false);
-        setTypingUsers([]);
       };
     }
-  }, [enableRealtime, chatId, user, enableTyping, getAuthHeaders]);
+  }, [enablePolling, chatId, user, accessToken, getAuthHeaders, refreshAuth, messages]);
 
   // Chat list polling - runs when not in specific chat
   useEffect(() => {
-    if (enableRealtime && !chatId && user) {
-      console.log('Setting up chat list polling...');
-      
+    if (enablePolling && !chatId && user) {
       const setupChatListPolling = () => {
         if (chatListPollingRef.current) {
           clearInterval(chatListPollingRef.current);
@@ -706,11 +417,9 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           try {
             // Skip polling if user is not authenticated
             if (!user || !accessToken) {
-              console.log('Skipping chat list poll - no user or token');
               return;
             }
             
-            console.log('Polling chat list for unread counts...');
             const headers = await getAuthHeaders();
             const response = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
               headers
@@ -732,8 +441,6 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               });
               
               if (chatsChanged || unreadCountChanged) {
-                console.log('Chat list updated - new messages or chats detected');
-                
                 const transformedChats: ChatListItem[] = updatedChats.map((chat: any) => ({
                   id: chat.id,
                   relatedPostId: chat.relatedPostId,
@@ -753,22 +460,18 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               }
               
             } else if (response.status === 422 || response.status === 401) {
-              console.log('Auth error in chat list polling, attempting refresh...');
               const refreshed = await refreshAuth();
               if (!refreshed) {
-                console.log('Auth refresh failed, stopping chat list polling');
                 if (chatListPollingRef.current) {
                   clearInterval(chatListPollingRef.current);
                   chatListPollingRef.current = null;
                 }
               }
-            } else {
-              console.log('Chat list polling response not ok:', response.status);
             }
           } catch (error) {
             console.error('Chat list polling error:', error);
           }
-        }, 10000); // Poll every 10 seconds for chat list (less frequent than individual chat)
+        }, 10000); // Poll every 10 seconds for chat list
       };
       
       // Start chat list polling after a delay
@@ -781,7 +484,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         }
       };
     }
-  }, [enableRealtime, chatId, user, accessToken, getAuthHeaders, refreshAuth, chats]);
+  }, [enablePolling, chatId, user, accessToken, getAuthHeaders, refreshAuth, chats]);
 
   return {
     // Data
@@ -800,19 +503,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     messageError,
     chatsError,
     
-    // Real-time states
-    isConnected,
-    typingUsers,
-    
     // Actions
     loadChat,
     loadChats,
     sendMessage,
     retryLastAction,
-    
-    // Real-time actions
-    startTyping,
-    stopTyping,
     
     // Utilities
     refreshAuth,

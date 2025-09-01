@@ -7,8 +7,6 @@ import { Language, chat as chatTranslations } from '@/lib/translations';
 
 interface MessageComposerProps {
   onSendMessage: (content: string, type?: Message['type']) => Promise<void>;
-  onStartTyping?: () => void;
-  onStopTyping?: () => void;
   language: Language;
   disabled?: boolean;
   placeholder?: string;
@@ -25,8 +23,6 @@ interface FileAttachment {
 
 export default function MessageComposer({
   onSendMessage,
-  onStartTyping,
-  onStopTyping,
   language,
   disabled = false,
   placeholder,
@@ -42,7 +38,6 @@ export default function MessageComposer({
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const typingTimeoutRef = useRef<NodeJS.Timeout>();
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -57,22 +52,6 @@ export default function MessageComposer({
     const value = e.target.value;
     setMessage(value);
     adjustTextareaHeight();
-    
-    // Handle typing indicators
-    if (value.trim() && !typingTimeoutRef.current) {
-      onStartTyping?.();
-    }
-    
-    // Clear existing timeout
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current);
-    }
-    
-    // Set new timeout to stop typing
-    typingTimeoutRef.current = setTimeout(() => {
-      onStopTyping?.();
-      typingTimeoutRef.current = undefined;
-    }, 1000);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -88,7 +67,6 @@ export default function MessageComposer({
     if (isSending || disabled) return;
 
     setIsSending(true);
-    onStopTyping?.();
     
     try {
       // TODO: Handle file attachments upload here
