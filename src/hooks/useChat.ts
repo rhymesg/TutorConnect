@@ -316,11 +316,13 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   // Auto-load on mount
   useEffect(() => {
     if (autoLoad) {
-      const timeoutId = setTimeout(() => {
+      const timeoutId = setTimeout(async () => {
         if (chatId) {
-          loadChat(chatId);
+          // Load both chat list and specific chat
+          await loadChats();
+          await loadChat(chatId);
         } else {
-          loadChats();
+          await loadChats();
         }
       }, 100);
       

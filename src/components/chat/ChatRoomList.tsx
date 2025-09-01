@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Filter, MessageCircle, Clock, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
+import { Search, MessageCircle, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
 import { ChatListItem, ChatFilter } from '@/types/chat';
 import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -47,20 +47,9 @@ export default function ChatRoomList({
   const { user } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ChatFilter>({ type: 'all' });
-  const [showFilters, setShowFilters] = useState(false);
 
   const filteredChats = useMemo(() => {
-    let filtered = chats;
-
-    // Apply filter
-    if (activeFilter.type === 'unread') {
-      filtered = filtered.filter(chat => chat.unreadCount > 0);
-    } else if (activeFilter.type === 'archived') {
-      filtered = filtered.filter(chat => !chat.isActive);
-    } else {
-      filtered = filtered.filter(chat => chat.isActive);
-    }
+    let filtered = chats.filter(chat => chat.isActive);
 
     // Apply search
     if (searchQuery.trim()) {
@@ -73,19 +62,13 @@ export default function ChatRoomList({
     }
 
     return filtered;
-  }, [chats, searchQuery, activeFilter]);
+  }, [chats, searchQuery]);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
     onSearch(value);
   };
 
-  const handleFilter = (type: ChatFilter['type']) => {
-    const newFilter = { type, search: searchQuery };
-    setActiveFilter(newFilter);
-    onFilter(newFilter);
-    setShowFilters(false);
-  };
 
   const getTimeDisplay = (date: Date | undefined) => {
     if (!date) return '';
@@ -153,45 +136,6 @@ export default function ChatRoomList({
           />
         </div>
         
-        {/* Filters */}
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full transition-colors ${
-              showFilters 
-                ? 'bg-blue-100 text-blue-700' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <Filter className="h-3 w-3" />
-            {t.roomList.filter}
-          </button>
-          
-          {activeFilter.type !== 'all' && (
-            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-              {t.roomList[`filter${activeFilter.type.charAt(0).toUpperCase() + activeFilter.type.slice(1)}` as keyof typeof t.roomList]}
-            </span>
-          )}
-        </div>
-        
-        {/* Filter Options */}
-        {showFilters && (
-          <div className="absolute top-full left-4 right-4 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-            {(['all', 'unread', 'archived'] as const).map((filterType) => (
-              <button
-                key={filterType}
-                onClick={() => handleFilter(filterType)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                  activeFilter.type === filterType 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-700'
-                }`}
-              >
-                {t.roomList[`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}` as keyof typeof t.roomList]}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Chat List */}
@@ -325,15 +269,6 @@ export default function ChatRoomList({
                       </div>
                     )}
                     
-                    {/* Status indicator */}
-                    {!chat.isOnline && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3 text-gray-400" />
-                        <span className="text-xs text-gray-400">
-                          {chat.lastSeenText}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </button>
