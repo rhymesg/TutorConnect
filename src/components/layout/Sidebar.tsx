@@ -20,6 +20,7 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  unreadMessagesCount?: number;
 }
 
 interface NavigationSection {
@@ -35,7 +36,7 @@ interface NavigationItem {
   description?: string;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   const navigationSections: NavigationSection[] = [
@@ -64,7 +65,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           name: 'Mine samtaler',
           href: '/chat',
           icon: ChatBubbleLeftRightIcon,
-          badge: 3,
+          badge: unreadMessagesCount,
           description: 'Aktive samtaler og meldinger',
         },
         {

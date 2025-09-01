@@ -30,10 +30,24 @@ export default function TypingIndicators({
 
   // Enhanced filtering and state management
   useEffect(() => {
+    // Convert string array to TypingIndicator objects if needed
+    const typingIndicators: TypingIndicator[] = typingUsers.map((user) => {
+      if (typeof user === 'string') {
+        return {
+          chatId: '',
+          userId: '',
+          userName: user,
+          timestamp: new Date(),
+        };
+      }
+      return user;
+    });
+
     const now = new Date();
-    const activeTypingUsers = typingUsers.filter(
+    const activeTypingUsers = typingIndicators.filter(
       indicator => 
         indicator.userId !== currentUserId &&
+        indicator.timestamp &&
         now.getTime() - indicator.timestamp.getTime() < autoHideDelay
     );
 

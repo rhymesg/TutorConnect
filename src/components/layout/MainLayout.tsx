@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/hooks/useChat';
 import Header from './Header';
 import MobileNavigation from './MobileNavigation';
 import Sidebar from './Sidebar';
@@ -16,6 +17,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  
+  // Get total unread count for notifications
+  const { totalUnreadCount } = useChat({
+    autoLoad: isAuthenticated,
+    enableRealtime: true,
+  });
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -50,6 +57,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Header 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           showMenuButton={showSidebar}
+          notificationCount={totalUnreadCount}
         />
       )}
 
@@ -59,6 +67,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           <Sidebar 
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
+            unreadMessagesCount={totalUnreadCount}
           />
         )}
 

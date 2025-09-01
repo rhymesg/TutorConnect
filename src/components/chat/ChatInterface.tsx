@@ -36,6 +36,7 @@ export default function ChatInterface({
     chat,
     messages,
     chats,
+    totalUnreadCount,
     isLoadingChat,
     isLoadingMessages,
     isLoadingChats,
@@ -53,9 +54,9 @@ export default function ChatInterface({
   } = useChat({
     chatId: selectedChatId || undefined,
     autoLoad: true,
-    enableRealtime: false, // Start with disabled, can be enabled gradually
-    enablePresence: false,
-    enableTyping: false,
+    enableRealtime: true, // Enable real-time updates
+    enablePresence: true, // Enable online presence
+    enableTyping: true, // Enable typing indicators
   });
 
   // Check if mobile
@@ -229,7 +230,12 @@ export default function ChatInterface({
                 language={language}
                 isLoading={isLoadingMessages}
                 hasMore={false} // TODO: Implement pagination
-                typingUsers={[]} // TODO: Implement real-time typing
+                typingUsers={typingUsers.map(userName => ({
+                  chatId: selectedChatId || '',
+                  userId: '',
+                  userName,
+                  timestamp: new Date()
+                }))}
                 onLoadMore={handleLoadMoreMessages}
                 onMessageAction={handleMessageAction}
                 onRetryMessage={handleRetryMessage}
@@ -242,12 +248,8 @@ export default function ChatInterface({
               onStartTyping={startTyping}
               onStopTyping={stopTyping}
               language={language}
-              disabled={isLoadingMessages} // Remove !isConnected since realtime is disabled
-              placeholder={
-                isLoadingMessages 
-                  ? (language === 'no' ? 'Laster...' : 'Loading...')
-                  : undefined
-              }
+              disabled={false} // Never disable during polling
+              placeholder={undefined} // No loading placeholder during polling
             />
           </>
         ) : (

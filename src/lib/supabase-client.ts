@@ -5,7 +5,13 @@ import type { Database } from '@/types/supabase';
 export const createClient = () => {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+      },
+    }
   );
 };
 
@@ -13,25 +19,54 @@ export const createClient = () => {
 export const supabase = createClient();
 
 // Real-time subscription helpers
-export const subscribeToChat = (
+export const subscribeToChat = async (
   supabase: ReturnType<typeof createClient>,
   chatId: string,
   onMessage: (payload: any) => void,
   onMessageUpdate?: (payload: any) => void,
   onMessageDelete?: (payload: any) => void
 ) => {
-  const channel = supabase.channel(`chat:${chatId}`);
+  const channel = supabase.channel(`chat:${chatId}`, {
+    config: {
+      broadcast: { self: false }
+    }
+  });
   
-  // Subscribe to new messages
+  console.log('Creating channel for chat:', chatId);
+  
+  // Subscribe to all messages and filter on client side
   channel.on(
     'postgres_changes',
     {
       event: 'INSERT',
       schema: 'public',
       table: 'messages',
-      filter: `chatId=eq.${chatId}`,
     },
-    onMessage
+    (payload) => {
+      console.log('Received INSERT event:', payload);
+      console.log('Full payload.new object:', payload.new);
+      console.log('Available fields:', payload.new ? Object.keys(payload.new) : 'no payload.new');
+      
+      // Try different possible field names
+      const messageChatId = payload.new?.chatId || payload.new?.chat_id || payload.new?.chatid;
+      
+      console.log('Filter check:', {
+        payloadChatId: payload.new?.chatId,
+        payloadChatId_snake: payload.new?.chat_id,
+        payloadChatId_lower: payload.new?.chatid,
+        actualChatId: messageChatId,
+        expectedChatId: chatId,
+        matches: messageChatId === chatId
+      });
+      
+      // Filter on client side with flexible field name matching
+      if (payload.new && messageChatId === chatId) {
+        console.log('Calling onMessage with payload');
+        onMessage(payload);
+      } else {
+        console.log('Message filtered out - different chat or no chat ID found');
+      }
+    }
   );
 
   if (onMessageUpdate) {
@@ -41,9 +76,14 @@ export const subscribeToChat = (
         event: 'UPDATE',
         schema: 'public',
         table: 'messages',
-        filter: `chatId=eq.${chatId}`,
       },
-      onMessageUpdate
+      (payload) => {
+        console.log('Received UPDATE event:', payload);
+        // Filter on client side
+        if (payload.new && payload.new.chatId === chatId) {
+          onMessageUpdate(payload);
+        }
+      }
     );
   }
 
@@ -54,13 +94,21 @@ export const subscribeToChat = (
         event: 'DELETE',
         schema: 'public',
         table: 'messages',
-        filter: `chatId=eq.${chatId}`,
       },
-      onMessageDelete
+      (payload) => {
+        console.log('Received DELETE event:', payload);
+        // Filter on client side
+        if (payload.old && payload.old.chatId === chatId) {
+          onMessageDelete(payload);
+        }
+      }
     );
   }
 
-  return channel.subscribe();
+  const status = await channel.subscribe();
+  console.log('Channel subscription status:', status);
+  
+  return channel;
 };
 
 export const subscribeToTyping = (
