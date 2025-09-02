@@ -207,6 +207,43 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         });
 
         if (!response.ok) {
+          // Handle token expiration gracefully
+          if (response.status === 401) {
+            // Try to refresh token before throwing error
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              // Retry the request with new token
+              const newHeaders = await getAuthHeaders();
+              const retryResponse = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
+                headers: newHeaders
+              });
+              
+              if (retryResponse.ok) {
+                const data = await retryResponse.json();
+                const chatsData = data.data.chats || [];
+                
+                const transformedChats: ChatListItem[] = chatsData.map((chat: any) => ({
+                  id: chat.id,
+                  relatedPostId: chat.relatedPostId,
+                  isActive: chat.isActive,
+                  lastMessageAt: new Date(chat.lastMessageAt),
+                  createdAt: new Date(chat.createdAt),
+                  updatedAt: new Date(chat.updatedAt),
+                  participants: chat.participants || [],
+                  unreadCount: chat.unreadCount || 0,
+                  otherParticipant: chat.otherParticipant,
+                  displayName: chat.otherParticipant?.user?.name || 'Unknown',
+                  lastMessagePreview: chat.lastMessage?.content || 'Chat started',
+                  relatedPost: chat.relatedPost,
+                  participantCount: chat.participants?.length || 0,
+                }));
+                
+                setChats(transformedChats);
+                return;
+              }
+            }
+          }
+          
           const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
           throw new Error(errorData.error || `Failed to load chats: ${response.status}`);
         }
@@ -227,11 +264,15 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           displayName: chat.otherParticipant?.user?.name || 'Unknown',
           lastMessagePreview: chat.lastMessage?.content || 'Chat started',
           relatedPost: chat.relatedPost,
+          participantCount: chat.participants?.length || 0,
         }));
         
         setChats(transformedChats);
       } catch (error) {
-        console.error('Error loading chats:', error);
+        // Don't log 401 errors as they're handled by token refresh
+        if (!(error instanceof Error && error.message.includes('401'))) {
+          console.error('Error loading chats:', error);
+        }
         setChatsError(error instanceof Error ? error.message : 'Failed to load chats');
         throw error;
       }
@@ -241,10 +282,16 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     
     try {
       await action();
+    } catch (error) {
+      // Silently fail on initial load if it's a 401 error
+      if (error instanceof Error && error.message.includes('401')) {
+        // Clear the error after a short delay to avoid flash of error
+        setTimeout(() => setChatsError(null), 100);
+      }
     } finally {
       setIsLoadingChats(false);
     }
-  }, [getAuthHeaders]);
+  }, [getAuthHeaders, refreshAuth]);
 
   // Send message
   const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT') => {

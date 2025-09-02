@@ -19,9 +19,11 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const { isAuthenticated } = useAuth();
   
   // Get total unread count for notifications
+  // Only load if authenticated and not on auth pages
+  const shouldLoadUnreadCount = isAuthenticated && !pathname.startsWith('/auth');
   const { totalUnreadCount } = useChat({
-    autoLoad: isAuthenticated,
-    enablePolling: true,
+    autoLoad: shouldLoadUnreadCount,
+    enablePolling: shouldLoadUnreadCount,
   });
 
   // Close sidebar when route changes on mobile
