@@ -1,18 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+// import { useState } from 'react'; // TODO: Re-add when menu functionality is implemented
 import { 
   Phone, 
   Video, 
-  MoreVertical, 
+  // MoreVertical, // TODO: Re-add when menu functionality is implemented
   User, 
-  Archive, 
-  Trash2, 
-  Shield, 
-  Flag,
-  Settings,
-  ChevronLeft,
-  Calendar
+  // Archive, // TODO: Re-add when menu functionality is implemented
+  // Trash2, // TODO: Re-add when menu functionality is implemented
+  // Shield, // TODO: Re-add when menu functionality is implemented
+  // Flag, // TODO: Re-add when menu functionality is implemented
+  // Settings, // TODO: Re-add when menu functionality is implemented
+  ChevronLeft
+  // Calendar // TODO: Re-add when calendar functionality is implemented (now using text button)
 } from 'lucide-react';
 import { ChatListItem } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
@@ -46,7 +46,7 @@ export default function ChatHeader({
   onSettings,
 }: ChatHeaderProps) {
   const t = chatTranslations[language];
-  const [showMenu, setShowMenu] = useState(false);
+  // const [showMenu, setShowMenu] = useState(false); // TODO: Re-enable when menu functionality is implemented
   
   // Get badges for the other user - use same pattern as PostCard and InlineProfileView
   const getOtherUserBadges = () => {
@@ -63,6 +63,7 @@ export default function ChatHeader({
 
   const { teacherBadge, studentBadge } = getOtherUserBadges();
 
+  /* TODO: Re-enable when menu functionality is implemented
   const handleMenuAction = (action: string) => {
     setShowMenu(false);
     
@@ -86,6 +87,7 @@ export default function ChatHeader({
         break;
     }
   };
+  */
 
   return (
     <>
@@ -123,43 +125,71 @@ export default function ChatHeader({
 
           {/* User info */}
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2">
-              {/* Show displayName (other participant's name) - same as ChatRoomList */}
-              {(chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id) ? (
-                <button
-                  onClick={() => window.open(`/profile/${chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id}`, '_blank', 'noopener,noreferrer,width=800,height=600')}
-                  className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate cursor-pointer text-left"
-                >
-                  {chat.displayName}
-                </button>
-              ) : (
-                <h2 className="text-lg font-semibold text-gray-900 truncate">
-                  {chat.displayName}
-                </h2>
-              )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 min-w-0">
+                {/* Show displayName (other participant's name) - same as ChatRoomList */}
+                {(chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id) ? (
+                  <button
+                    onClick={() => window.open(`/profile/${chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id}`, '_blank', 'noopener,noreferrer,width=800,height=600')}
+                    className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate cursor-pointer text-left"
+                  >
+                    {chat.displayName}
+                  </button>
+                ) : (
+                  <h2 className="text-lg font-semibold text-gray-900 truncate">
+                    {chat.displayName}
+                  </h2>
+                )}
+                
+                {/* Badges - same pattern as InlineProfileView */}
+                <div className="flex items-center space-x-1">
+                  {teacherBadge && (
+                    <button 
+                      onClick={() => window.location.href = '/badges'}
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${teacherBadge.color}`}
+                      title={`Lærer ${teacherBadge.level} - Klikk for mer info`}
+                    >
+                      <span className="mr-1">👨‍🏫</span>
+                      <span>{teacherBadge.icon}</span>
+                    </button>
+                  )}
+                  {studentBadge && (
+                    <button 
+                      onClick={() => window.location.href = '/badges'}
+                      className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${studentBadge.color}`}
+                      title={`Student ${studentBadge.level} - Klikk for mer info`}
+                    >
+                      <span className="mr-1">🎓</span>
+                      <span>{studentBadge.icon}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
               
-              {/* Badges - same pattern as InlineProfileView */}
-              <div className="flex items-center space-x-1">
-                {teacherBadge && (
-                  <button 
-                    onClick={() => window.location.href = '/badges'}
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${teacherBadge.color}`}
-                    title={`Lærer ${teacherBadge.level} - Klikk for mer info`}
+              {/* Action buttons */}
+              <div className="flex items-center gap-4">
+                {chat.relatedPost?.id && (
+                  <button
+                    onClick={() => window.open(`/posts/${chat.relatedPost.id}`, '_blank')}
+                    className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                   >
-                    <span className="mr-1">👨‍🏫</span>
-                    <span>{teacherBadge.icon}</span>
+                    Se annonse
+                    <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                   </button>
                 )}
-                {studentBadge && (
-                  <button 
-                    onClick={() => window.location.href = '/badges'}
-                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${studentBadge.color}`}
-                    title={`Student ${studentBadge.level} - Klikk for mer info`}
-                  >
-                    <span className="mr-1">🎓</span>
-                    <span>{studentBadge.icon}</span>
-                  </button>
-                )}
+                
+                <button
+                  onClick={() => {
+                    // TODO: Open appointment scheduling modal
+                    // console.log('Schedule appointment');
+                  }}
+                  className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-md hover:bg-purple-200 border border-purple-100 hover:border-purple-200 transition-colors"
+                  title="Avtale undervisningstime"
+                >
+                  Avtale time
+                </button>
               </div>
             </div>
           </div>
@@ -167,18 +197,6 @@ export default function ChatHeader({
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
-          {/* Quick actions for tutoring */}
-          <button
-            onClick={() => {
-              // TODO: Open appointment scheduling modal
-              // console.log('Schedule appointment');
-            }}
-            className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
-            title={language === 'no' ? 'Book undervisningstime' : 'Schedule tutoring session'}
-          >
-            <Calendar className="h-5 w-5" />
-          </button>
-          
           {/* Call buttons */}
           {onCall && (
             <button
@@ -200,7 +218,7 @@ export default function ChatHeader({
             </button>
           )}
 
-          {/* More menu */}
+          {/* TODO: Implement menu functionality (settings, archive, block, report, delete)
           <div className="relative">
             <button
               onClick={() => setShowMenu(!showMenu)}
@@ -210,7 +228,6 @@ export default function ChatHeader({
               <MoreVertical className="h-5 w-5" />
             </button>
 
-            {/* Menu dropdown */}
             {showMenu && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-20">
                 <button
@@ -257,17 +274,19 @@ export default function ChatHeader({
               </div>
             )}
           </div>
+          */}
         </div>
       </div>
 
 
-      {/* Click outside to close menu */}
+      {/* TODO: Re-enable when menu functionality is implemented
       {showMenu && (
         <div
           className="fixed inset-0 z-10"
           onClick={() => setShowMenu(false)}
         />
       )}
+      */}
     </>
   );
 }
