@@ -12,8 +12,8 @@ import {
   ClockIcon,
   ChatBubbleLeftRightIcon,
   PencilIcon,
-  PlusIcon,
-  EyeIcon
+  PlusIcon
+  // EyeIcon - TODO: Re-add when view count tracking is implemented
 } from '@heroicons/react/24/outline';
 
 export default function MyPostsPageClient() {
@@ -198,12 +198,14 @@ export default function MyPostsPageClient() {
                   </div>
                   
                   <div className="flex items-center space-x-3">
+                    {/* TODO: Implement view count tracking
                     {post.viewCount !== undefined && (
                       <div className="flex items-center">
                         <EyeIcon className="h-4 w-4 mr-1" />
                         <span>{post.viewCount}</span>
                       </div>
                     )}
+                    */}
                     
                     {post._count?.chats !== undefined && (
                       <div className="flex items-center">
