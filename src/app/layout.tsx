@@ -117,7 +117,7 @@ export default function RootLayout({
           <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
         )}
       </head>
-      <body className="min-h-screen bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
+      <body className="h-screen overflow-hidden bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
           <MainLayout>
             {children}

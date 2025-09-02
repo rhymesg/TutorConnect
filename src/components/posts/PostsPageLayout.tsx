@@ -49,6 +49,9 @@ export default function PostsPageLayout({
             <p className="mx-auto mt-4 max-w-3xl text-lg text-neutral-600">
               {subtitle}
             </p>
+            <p className="mx-auto mt-2 text-sm text-neutral-500">
+              * Vi tar ingen gebyrer - All betaling skjer direkte mellom dere
+            </p>
           </div>
         </div>
       </div>

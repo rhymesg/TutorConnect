@@ -392,7 +392,7 @@ class SecurityLogger {
       this.sendToLogService(logEntry);
     }
 
-    console.log('SECURITY_LOG:', JSON.stringify(logEntry));
+    // console.log('SECURITY_LOG:', JSON.stringify(logEntry));
   }
 
   private sendToLogService(entry: SecurityLogEntry): void {

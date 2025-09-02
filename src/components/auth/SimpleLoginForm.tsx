@@ -30,6 +30,7 @@ export default function SimpleLoginForm() {
         setError(result.error || 'Login failed');
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('An unexpected error occurred');
     } finally {
       setIsSubmitting(false);

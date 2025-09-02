@@ -14,6 +14,10 @@ export interface ChatParticipant {
     profileImage?: string;
     isActive: boolean;
     lastActive?: Date;
+    teacherSessions?: number;
+    teacherStudents?: number;
+    studentSessions?: number;
+    studentTeachers?: number;
   };
 }
 
@@ -62,6 +66,10 @@ export interface Chat {
       id: string;
       name: string;
       profileImage?: string;
+      teacherSessions?: number;
+      teacherStudents?: number;
+      studentSessions?: number;
+      studentTeachers?: number;
     };
   };
   lastMessage?: Message;

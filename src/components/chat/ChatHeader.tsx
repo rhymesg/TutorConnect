@@ -6,21 +6,17 @@ import {
   Video, 
   MoreVertical, 
   User, 
-  Info, 
   Archive, 
   Trash2, 
   Shield, 
   Flag,
   Settings,
   ChevronLeft,
-  MapPin,
-  DollarSign,
-  Clock,
-  GraduationCap,
   Calendar
 } from 'lucide-react';
 import { ChatListItem } from '@/types/chat';
-import { Language, chat as chatTranslations, formatters } from '@/lib/translations';
+import { Language, chat as chatTranslations } from '@/lib/translations';
+import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 
 interface ChatHeaderProps {
   chat: ChatListItem;
@@ -51,20 +47,21 @@ export default function ChatHeader({
 }: ChatHeaderProps) {
   const t = chatTranslations[language];
   const [showMenu, setShowMenu] = useState(false);
-  const [showPostDetails, setShowPostDetails] = useState(false);
-
-  const getOnlineStatusText = () => {
-    if (chat.isOnline) {
-      return t.header.online;
-    }
-    return `${t.header.lastSeen} ${chat.lastSeenText}`;
+  
+  // Get badges for the other user - use same pattern as PostCard and InlineProfileView
+  const getOtherUserBadges = () => {
+    // Get the other participant's data
+    const otherUser = chat.otherParticipant?.user || chat.relatedPost?.user;
+    if (!otherUser) return { teacherBadge: null, studentBadge: null };
+    
+    // Calculate badges based on user's session data
+    const teacherBadge = getTeacherBadge(otherUser.teacherSessions || 0, otherUser.teacherStudents || 0);
+    const studentBadge = getStudentBadge(otherUser.studentSessions || 0, otherUser.studentTeachers || 0);
+    
+    return { teacherBadge, studentBadge };
   };
 
-  const getTypingText = () => {
-    // This would be connected to real typing indicators
-    // For now, just a placeholder
-    return null;
-  };
+  const { teacherBadge, studentBadge } = getOtherUserBadges();
 
   const handleMenuAction = (action: string) => {
     setShowMenu(false);
@@ -127,29 +124,43 @@ export default function ChatHeader({
           {/* User info */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-lg font-semibold text-gray-900 truncate">
-                {chat.displayName}
-              </h2>
-              {chat.relatedPost && (
+              {/* Show displayName (other participant's name) - same as ChatRoomList */}
+              {(chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id) ? (
                 <button
-                  onClick={() => setShowPostDetails(!showPostDetails)}
-                  className="text-blue-600 hover:text-blue-700 p-1 rounded transition-colors"
-                  title={t.header.about}
+                  onClick={() => window.open(`/profile/${chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id}`, '_blank', 'noopener,noreferrer,width=800,height=600')}
+                  className="text-lg font-semibold text-gray-900 hover:text-blue-600 transition-colors truncate cursor-pointer text-left"
                 >
-                  <Info className="h-4 w-4" />
+                  {chat.displayName}
                 </button>
+              ) : (
+                <h2 className="text-lg font-semibold text-gray-900 truncate">
+                  {chat.displayName}
+                </h2>
               )}
-            </div>
-            
-            <div className="flex items-center gap-1 text-sm text-gray-500">
-              {getTypingText() || (
-                <>
-                  <div className={`w-2 h-2 rounded-full ${
-                    chat.isOnline ? 'bg-green-400' : 'bg-gray-300'
-                  }`} />
-                  <span>{getOnlineStatusText()}</span>
-                </>
-              )}
+              
+              {/* Badges - same pattern as InlineProfileView */}
+              <div className="flex items-center space-x-1">
+                {teacherBadge && (
+                  <button 
+                    onClick={() => window.location.href = '/badges'}
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${teacherBadge.color}`}
+                    title={`Lærer ${teacherBadge.level} - Klikk for mer info`}
+                  >
+                    <span className="mr-1">👨‍🏫</span>
+                    <span>{teacherBadge.icon}</span>
+                  </button>
+                )}
+                {studentBadge && (
+                  <button 
+                    onClick={() => window.location.href = '/badges'}
+                    className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${studentBadge.color}`}
+                    title={`Student ${studentBadge.level} - Klikk for mer info`}
+                  >
+                    <span className="mr-1">🎓</span>
+                    <span>{studentBadge.icon}</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -160,7 +171,7 @@ export default function ChatHeader({
           <button
             onClick={() => {
               // TODO: Open appointment scheduling modal
-              console.log('Schedule appointment');
+              // console.log('Schedule appointment');
             }}
             className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-full transition-colors"
             title={language === 'no' ? 'Book undervisningstime' : 'Schedule tutoring session'}
@@ -249,72 +260,6 @@ export default function ChatHeader({
         </div>
       </div>
 
-      {/* Post details panel */}
-      {showPostDetails && chat.relatedPost && (
-        <div className="bg-blue-50 border-b border-blue-200 p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-2">
-                <div className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  chat.relatedPost.type === 'TEACHER' 
-                    ? 'bg-green-100 text-green-800' 
-                    : 'bg-blue-100 text-blue-800'
-                }`}>
-                  {chat.relatedPost.type === 'TEACHER' 
-                    ? (language === 'no' ? 'Lærer' : 'Teacher')
-                    : (language === 'no' ? 'Student' : 'Student')
-                  }
-                </div>
-                <GraduationCap className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-900">
-                  {chat.relatedPost.subject}
-                </span>
-              </div>
-              
-              <h3 className="text-sm font-semibold text-blue-900 mb-2 line-clamp-2">
-                {chat.relatedPost.title}
-              </h3>
-              
-              <div className="flex flex-wrap items-center gap-4 text-xs text-blue-700">
-                {chat.relatedPost.hourlyRate && (
-                  <div className="flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />
-                    <span>{formatters.currency(chat.relatedPost.hourlyRate)}/t</span>
-                  </div>
-                )}
-                
-                <div className="flex items-center gap-1">
-                  <User className="h-3 w-3" />
-                  <span>{chat.relatedPost.user.name}</span>
-                </div>
-                
-                <div className="flex items-center gap-1">
-                  <Clock className="h-3 w-3" />
-                  <span>{language === 'no' ? 'Fleksibel tid' : 'Flexible time'}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-2 ml-4">
-              {onShowPostDetails && (
-                <button
-                  onClick={onShowPostDetails}
-                  className="text-xs text-blue-600 hover:text-blue-800 font-medium px-2 py-1 rounded border border-blue-200 hover:bg-blue-100 transition-colors"
-                >
-                  {language === 'no' ? 'Se innlegg' : 'View post'}
-                </button>
-              )}
-              
-              <button
-                onClick={() => setShowPostDetails(false)}
-                className="text-blue-400 hover:text-blue-600 p-1 rounded transition-colors"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Click outside to close menu */}
       {showMenu && (

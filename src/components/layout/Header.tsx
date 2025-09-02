@@ -18,6 +18,7 @@ import {
 interface HeaderProps {
   onMenuClick: () => void;
   showMenuButton?: boolean;
+  notificationCount?: number;
 }
 
 interface NavigationItem {
@@ -28,7 +29,8 @@ interface NavigationItem {
 
 export default function Header({ 
   onMenuClick, 
-  showMenuButton = false
+  showMenuButton = false,
+  notificationCount = 0
 }: HeaderProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
@@ -128,17 +130,19 @@ export default function Header({
             {isAuthenticated ? (
               <>
                 {/* Notifications */}
-                <button
-                  type="button"
-                  className="relative rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  aria-label="Vis varsler"
+                <Link
+                  href="/chat"
+                  className="relative block rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  aria-label="Vis meldinger"
                 >
                   <BellIcon className="h-6 w-6" aria-hidden="true" />
                   {/* Notification badge */}
-                  <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
-                    3
-                  </span>
-                </button>
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
+                      {notificationCount > 99 ? '99+' : notificationCount}
+                    </span>
+                  )}
+                </Link>
 
                 {/* User menu */}
                 <div className="relative" ref={userMenuRef}>

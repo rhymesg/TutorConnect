@@ -1,4 +1,4 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
@@ -18,12 +18,12 @@ const sendMessageSchema = z.object({
 
 // Message query schema
 const messageQuerySchema = z.object({
-  page: z.string().optional().transform(val => val ? parseInt(val) : 1),
-  limit: z.string().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
-  before: z.string().optional(), // Message ID for pagination
-  after: z.string().optional(), // Message ID for pagination
+  page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
+  limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 10),
+  before: z.string().nullable().optional(), // Message ID for pagination
+  after: z.string().nullable().optional(), // Message ID for pagination
   type: z.nativeEnum(MessageType).optional(),
-  search: z.string().optional(),
+  search: z.string().nullable().optional(),
 });
 
 interface RouteParams {
@@ -66,9 +66,9 @@ async function validateChatMessageAccess(chatId: string, userId: string) {
 /**
  * GET /api/chat/[chatId]/messages - Get chat messages with pagination
  */
-async function handleGET(request: NextRequest, { params }: { params: RouteParams }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
-  const { chatId } = params;
+  const { chatId } = await params;
   const { searchParams } = new URL(request.url);
 
   // Validate access
@@ -210,7 +210,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
 
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : 0;
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       messages: messagesWithReadStatus.reverse(), // Return in chronological order
@@ -224,15 +224,15 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
         newestMessageId: messages.length > 0 ? messages[0].id : null,
       },
     },
-  };
+  });
 }
 
 /**
  * POST /api/chat/[chatId]/messages - Send a new message
  */
-async function handlePOST(request: NextRequest, { params }: { params: RouteParams }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
-  const { chatId } = params;
+  const { chatId } = await params;
   const body = await request.json();
 
   // Validate access
@@ -385,7 +385,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
   // Trigger real-time notification (handled by Supabase realtime)
   // This would be where you'd emit to the real-time channel
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       message: {
@@ -396,17 +396,21 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         canDelete: true,
       },
     },
-  };
+  });
 }
 
-export const GET = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handleGET,
+export const GET = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const chatId = pathSegments[pathSegments.indexOf('chat') + 1];
+  return handleGET(request, { params: Promise.resolve({ chatId }) });
 });
 
-export const POST = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handlePOST,
+export const POST = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/');
+  const chatId = pathSegments[pathSegments.indexOf('chat') + 1];
+  return handlePOST(request, { params: Promise.resolve({ chatId }) });
 });

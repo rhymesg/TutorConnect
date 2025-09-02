@@ -1,506 +1,567 @@
+'use client';
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { 
-  ChatListItem, 
-  Chat, 
-  Message, 
-  TypingIndicator, 
-  ChatFilter,
-  UseChatReturn,
-  MessageStatus
-} from '@/types/chat';
-import { useLanguage } from '@/lib/translations';
+import { Chat, ChatListItem, Message } from '@/types/chat';
 
 interface UseChatOptions {
-  enableRealtime?: boolean;
-  enableTyping?: boolean;
-  enablePresence?: boolean;
-  autoMarkAsRead?: boolean;
+  chatId?: string;
+  autoLoad?: boolean;
+  enablePolling?: boolean;
 }
 
-interface ChatState {
-  chats: ChatListItem[];
-  selectedChat: Chat | null;
+interface UseChatReturn {
+  // Single chat data
+  chat: Chat | null;
   messages: Message[];
-  typingUsers: TypingIndicator[];
-  onlineUsers: string[];
-  unreadCount: number;
-}
-
-interface LoadingState {
-  chatsLoading: boolean;
-  messagesLoading: boolean;
-  sendingMessage: boolean;
-}
-
-interface ErrorState {
+  
+  // Chat list data
+  chats: ChatListItem[];
+  totalUnreadCount: number;
+  
+  // Loading states
+  isLoadingChat: boolean;
+  isLoadingMessages: boolean;
+  isLoadingChats: boolean;
+  
+  // Error states
+  chatError: string | null;
+  messageError: string | null;
   chatsError: string | null;
-  messagesError: string | null;
-  connectionError: string | null;
-}
-
-interface PaginationState {
-  hasMoreChats: boolean;
-  hasMoreMessages: boolean;
-  chatsPage: number;
-  messagesPage: number;
+  
+  // Actions
+  loadChat: (chatId: string) => Promise<void>;
+  loadChats: () => Promise<void>;
+  sendMessage: (content: string, type?: Message['type']) => Promise<void>;
+  retryLastAction: () => Promise<void>;
+  
+  // Utilities
+  refreshAuth: () => Promise<boolean>;
+  clearErrors: () => void;
 }
 
 export function useChat(options: UseChatOptions = {}): UseChatReturn {
-  const { user, token } = useAuth();
-  const language = useLanguage();
-  
-  const {
-    enableRealtime = true,
-    enableTyping = true,
-    enablePresence = true,
-    autoMarkAsRead = true,
+  const { 
+    chatId, 
+    autoLoad = true, 
+    enablePolling = true 
   } = options;
-
-  // State
-  const [chatState, setChatState] = useState<ChatState>({
-    chats: [],
-    selectedChat: null,
-    messages: [],
-    typingUsers: [],
-    onlineUsers: [],
-    unreadCount: 0,
-  });
-
-  const [loadingState, setLoadingState] = useState<LoadingState>({
-    chatsLoading: true,
-    messagesLoading: false,
-    sendingMessage: false,
-  });
-
-  const [errorState, setErrorState] = useState<ErrorState>({
-    chatsError: null,
-    messagesError: null,
-    connectionError: null,
-  });
-
-  const [paginationState, setPaginationState] = useState<PaginationState>({
-    hasMoreChats: false,
-    hasMoreMessages: false,
-    chatsPage: 1,
-    messagesPage: 1,
-  });
-
-  // Filters and search
-  const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ChatFilter>({ type: 'all' });
+  const { user, accessToken, refreshAuth: authRefresh } = useAuth();
   
-  // Refs for cleanup
-  const realtimeSubscription = useRef<any>(null);
-  const typingTimeout = useRef<NodeJS.Timeout | null>(null);
+  // State
+  const [chat, setChat] = useState<Chat | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [chats, setChats] = useState<ChatListItem[]>([]);
+  const [totalUnreadCount, setTotalUnreadCount] = useState<number>(0);
+  
+  // Loading states
+  const [isLoadingChat, setIsLoadingChat] = useState(false);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
+  
+  // Error states
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [messageError, setMessageError] = useState<string | null>(null);
+  const [chatsError, setChatsError] = useState<string | null>(null);
+  
+  // Last action for retry
+  const [lastAction, setLastAction] = useState<(() => Promise<void>) | null>(null);
 
-  // Load chats
-  const loadChats = useCallback(async (page = 1, append = false) => {
-    if (!token || !user) return;
-
+  // Centralized auth refresh
+  const refreshAuth = useCallback(async (): Promise<boolean> => {
     try {
-      setLoadingState(prev => ({ ...prev, chatsLoading: !append }));
-      setErrorState(prev => ({ ...prev, chatsError: null }));
+      const result = await authRefresh();
+      return result;
+    } catch (error) {
+      // console.error('Auth refresh failed:', error);
+      return false;
+    }
+  }, [authRefresh]);
 
-      const params = new URLSearchParams({
-        page: page.toString(),
-        limit: '20',
-        search: searchQuery,
-        filter: activeFilter.type,
-      });
-
-      const response = await fetch(`/api/chat?${params}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load chats: ${response.statusText}`);
+  // Get headers with auth token
+  const getAuthHeaders = useCallback(async () => {
+    if (!accessToken) {
+      const refreshed = await refreshAuth();
+      if (!refreshed) {
+        throw new Error('Authentication required');
       }
+      // After refresh, we need to get the new token
+      const newToken = localStorage.getItem('accessToken');
+      return {
+        'Authorization': `Bearer ${newToken}`,
+        'Content-Type': 'application/json',
+      };
+    }
+    return {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    };
+  }, [accessToken, refreshAuth]);
 
-      const data = await response.json();
-      
-      // Transform chats to ChatListItem format
-      const chatList: ChatListItem[] = data.data.chats.map((chat: Chat) => {
-        const otherParticipant = chat.participants.find(
-          p => p.userId !== user.id && p.isActive
-        );
+  // Load specific chat with messages
+  const loadChat = useCallback(async (targetChatId: string) => {
+    setIsLoadingChat(true);
+    setIsLoadingMessages(true);
+    setChatError(null);
+    setMessageError(null);
+    
+    const action = async () => {
+      try {
+        const headers = await getAuthHeaders();
         
-        if (!otherParticipant) {
-          console.warn('Chat without other participant:', chat.id);
-          return null;
+        const response = await fetch(`/api/chat/${targetChatId}`, { headers });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Failed to load chat: ${response.status}`);
         }
 
-        const isOnline = otherParticipant.user.isActive && 
-          otherParticipant.user.lastActive &&
-          new Date().getTime() - new Date(otherParticipant.user.lastActive).getTime() < 300000; // 5 minutes
+        const data = await response.json();
         
-        let lastSeenText = '';
-        if (otherParticipant.user.lastActive && !isOnline) {
-          const diffMs = new Date().getTime() - new Date(otherParticipant.user.lastActive).getTime();
-          const diffMinutes = Math.floor(diffMs / (1000 * 60));
-          
-          if (diffMinutes < 60) {
-            lastSeenText = `${diffMinutes}m ${language === 'no' ? 'siden' : 'ago'}`;
-          } else {
-            const diffHours = Math.floor(diffMinutes / 60);
-            if (diffHours < 24) {
-              lastSeenText = `${diffHours}t ${language === 'no' ? 'siden' : 'ago'}`;
-            } else {
-              const diffDays = Math.floor(diffHours / 24);
-              lastSeenText = `${diffDays}d ${language === 'no' ? 'siden' : 'ago'}`;
+        const chatData = data.data?.chat || data.data;
+        const messagesData = data.data?.messages || [];
+        
+        // Transform chat data
+        const transformedChat: Chat = {
+          id: chatData.id,
+          relatedPostId: chatData.relatedPostId,
+          isActive: chatData.isActive,
+          lastMessageAt: chatData.lastMessageAt ? new Date(chatData.lastMessageAt) : new Date(),
+          createdAt: new Date(chatData.createdAt),
+          updatedAt: new Date(chatData.updatedAt),
+          participants: chatData.participants || [],
+          relatedPost: chatData.relatedPost,
+        };
+        
+        // Transform messages
+        const transformedMessages: Message[] = messagesData.map((msg: any) => ({
+          id: msg.id,
+          content: msg.content,
+          type: msg.type || 'TEXT',
+          chatId: msg.chatId,
+          senderId: msg.senderId,
+          isEdited: msg.isEdited || false,
+          sentAt: new Date(msg.sentAt),
+          sender: msg.sender,
+        }));
+        
+        setChat(transformedChat);
+        setMessages(transformedMessages);
+        
+        // Also add to chats list if not present
+        const otherParticipants = chatData.otherParticipants || 
+          chatData.participants?.filter((p: any) => p.userId !== user?.id) || [];
+        const otherParticipant = otherParticipants[0];
+        
+        const chatItem: ChatListItem = {
+          id: chatData.id,
+          relatedPostId: chatData.relatedPostId,
+          isActive: chatData.isActive,
+          lastMessageAt: chatData.lastMessageAt ? new Date(chatData.lastMessageAt) : new Date(),
+          createdAt: new Date(chatData.createdAt),
+          updatedAt: new Date(chatData.updatedAt),
+          participants: chatData.participants || [],
+          unreadCount: chatData.unreadCount || 0,
+          otherParticipant,
+          displayName: otherParticipant?.user?.name || chatData.relatedPost?.user?.name || 'Unknown',
+          lastMessagePreview: transformedMessages[0]?.content || 'Chat started',
+          relatedPost: chatData.relatedPost,
+        };
+        
+        setChats(prev => {
+          const existing = prev.find(c => c.id === chatItem.id);
+          if (existing) {
+            return prev.map(c => c.id === chatItem.id ? chatItem : c);
+          }
+          return [chatItem, ...prev];
+        });
+        
+      } catch (error) {
+        // console.error('Error loading chat:', error);
+        setChatError(error instanceof Error ? error.message : 'Failed to load chat');
+        throw error;
+      }
+    };
+    
+    setLastAction(() => action);
+    
+    try {
+      await action();
+    } finally {
+      setIsLoadingChat(false);
+      setIsLoadingMessages(false);
+    }
+  }, [getAuthHeaders, user]);
+
+  // Load all chats
+  const loadChats = useCallback(async () => {
+    setIsLoadingChats(true);
+    setChatsError(null);
+    
+    const action = async () => {
+      try {
+        const headers = await getAuthHeaders();
+        
+        const response = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
+          headers
+        });
+
+        if (!response.ok) {
+          // Handle token expiration gracefully
+          if (response.status === 401) {
+            // Try to refresh token before throwing error
+            const refreshed = await refreshAuth();
+            if (refreshed) {
+              // Retry the request with new token
+              const newHeaders = await getAuthHeaders();
+              const retryResponse = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
+                headers: newHeaders
+              });
+              
+              if (retryResponse.ok) {
+                const data = await retryResponse.json();
+                const chatsData = data.data.chats || [];
+                
+                const transformedChats: ChatListItem[] = chatsData.map((chat: any) => ({
+                  id: chat.id,
+                  relatedPostId: chat.relatedPostId,
+                  isActive: chat.isActive,
+                  lastMessageAt: new Date(chat.lastMessageAt),
+                  createdAt: new Date(chat.createdAt),
+                  updatedAt: new Date(chat.updatedAt),
+                  participants: chat.participants || [],
+                  unreadCount: chat.unreadCount || 0,
+                  otherParticipant: chat.otherParticipant,
+                  displayName: chat.otherParticipant?.user?.name || 'Unknown',
+                  lastMessagePreview: chat.lastMessage?.content || 'Chat started',
+                  relatedPost: chat.relatedPost,
+                  participantCount: chat.participants?.length || 0,
+                }));
+                
+                setChats(transformedChats);
+                return;
+              }
             }
           }
-        } else if (isOnline) {
-          lastSeenText = language === 'no' ? 'Aktiv nå' : 'Active now';
+          
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+          throw new Error(errorData.error || `Failed to load chats: ${response.status}`);
         }
+
+        const data = await response.json();
+        const chatsData = data.data.chats || [];
         
-        return {
-          ...chat,
-          otherParticipant,
-          displayName: otherParticipant.user.name,
-          displayImage: otherParticipant.user.profileImage,
-          isOnline,
-          lastSeenText,
-          unreadCount: otherParticipant.unreadCount || 0,
-        };
-      }).filter(Boolean);
-      
-      setChatState(prev => ({
-        ...prev,
-        chats: append ? [...prev.chats, ...chatList] : chatList,
-        unreadCount: chatList.reduce((sum, chat) => sum + chat.unreadCount, 0),
-      }));
-      
-      setPaginationState(prev => ({
-        ...prev,
-        hasMoreChats: data.data.hasMore || false,
-        chatsPage: page,
-      }));
-      
-    } catch (error) {
-      console.error('Failed to load chats:', error);
-      setErrorState(prev => ({
-        ...prev,
-        chatsError: error instanceof Error ? error.message : 'Unknown error',
-      }));
-    } finally {
-      setLoadingState(prev => ({ ...prev, chatsLoading: false }));
-    }
-  }, [token, user, searchQuery, activeFilter, language]);
-
-  // Load chat details
-  const loadChatDetails = useCallback(async (chatId: string) => {
-    if (!token) return null;
-
+        const transformedChats: ChatListItem[] = chatsData.map((chat: any) => ({
+          id: chat.id,
+          relatedPostId: chat.relatedPostId,
+          isActive: chat.isActive,
+          lastMessageAt: new Date(chat.lastMessageAt),
+          createdAt: new Date(chat.createdAt),
+          updatedAt: new Date(chat.updatedAt),
+          participants: chat.participants || [],
+          unreadCount: chat.unreadCount || 0,
+          otherParticipant: chat.otherParticipant,
+          displayName: chat.otherParticipant?.user?.name || 'Unknown',
+          lastMessagePreview: chat.lastMessage?.content || 'Chat started',
+          relatedPost: chat.relatedPost,
+          participantCount: chat.participants?.length || 0,
+        }));
+        
+        setChats(transformedChats);
+      } catch (error) {
+        // Don't log 401 errors as they're handled by token refresh
+        if (!(error instanceof Error && error.message.includes('401'))) {
+          // console.error('Error loading chats:', error);
+        }
+        setChatsError(error instanceof Error ? error.message : 'Failed to load chats');
+        throw error;
+      }
+    };
+    
+    setLastAction(() => action);
+    
     try {
-      const response = await fetch(`/api/chat/${chatId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load chat details');
-      }
-
-      const data = await response.json();
-      const chat = data.data.chat;
-      
-      setChatState(prev => ({ ...prev, selectedChat: chat }));
-      return chat;
-      
+      await action();
     } catch (error) {
-      console.error('Failed to load chat details:', error);
-      return null;
-    }
-  }, [token]);
-
-  // Load messages
-  const loadMessages = useCallback(async (chatId: string, page = 1, append = false) => {
-    if (!token) return;
-
-    try {
-      if (!append) {
-        setLoadingState(prev => ({ ...prev, messagesLoading: true }));
-        setErrorState(prev => ({ ...prev, messagesError: null }));
+      // Silently fail on initial load if it's a 401 error
+      if (error instanceof Error && error.message.includes('401')) {
+        // Clear the error after a short delay to avoid flash of error
+        setTimeout(() => setChatsError(null), 100);
       }
-
-      const response = await fetch(`/api/chat/${chatId}/messages?page=${page}&limit=50`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to load messages');
-      }
-
-      const data = await response.json();
-      
-      setChatState(prev => ({
-        ...prev,
-        messages: append ? [...data.data.messages, ...prev.messages] : data.data.messages,
-      }));
-      
-      setPaginationState(prev => ({
-        ...prev,
-        hasMoreMessages: data.data.hasMore || false,
-        messagesPage: page,
-      }));
-
-      // Auto mark as read if enabled
-      if (autoMarkAsRead && !append) {
-        markAsRead(chatId);
-      }
-      
-    } catch (error) {
-      console.error('Failed to load messages:', error);
-      setErrorState(prev => ({
-        ...prev,
-        messagesError: error instanceof Error ? error.message : 'Unknown error',
-      }));
     } finally {
-      setLoadingState(prev => ({ ...prev, messagesLoading: false }));
+      setIsLoadingChats(false);
     }
-  }, [token, autoMarkAsRead]);
+  }, [getAuthHeaders, refreshAuth]);
 
   // Send message
-  const sendMessage = useCallback(async (chatId: string, content: string, type: Message['type'] = 'TEXT'): Promise<Message | null> => {
-    if (!token || !user || !content.trim()) return null;
-
-    const tempId = `temp-${Date.now()}-${Math.random()}`;
+  const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT') => {
+    if (!chatId || !content.trim()) {
+      return;
+    }
+    setMessageError(null);
     
-    // Create optimistic message
-    const optimisticMessage: Message = {
-      id: tempId,
-      content: content.trim(),
-      type,
-      chatId,
-      senderId: user.id,
-      isEdited: false,
-      sentAt: new Date(),
-      sender: {
-        id: user.id,
-        name: user.name,
-        profileImage: user.profileImage,
-      },
-      status: 'sending',
-      isOptimistic: true,
-      tempId,
-    };
-
-    // Add optimistic message immediately
-    setChatState(prev => ({
-      ...prev,
-      messages: [...prev.messages, optimisticMessage],
-    }));
-
     try {
-      setLoadingState(prev => ({ ...prev, sendingMessage: true }));
-
+      const headers = await getAuthHeaders();
+      
       const response = await fetch(`/api/chat/${chatId}/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          content: content.trim(),
-          type,
-        }),
+        headers,
+        body: JSON.stringify({ content: content.trim(), type }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send message');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        // console.error('API error response:', errorData);
+        throw new Error(errorData.error || 'Failed to send message');
       }
 
       const data = await response.json();
-      const sentMessage = data.data.message;
+      const newMessage = data.data.message;
       
-      // Replace optimistic message with real message
-      setChatState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.tempId === tempId ? sentMessage : msg
-        ),
-        chats: prev.chats.map(chat => 
-          chat.id === chatId 
-            ? { ...chat, lastMessage: sentMessage, lastMessageAt: sentMessage.sentAt }
-            : chat
-        ),
-      }));
-
-      return sentMessage;
+      // Transform and add the new message
+      const transformedMessage: Message = {
+        id: newMessage.id,
+        content: newMessage.content,
+        type: newMessage.type,
+        chatId: newMessage.chatId,
+        senderId: newMessage.senderId,
+        isEdited: newMessage.isEdited || false,
+        sentAt: new Date(newMessage.sentAt),
+        sender: newMessage.sender,
+      };
       
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      
-      // Update optimistic message to failed state
-      setChatState(prev => ({
-        ...prev,
-        messages: prev.messages.map(msg => 
-          msg.tempId === tempId 
-            ? { ...msg, status: 'failed' as MessageStatus, error: error instanceof Error ? error.message : 'Failed to send' }
-            : msg
-        ),
-      }));
-      
-      return null;
-    } finally {
-      setLoadingState(prev => ({ ...prev, sendingMessage: false }));
-    }
-  }, [token, user]);
-
-  // Retry failed message
-  const retryMessage = useCallback(async (messageId: string) => {
-    const message = chatState.messages.find(m => m.id === messageId || m.tempId === messageId);
-    if (!message || !chatState.selectedChat) return;
-
-    await sendMessage(chatState.selectedChat.id, message.content, message.type);
-    
-    // Remove the failed message
-    setChatState(prev => ({
-      ...prev,
-      messages: prev.messages.filter(m => m.id !== messageId && m.tempId !== messageId),
-    }));
-  }, [chatState.messages, chatState.selectedChat, sendMessage]);
-
-  // Mark as read
-  const markAsRead = useCallback(async (chatId: string) => {
-    if (!token) return;
-
-    try {
-      await fetch(`/api/chat/${chatId}/read`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      // Update unread count in chat list
-      setChatState(prev => ({
-        ...prev,
-        chats: prev.chats.map(chat => 
-          chat.id === chatId 
-            ? { ...chat, unreadCount: 0 }
-            : chat
-        ),
-        unreadCount: prev.unreadCount - (prev.chats.find(c => c.id === chatId)?.unreadCount || 0),
-      }));
+      setMessages(prev => [...prev, transformedMessage]);
       
     } catch (error) {
-      console.error('Failed to mark as read:', error);
+      // console.error('Error sending message:', error);
+      setMessageError(error instanceof Error ? error.message : 'Failed to send message');
+      throw error;
     }
-  }, [token]);
+  }, [chatId, getAuthHeaders]);
 
-  // Search chats
-  const searchChats = useCallback((query: string) => {
-    setSearchQuery(query);
-    // Reload chats with new search query
-    loadChats(1, false);
-  }, [loadChats]);
-
-  // Filter chats
-  const filterChats = useCallback((filter: ChatFilter) => {
-    setActiveFilter(filter);
-    // Reload chats with new filter
-    loadChats(1, false);
-  }, [loadChats]);
-
-  // Load more chats
-  const loadMoreChats = useCallback(() => {
-    if (paginationState.hasMoreChats && !loadingState.chatsLoading) {
-      loadChats(paginationState.chatsPage + 1, true);
+  // Retry last action
+  const retryLastAction = useCallback(async () => {
+    if (lastAction) {
+      await lastAction();
     }
-  }, [loadChats, paginationState.hasMoreChats, paginationState.chatsPage, loadingState.chatsLoading]);
+  }, [lastAction]);
 
-  // Load more messages
-  const loadMoreMessages = useCallback(() => {
-    if (paginationState.hasMoreMessages && !loadingState.messagesLoading && chatState.selectedChat) {
-      loadMessages(chatState.selectedChat.id, paginationState.messagesPage + 1, true);
-    }
-  }, [loadMessages, paginationState.hasMoreMessages, paginationState.messagesPage, loadingState.messagesLoading, chatState.selectedChat]);
 
-  // Select chat
-  const selectChat = useCallback(async (chatId: string) => {
-    const chat = await loadChatDetails(chatId);
-    if (chat) {
-      await loadMessages(chatId);
-    }
-  }, [loadChatDetails, loadMessages]);
+  // Clear errors
+  const clearErrors = useCallback(() => {
+    setChatError(null);
+    setMessageError(null);
+    setChatsError(null);
+  }, []);
 
-  // Refresh
-  const refresh = useCallback(() => {
-    loadChats(1, false);
-    if (chatState.selectedChat) {
-      loadMessages(chatState.selectedChat.id, 1, false);
-    }
-  }, [loadChats, loadMessages, chatState.selectedChat]);
-
-  // Initialize
+  // Calculate total unread count whenever chats change
   useEffect(() => {
-    if (user && token) {
-      loadChats();
-    }
-  }, [user, token, loadChats]);
+    const total = chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
+    setTotalUnreadCount(total);
+  }, [chats]);
 
-  // TODO: Setup real-time subscriptions
+  // Auto-load on mount
   useEffect(() => {
-    if (!enableRealtime || !user) return;
+    if (autoLoad) {
+      const timeoutId = setTimeout(async () => {
+        if (chatId) {
+          // Load both chat list and specific chat
+          await loadChats();
+          await loadChat(chatId);
+        } else {
+          await loadChats();
+        }
+      }, 100);
+      
+      return () => clearTimeout(timeoutId);
+    }
+  }, [chatId, autoLoad, loadChat, loadChats]);
 
-    // Setup WebSocket or Supabase subscriptions here
-    console.log('Setting up real-time subscriptions...');
+  // Polling refs
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const chatListPollingRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Message polling for individual chat
+  useEffect(() => {
+    if (enablePolling && chatId && user) {
+      const setupPolling = () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+        
+        pollingIntervalRef.current = setInterval(async () => {
+          try {
+            // Skip polling if user is not authenticated
+            if (!user || !accessToken) {
+              return;
+            }
+            
+            const headers = await getAuthHeaders();
+            
+            // Simple polling - get latest messages and filter client-side
+            const response = await fetch(`/api/chat/${chatId}/messages?limit=10`, { headers });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const newMessages = data.data.messages || [];
+              
+              if (newMessages.length > 0) {
+                // Filter out our own messages and duplicates
+                const filteredMessages = newMessages.filter((msg: any) => 
+                  msg.senderId !== user.id && 
+                  !messages.some(existingMsg => existingMsg.id === msg.id)
+                );
+                
+                if (filteredMessages.length > 0) {
+                  const transformedMessages: Message[] = filteredMessages.map((msg: any) => ({
+                    id: msg.id,
+                    content: msg.content,
+                    type: msg.type || 'TEXT',
+                    chatId: msg.chatId,
+                    senderId: msg.senderId,
+                    isEdited: msg.isEdited || false,
+                    sentAt: new Date(msg.sentAt),
+                    sender: msg.sender,
+                  }));
+                  
+                  setMessages(prev => [...prev, ...transformedMessages]);
+                }
+              }
+            } else if (response.status === 422 || response.status === 401) {
+              const refreshed = await refreshAuth();
+              if (!refreshed) {
+                if (pollingIntervalRef.current) {
+                  clearInterval(pollingIntervalRef.current);
+                  pollingIntervalRef.current = null;
+                }
+              }
+            }
+          } catch (error) {
+            // console.error('Polling error:', error);
+          }
+        }, 5000); // Poll every 5 seconds
+      };
+      
+      // Start polling after a delay
+      setTimeout(setupPolling, 1000);
+      
+      return () => {
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+          pollingIntervalRef.current = null;
+        }
+      };
+    }
+  }, [enablePolling, chatId, user, accessToken, getAuthHeaders, refreshAuth, messages]);
 
-    return () => {
-      if (realtimeSubscription.current) {
-        realtimeSubscription.current.unsubscribe();
-      }
-    };
-  }, [enableRealtime, user]);
+  // Chat list polling - runs when not in specific chat
+  useEffect(() => {
+    if (enablePolling && !chatId && user) {
+      const setupChatListPolling = () => {
+        if (chatListPollingRef.current) {
+          clearInterval(chatListPollingRef.current);
+        }
+        
+        chatListPollingRef.current = setInterval(async () => {
+          try {
+            // Skip polling if user is not authenticated
+            if (!user || !accessToken) {
+              return;
+            }
+            
+            const headers = await getAuthHeaders();
+            const response = await fetch('/api/chat?limit=20&sortBy=lastMessageAt&sortOrder=desc', {
+              headers
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              const updatedChats = data.data.chats || [];
+              
+              // Compare with existing chats and update if there are changes
+              const currentChatIds = chats.map(c => c.id).sort();
+              const newChatIds = updatedChats.map((c: any) => c.id).sort();
+              const chatsChanged = JSON.stringify(currentChatIds) !== JSON.stringify(newChatIds);
+              
+              // Check for unread count changes
+              const unreadCountChanged = updatedChats.some((newChat: any) => {
+                const existingChat = chats.find(c => c.id === newChat.id);
+                return existingChat && existingChat.unreadCount !== (newChat.unreadCount || 0);
+              });
+              
+              if (chatsChanged || unreadCountChanged) {
+                const transformedChats: ChatListItem[] = updatedChats.map((chat: any) => ({
+                  id: chat.id,
+                  relatedPostId: chat.relatedPostId,
+                  isActive: chat.isActive,
+                  lastMessageAt: new Date(chat.lastMessageAt),
+                  createdAt: new Date(chat.createdAt),
+                  updatedAt: new Date(chat.updatedAt),
+                  participants: chat.participants || [],
+                  unreadCount: chat.unreadCount || 0,
+                  otherParticipant: chat.otherParticipant,
+                  displayName: chat.otherParticipant?.user?.name || 'Unknown',
+                  lastMessagePreview: chat.lastMessage?.content || 'Chat started',
+                  relatedPost: chat.relatedPost,
+                }));
+                
+                setChats(transformedChats);
+              }
+              
+            } else if (response.status === 422 || response.status === 401) {
+              const refreshed = await refreshAuth();
+              if (!refreshed) {
+                if (chatListPollingRef.current) {
+                  clearInterval(chatListPollingRef.current);
+                  chatListPollingRef.current = null;
+                }
+              }
+            }
+          } catch (error) {
+            // console.error('Chat list polling error:', error);
+          }
+        }, 10000); // Poll every 10 seconds for chat list
+      };
+      
+      // Start chat list polling after a delay
+      setTimeout(setupChatListPolling, 2000);
+      
+      return () => {
+        if (chatListPollingRef.current) {
+          clearInterval(chatListPollingRef.current);
+          chatListPollingRef.current = null;
+        }
+      };
+    }
+  }, [enablePolling, chatId, user, accessToken, getAuthHeaders, refreshAuth, chats]);
 
   return {
     // Data
-    chats: chatState.chats,
-    selectedChat: chatState.selectedChat,
-    messages: chatState.messages,
-    typingUsers: chatState.typingUsers,
-    onlineUsers: chatState.onlineUsers,
-    unreadCount: chatState.unreadCount,
+    chat,
+    messages,
+    chats,
+    totalUnreadCount,
     
     // Loading states
-    isLoading: loadingState.chatsLoading || loadingState.messagesLoading,
-    chatsLoading: loadingState.chatsLoading,
-    messagesLoading: loadingState.messagesLoading,
-    sendingMessage: loadingState.sendingMessage,
+    isLoadingChat,
+    isLoadingMessages,
+    isLoadingChats,
     
     // Error states
-    error: errorState.chatsError || errorState.messagesError || errorState.connectionError,
-    chatsError: errorState.chatsError,
-    messagesError: errorState.messagesError,
-    connectionError: errorState.connectionError,
-    
-    // Pagination
-    hasMore: paginationState.hasMoreChats,
-    hasMoreChats: paginationState.hasMoreChats,
-    hasMoreMessages: paginationState.hasMoreMessages,
+    chatError,
+    messageError,
+    chatsError,
     
     // Actions
-    loadChats: () => loadChats(1, false),
-    selectChat,
+    loadChat,
+    loadChats,
     sendMessage,
-    retryMessage,
-    loadMore: loadMoreChats,
-    loadMoreMessages,
-    markAsRead,
-    searchChats,
-    filterChats,
-    refresh,
+    retryLastAction,
     
-    // Clear functions
-    clearChatsError: () => setErrorState(prev => ({ ...prev, chatsError: null })),
-    clearMessagesError: () => setErrorState(prev => ({ ...prev, messagesError: null })),
-    clearConnectionError: () => setErrorState(prev => ({ ...prev, connectionError: null })),
-  } as UseChatReturn;
+    // Utilities
+    refreshAuth,
+    clearErrors,
+  };
 }
+
+export default useChat;

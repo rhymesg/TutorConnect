@@ -20,6 +20,7 @@ import {
 interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
+  unreadMessagesCount?: number;
 }
 
 interface NavigationSection {
@@ -35,7 +36,7 @@ interface NavigationItem {
   description?: string;
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: SidebarProps) {
   const pathname = usePathname();
 
   const navigationSections: NavigationSection[] = [
@@ -64,7 +65,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           name: 'Mine samtaler',
           href: '/chat',
           icon: ChatBubbleLeftRightIcon,
-          badge: 3,
+          badge: unreadMessagesCount,
           description: 'Aktive samtaler og meldinger',
         },
         {
@@ -145,7 +146,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       </div>
 
       {/* Navigation sections */}
-      <nav className="flex-1 space-y-6 px-6 py-6 overflow-y-auto" aria-label="Sidemeny navigasjon">
+      <nav className="flex-1 space-y-6 px-6 py-6 overflow-y-auto min-h-0" aria-label="Sidemeny navigasjon">
         {navigationSections.map((section) => (
           <div key={section.title}>
             <h3 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3">
@@ -210,22 +211,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User info at bottom */}
-      <div className="border-t border-neutral-200 p-6">
-        <div className="flex items-center">
-          <div className="h-10 w-10 rounded-full bg-brand-100 flex items-center justify-center">
-            <UserIcon className="h-6 w-6 text-brand-600" aria-hidden="true" />
-          </div>
-          <div className="ml-3 flex-1">
-            <p className="text-sm font-medium text-neutral-900">
-              Bruker Navn {/* TODO: Replace with actual user name */}
-            </p>
-            <p className="text-xs text-neutral-500">
-              Lærer {/* TODO: Replace with actual user type */}
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 
@@ -233,7 +218,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col border-r border-neutral-200 bg-white pt-16">
+        <div className="flex flex-col h-full border-r border-neutral-200 bg-white pt-16 overflow-hidden">
           <SidebarContent />
         </div>
       </div>

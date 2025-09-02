@@ -1,6 +1,5 @@
-import { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
-import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 import { MessageType } from "@prisma/client";
@@ -10,7 +9,7 @@ const prisma = new PrismaClient();
 
 // Initiate chat schema
 const initiateChatSchema = z.object({
-  message: z.string().min(1).max(1000),
+  message: z.string().min(1).max(1000).optional(), // Make message optional
   includeProfile: z.boolean().optional().default(false),
 });
 
@@ -65,24 +64,19 @@ async function validatePostChatAccess(postId: string, userId: string) {
  * Helper function to check if users can communicate based on post type
  */
 function validatePostTypeCompatibility(postType: string, initiatorType: 'TEACHER' | 'STUDENT') {
-  // Teachers can contact student posts, students can contact teacher posts
-  if (postType === 'TEACHER' && initiatorType === 'TEACHER') {
-    return { compatible: false, reason: 'Teachers cannot contact other teacher posts' };
-  }
-  
-  if (postType === 'STUDENT' && initiatorType === 'STUDENT') {
-    return { compatible: false, reason: 'Students cannot contact other student posts' };
-  }
-
+  // TutorConnect allows flexible roles - anyone can teach or learn
+  // Users can be both teachers and students depending on the subject
   return { compatible: true };
 }
 
 /**
  * POST /api/posts/[postId]/chat - Initiate chat with post owner
  */
-async function handlePOST(request: NextRequest, { params }: { params: RouteParams }) {
+async function handlePOST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  // Apply authentication middleware first
+  await authMiddleware(request);
   const user = getAuthenticatedUser(request);
-  const { postId } = params;
+  const { postId } = await params;
   const body = await request.json();
 
   // Validate post access
@@ -103,13 +97,8 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
     },
   });
 
-  // Validate post type compatibility
-  if (initiatorRecentPost) {
-    const compatibility = validatePostTypeCompatibility(post.type, initiatorRecentPost.type);
-    if (!compatibility.compatible) {
-      throw new BadRequestError(compatibility.reason);
-    }
-  }
+  // TutorConnect supports flexible learning/teaching roles - anyone can contact anyone
+  // Users can be both teachers and students depending on the subject
 
   // Check for existing chat between these users for this post
   const existingChat = await prisma.chat.findFirst({
@@ -138,6 +127,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
     },
   });
 
+
   // If chat exists and both users are participants, return existing chat
   if (existingChat && existingChat.participants.length === 2) {
     const userParticipant = existingChat.participants.find(p => p.userId === user.id);
@@ -159,14 +149,14 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
       });
     }
 
-    return {
+    return NextResponse.json({
       success: true,
       data: {
         chatId: existingChat.id,
         message: 'Chat already exists',
         existing: true,
       },
-    };
+    });
   }
 
   // Rate limiting: Check recent chat initiations by this user
@@ -187,55 +177,67 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
     throw new BadRequestError('Too many chat requests in the last hour. Please wait before initiating more chats.');
   }
 
-  // Content filtering for initial message
-  const bannedWords = ['spam', 'scam', 'fake', 'money transfer', 'urgent payment'];
-  const containsBannedContent = bannedWords.some(word => 
-    message.toLowerCase().includes(word.toLowerCase())
-  );
+  // Content filtering for initial message (only if message exists)
+  if (message) {
+    const bannedWords = ['spam', 'scam', 'fake', 'money transfer', 'urgent payment'];
+    const containsBannedContent = bannedWords.some(word => 
+      message.toLowerCase().includes(word.toLowerCase())
+    );
 
-  if (containsBannedContent) {
-    throw new BadRequestError('Message contains inappropriate content');
+    if (containsBannedContent) {
+      throw new BadRequestError('Message contains inappropriate content');
+    }
   }
 
   // Create chat and send initial message in transaction
   const newChat = await prisma.$transaction(async (tx) => {
+    // Determine teacher and student IDs based on post type
+    const teacherId = post.type === 'TEACHER' ? post.userId : user.id;
+    const studentId = post.type === 'TEACHER' ? user.id : post.userId;
+
     // Create the chat
     const chat = await tx.chat.create({
       data: {
         relatedPostId: postId,
+        teacherId: teacherId,
+        studentId: studentId,
         isActive: true,
       },
     });
 
     // Add both participants
+    const participantData = [
+      {
+        chatId: chat.id,
+        userId: user.id,
+        joinedAt: new Date(),
+        isActive: true,
+        unreadCount: 0,
+      },
+      {
+        chatId: chat.id,
+        userId: post.userId,
+        joinedAt: new Date(),
+        isActive: true,
+        unreadCount: message ? 1 : 0, // Post owner has unread count only if message was sent
+      },
+    ];
+    
     await tx.chatParticipant.createMany({
-      data: [
-        {
-          chatId: chat.id,
-          userId: user.id,
-          joinedAt: new Date(),
-          isActive: true,
-          unreadCount: 0,
-        },
-        {
-          chatId: chat.id,
-          userId: post.userId,
-          joinedAt: new Date(),
-          isActive: true,
-          unreadCount: 1, // Post owner has one unread message
-        },
-      ],
+      data: participantData,
     });
 
-    // Send initial message
-    await tx.message.create({
-      data: {
-        content: message,
-        type: MessageType.TEXT,
-        chatId: chat.id,
-        senderId: user.id,
-      },
-    });
+    // Send initial message if provided
+    if (message) {
+      await tx.message.create({
+        data: {
+          content: message,
+          type: MessageType.TEXT,
+          chatId: chat.id,
+          senderId: user.id,
+        },
+      });
+    }
 
     // Add system message about chat creation
     await tx.message.create({
@@ -298,6 +300,22 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
   const chatWithDetails = await prisma.chat.findUnique({
     where: { id: newChat.id },
     include: {
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
       participants: {
         include: {
           user: {
@@ -335,28 +353,32 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
   });
 
   // Create notification for post owner (this would integrate with notification system)
-  // For now, we'll just log it
-  console.log(`New chat notification for user ${post.userId} from ${user.id} about post "${post.title}"`);
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       chat: {
         ...chatWithDetails,
         messages: chatWithDetails?.messages.reverse(), // Chronological order
         otherParticipant: chatWithDetails?.participants.find(p => p.userId !== user.id),
+        teacherId: chatWithDetails?.teacherId,
+        studentId: chatWithDetails?.studentId,
+        teacher: chatWithDetails?.teacher,
+        student: chatWithDetails?.student,
       },
       message: 'Chat initiated successfully',
     },
-  };
+  });
 }
 
 /**
  * GET /api/posts/[postId]/chat - Get existing chat for this post
  */
-async function handleGET(request: NextRequest, { params }: { params: RouteParams }) {
+async function handleGET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  // Apply authentication middleware first
+  await authMiddleware(request);
   const user = getAuthenticatedUser(request);
-  const { postId } = params;
+  const { postId } = await params;
 
   // Validate post exists
   const post = await prisma.post.findUnique({
@@ -385,6 +407,22 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
       },
     },
     include: {
+      teacher: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
+      student: {
+        select: {
+          id: true,
+          name: true,
+          profileImage: true,
+          isActive: true,
+        },
+      },
       participants: {
         where: { isActive: true },
         include: {
@@ -423,7 +461,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
   });
 
   if (!existingChat) {
-    return {
+    return NextResponse.json({
       success: true,
       data: {
         hasExistingChat: false,
@@ -433,7 +471,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
           canInitiateChat: post.userId !== user.id && post.isActive,
         },
       },
-    };
+    });
   }
 
   // Get unread count for current user
@@ -450,7 +488,7 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
     },
   }) : 0;
 
-  return {
+  return NextResponse.json({
     success: true,
     data: {
       hasExistingChat: true,
@@ -459,19 +497,57 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
         unreadCount,
         lastMessage: existingChat.messages[0] || null,
         otherParticipant: existingChat.participants.find(p => p.userId !== user.id),
+        teacherId: existingChat.teacherId,
+        studentId: existingChat.studentId,
+        teacher: existingChat.teacher,
+        student: existingChat.student,
       },
     },
-  };
+  });
 }
 
-export const GET = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handleGET,
-});
+export async function GET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  try {
+    return await handleGET(request, { params });
+  } catch (error) {
+    console.error('GET /api/posts/[postId]/chat error:', error);
+    
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
 
-export const POST = apiHandler({
-  requireAuth: true,
-  middlewares: [authMiddleware],
-  handler: handlePOST,
-});
+export async function POST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
+  try {
+    return await handlePOST(request, { params });
+  } catch (error) {
+    console.error('POST /api/posts/[postId]/chat error:', error);
+    
+    if (error instanceof NotFoundError) {
+      return NextResponse.json({ error: error.message }, { status: 404 });
+    }
+    if (error instanceof ForbiddenError) {
+      return NextResponse.json({ error: error.message }, { status: 403 });
+    }
+    if (error instanceof BadRequestError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}

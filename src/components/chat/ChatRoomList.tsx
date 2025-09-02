@@ -1,17 +1,20 @@
 'use client';
 
 import { useState, useMemo, useRef, useEffect } from 'react';
-import { Search, Filter, MessageCircle, Clock, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
+import { Search, MessageCircle, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
 import { ChatListItem, ChatFilter } from '@/types/chat';
 import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import { NoChatsEmptyState, NoSearchResultsEmptyState, ConnectionErrorEmptyState, ChatListLoadingState } from './EmptyStates';
+import { useAuth } from '@/contexts/AuthContext';
+import { getSubjectLabel } from '@/constants/subjects';
 
 interface ChatRoomListProps {
   chats: ChatListItem[];
   isLoading: boolean;
   error: string | null;
   selectedChatId?: string;
+  isLoadingChat?: boolean;
   onSelectChat: (chatId: string) => void;
   onSearch: (query: string) => void;
   onFilter: (filter: ChatFilter) => void;
@@ -29,6 +32,7 @@ export default function ChatRoomList({
   isLoading,
   error,
   selectedChatId,
+  isLoadingChat = false,
   onSelectChat,
   onSearch,
   onFilter,
@@ -42,22 +46,12 @@ export default function ChatRoomList({
 }: ChatRoomListProps) {
   const language = useLanguage();
   const t = chatTranslations[language];
+  const { user } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeFilter, setActiveFilter] = useState<ChatFilter>({ type: 'all' });
-  const [showFilters, setShowFilters] = useState(false);
 
   const filteredChats = useMemo(() => {
-    let filtered = chats;
-
-    // Apply filter
-    if (activeFilter.type === 'unread') {
-      filtered = filtered.filter(chat => chat.unreadCount > 0);
-    } else if (activeFilter.type === 'archived') {
-      filtered = filtered.filter(chat => !chat.isActive);
-    } else {
-      filtered = filtered.filter(chat => chat.isActive);
-    }
+    let filtered = chats.filter(chat => chat.isActive);
 
     // Apply search
     if (searchQuery.trim()) {
@@ -70,19 +64,13 @@ export default function ChatRoomList({
     }
 
     return filtered;
-  }, [chats, searchQuery, activeFilter]);
+  }, [chats, searchQuery]);
 
   const handleSearch = (value: string) => {
     setSearchQuery(value);
     onSearch(value);
   };
 
-  const handleFilter = (type: ChatFilter['type']) => {
-    const newFilter = { type, search: searchQuery };
-    setActiveFilter(newFilter);
-    onFilter(newFilter);
-    setShowFilters(false);
-  };
 
   const getTimeDisplay = (date: Date | undefined) => {
     if (!date) return '';
@@ -131,7 +119,7 @@ export default function ChatRoomList({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -150,45 +138,6 @@ export default function ChatRoomList({
           />
         </div>
         
-        {/* Filters */}
-        <div className="flex items-center gap-2 mt-3">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-1 px-3 py-1 text-sm rounded-full transition-colors ${
-              showFilters 
-                ? 'bg-blue-100 text-blue-700' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            <Filter className="h-3 w-3" />
-            {t.roomList.filter}
-          </button>
-          
-          {activeFilter.type !== 'all' && (
-            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full">
-              {t.roomList[`filter${activeFilter.type.charAt(0).toUpperCase() + activeFilter.type.slice(1)}` as keyof typeof t.roomList]}
-            </span>
-          )}
-        </div>
-        
-        {/* Filter Options */}
-        {showFilters && (
-          <div className="absolute top-full left-4 right-4 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-            {(['all', 'unread', 'archived'] as const).map((filterType) => (
-              <button
-                key={filterType}
-                onClick={() => handleFilter(filterType)}
-                className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${
-                  activeFilter.type === filterType 
-                    ? 'bg-blue-50 text-blue-700' 
-                    : 'text-gray-700'
-                }`}
-              >
-                {t.roomList[`filter${filterType.charAt(0).toUpperCase() + filterType.slice(1)}` as keyof typeof t.roomList]}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Chat List */}
@@ -213,10 +162,16 @@ export default function ChatRoomList({
               <button
                 key={chat.id}
                 onClick={() => onSelectChat(chat.id)}
-                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                   selectedChatId === chat.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                 }`}
               >
+                {/* Loading overlay */}
+                {isLoadingChat && selectedChatId === chat.id && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <LoadingSpinner size="sm" />
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">
@@ -273,8 +228,8 @@ export default function ChatRoomList({
                         }
                       </p>
                     ) : (
-                      <p className="text-sm text-gray-400 italic">
-                        {language === 'no' ? 'Ingen meldinger enda' : 'No messages yet'}
+                      <p className="text-sm text-gray-500 truncate">
+                        {chat.relatedPost?.title || (language === 'no' ? 'Ingen meldinger enda' : 'No messages yet')}
                       </p>
                     )}
                     
@@ -282,17 +237,37 @@ export default function ChatRoomList({
                     {chat.relatedPost && (
                       <div className="flex items-center gap-1 mt-1">
                         <div className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          chat.relatedPost.type === 'TEACHER' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-blue-100 text-blue-800'
+                          (() => {
+                            const isPostOwner = chat.relatedPost.user.id === user?.id;
+                            const postType = chat.relatedPost.type;
+                            const otherUserRole = isPostOwner 
+                              ? (postType === 'TEACHER' ? 'STUDENT' : 'TEACHER')
+                              : postType;
+                            
+                            return otherUserRole === 'TEACHER'
+                              ? 'bg-green-100 text-green-800' 
+                              : 'bg-blue-100 text-blue-800';
+                          })()
                         }`}>
-                          {chat.relatedPost.type === 'TEACHER' 
-                            ? (language === 'no' ? 'Lærer' : 'Teacher')
-                            : (language === 'no' ? 'Student' : 'Student')
-                          }
+                          {/* Show the role of the other user in the chat */}
+                          {(() => {
+                            const isPostOwner = chat.relatedPost.user.id === user?.id;
+                            const postType = chat.relatedPost.type;
+                            
+                            // If I own the post and it's a TEACHER post, the other person is a STUDENT
+                            // If I own the post and it's a STUDENT post, the other person is a TEACHER
+                            // If they own the post, their role matches the post type
+                            const otherUserRole = isPostOwner 
+                              ? (postType === 'TEACHER' ? 'STUDENT' : 'TEACHER')
+                              : postType;
+                            
+                            return otherUserRole === 'TEACHER' 
+                              ? (language === 'no' ? 'Lærer' : 'Teacher')
+                              : (language === 'no' ? 'Student' : 'Student');
+                          })()}
                         </div>
                         <span className="text-xs text-gray-600 font-medium">
-                          {chat.relatedPost.subject}
+                          {getSubjectLabel(chat.relatedPost.subject)}
                         </span>
                         {chat.relatedPost.hourlyRate && (
                           <span className="text-xs text-gray-500">
@@ -302,15 +277,6 @@ export default function ChatRoomList({
                       </div>
                     )}
                     
-                    {/* Status indicator */}
-                    {!chat.isOnline && (
-                      <div className="flex items-center gap-1 mt-1">
-                        <Clock className="h-3 w-3 text-gray-400" />
-                        <span className="text-xs text-gray-400">
-                          {chat.lastSeenText}
-                        </span>
-                      </div>
-                    )}
                   </div>
                 </div>
               </button>

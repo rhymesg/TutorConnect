@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { useChat } from '@/hooks/useChat';
 import Header from './Header';
 import MobileNavigation from './MobileNavigation';
 import Sidebar from './Sidebar';
@@ -16,6 +17,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { isAuthenticated } = useAuth();
+  
+  // Get total unread count for notifications
+  // Only load if authenticated and not on auth pages
+  const shouldLoadUnreadCount = isAuthenticated && !pathname.startsWith('/auth');
+  const { totalUnreadCount } = useChat({
+    autoLoad: shouldLoadUnreadCount,
+    enablePolling: shouldLoadUnreadCount,
+  });
 
   // Close sidebar when route changes on mobile
   useEffect(() => {
@@ -29,6 +38,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
   
   // Hide navigation for public profile pages (viewing other users' profiles)
   const isPublicProfilePage = pathname.startsWith('/profile/') && pathname !== '/profile';
+  
+  // Check if on chat page
+  const isChatPage = pathname === '/chat';
 
   // Determine layout structure based on authentication and page type
   const showSidebar = isAuthenticated && !isPublicPage && !isPublicProfilePage;
@@ -36,7 +48,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const showHeader = !isPublicProfilePage;
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className={`${isChatPage ? 'h-screen' : 'min-h-screen'} bg-neutral-50 ${isChatPage ? 'overflow-hidden' : ''}`}>
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -50,15 +62,17 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <Header 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
           showMenuButton={showSidebar}
+          notificationCount={totalUnreadCount}
         />
       )}
 
-      <div className={`flex ${showHeader ? 'h-[calc(100vh-4rem)]' : 'h-screen'}`}>
+      <div className={`flex ${showHeader ? 'h-[calc(100vh-4rem)]' : 'h-screen'} ${isChatPage ? 'overflow-hidden' : ''}`}>
         {/* Desktop Sidebar */}
         {showSidebar && (
           <Sidebar 
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
+            unreadMessagesCount={totalUnreadCount}
           />
         )}
 
@@ -66,14 +80,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <main 
           id="main-content"
           className={`
-            flex-1 overflow-y-auto
+            flex-1 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
             ${showSidebar ? 'lg:ml-64' : ''}
-            ${showMobileNav ? 'pb-16' : ''}
+            ${showMobileNav && !isChatPage ? 'pb-16' : ''}
           `}
           role="main"
           aria-label="Hovedinnhold"
         >
-          <div className="min-h-full">
+          <div className={isChatPage ? 'h-full' : 'min-h-full'}>
             {children}
           </div>
           
