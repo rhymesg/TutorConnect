@@ -168,6 +168,7 @@ export default function ChatInterface({
           isLoading={isLoadingChats}
           error={chatsError}
           selectedChatId={selectedChatId || undefined}
+          isLoadingChat={isLoadingChat}
           onSelectChat={handleSelectChat}
           onSearch={handleSearchChats}
           onFilter={handleFilterChats}

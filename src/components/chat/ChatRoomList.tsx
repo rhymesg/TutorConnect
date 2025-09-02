@@ -14,6 +14,7 @@ interface ChatRoomListProps {
   isLoading: boolean;
   error: string | null;
   selectedChatId?: string;
+  isLoadingChat?: boolean;
   onSelectChat: (chatId: string) => void;
   onSearch: (query: string) => void;
   onFilter: (filter: ChatFilter) => void;
@@ -31,6 +32,7 @@ export default function ChatRoomList({
   isLoading,
   error,
   selectedChatId,
+  isLoadingChat = false,
   onSelectChat,
   onSearch,
   onFilter,
@@ -160,10 +162,16 @@ export default function ChatRoomList({
               <button
                 key={chat.id}
                 onClick={() => onSelectChat(chat.id)}
-                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors ${
+                className={`w-full p-4 text-left hover:bg-gray-50 transition-colors relative ${
                   selectedChatId === chat.id ? 'bg-blue-50 border-r-2 border-blue-500' : ''
                 }`}
               >
+                {/* Loading overlay */}
+                {isLoadingChat && selectedChatId === chat.id && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-10">
+                    <LoadingSpinner size="sm" />
+                  </div>
+                )}
                 <div className="flex items-start gap-3">
                   {/* Avatar */}
                   <div className="relative flex-shrink-0">

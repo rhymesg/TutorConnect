@@ -130,10 +130,10 @@ export default function Header({
             {isAuthenticated ? (
               <>
                 {/* Notifications */}
-                <button
-                  type="button"
-                  className="relative rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  aria-label="Vis varsler"
+                <Link
+                  href="/chat"
+                  className="relative block rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  aria-label="Vis meldinger"
                 >
                   <BellIcon className="h-6 w-6" aria-hidden="true" />
                   {/* Notification badge */}
@@ -142,7 +142,7 @@ export default function Header({
                       {notificationCount > 99 ? '99+' : notificationCount}
                     </span>
                   )}
-                </button>
+                </Link>
 
                 {/* User menu */}
                 <div className="relative" ref={userMenuRef}>
