@@ -10,9 +10,9 @@ function ChatPageContent() {
   const initialChatId = searchParams.get('id') || undefined;
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Full-screen Chat Interface without MainLayout */}
-      <ChatInterface initialChatId={initialChatId} />
+    <div className="h-full flex flex-col bg-white">
+      {/* Chat Interface filling available height */}
+      <ChatInterface initialChatId={initialChatId} className="h-full" />
     </div>
   );
 }

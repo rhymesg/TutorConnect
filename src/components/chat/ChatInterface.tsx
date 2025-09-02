@@ -183,7 +183,7 @@ export default function ChatInterface({
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             } transition-transform duration-300 ease-in-out`
           : 'w-80 flex-shrink-0'
-      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200`}>
+      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden`}>
         
         <ChatRoomList
           chats={chats}
@@ -205,9 +205,9 @@ export default function ChatInterface({
       </div>
 
       {/* Conversation View */}
-      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''}`}>
+      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} h-full overflow-hidden`}>
         {selectedChatId && chat ? (
-          <>
+          <div className="flex flex-col h-full">
             {/* Error display */}
             {(chatError || messageError) && (
               <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
@@ -239,8 +239,8 @@ export default function ChatInterface({
               onSettings={() => console.log('Settings')}
             />
             
-            {/* Messages */}
-            <div className="flex-1 flex flex-col relative">
+            {/* Messages - scrollable area */}
+            <div className="flex-1 overflow-y-auto">
               <MessageList
                 messages={messages}
                 currentUserId={user?.id || ""}
@@ -254,13 +254,15 @@ export default function ChatInterface({
               />
             </div>
             
-            {/* Message Composer */}
-            <MessageComposer
-              onSendMessage={handleSendMessage}
-              language={language}
-              disabled={false}
-            />
-          </>
+            {/* Message Composer - fixed at bottom */}
+            <div className="border-t border-gray-200">
+              <MessageComposer
+                onSendMessage={handleSendMessage}
+                language={language}
+                disabled={false}
+              />
+            </div>
+          </div>
         ) : (
           /* Empty state */
           <div className="flex-1 flex items-center justify-center bg-gray-50">

@@ -234,7 +234,7 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: Si
     <>
       {/* Desktop sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col border-r border-neutral-200 bg-white pt-16">
+        <div className="flex flex-col h-full border-r border-neutral-200 bg-white pt-16 overflow-hidden">
           <SidebarContent />
         </div>
       </div>

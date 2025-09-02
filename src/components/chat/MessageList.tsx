@@ -205,7 +205,7 @@ export default function MessageList({
   const messageGroups = getMessageGroups();
 
   return (
-    <div className={`flex-1 relative ${className}`}>
+    <div className={`relative h-full ${className}`}>
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
@@ -281,18 +281,18 @@ export default function MessageList({
         
         {/* Bottom anchor for auto-scrolling */}
         <div ref={messagesEndRef} />
-      </div>
 
-      {/* Scroll to bottom button */}
-      {showScrollButton && (
-        <button
-          onClick={scrollToBottom}
-          className="fixed bottom-20 right-8 p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors z-10"
-          title={language === 'no' ? 'Gå til bunn' : 'Scroll to bottom'}
-        >
-          <ChevronDown className="h-5 w-5" />
-        </button>
-      )}
+        {/* Scroll to bottom button */}
+        {showScrollButton && (
+          <button
+            onClick={scrollToBottom}
+            className="absolute bottom-4 right-4 p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors z-10"
+            title={language === 'no' ? 'Gå til bunn' : 'Scroll to bottom'}
+          >
+            <ChevronDown className="h-5 w-5" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

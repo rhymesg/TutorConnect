@@ -119,7 +119,7 @@ export default function ChatRoomList({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white border-r border-gray-200">
+    <div className="flex flex-col h-full bg-white">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
