@@ -7,7 +7,7 @@ import { NextRequest } from 'next/server';
 import { createAPIHandler, createSuccessResponse, APIContext } from '@/lib/api-handler';
 import { NorwegianSubjectCategories, AgeGroupToGrades } from '@/schemas/post';
 import { NORWEGIAN_SUBJECTS } from '@/lib/search-utils';
-import { NORWEGIAN_AGE_GROUPS } from '@/types/norwegian';
+import { AGE_GROUP_OPTIONS } from '@/constants/ageGroups';
 
 /**
  * GET /api/posts/subjects - Get Norwegian curriculum subjects and categories
@@ -63,7 +63,7 @@ async function handleGetSubjects(
         subjectCount: subjects.length,
         subjects: subjects,
       })),
-      ageGroups: Object.entries(NORWEGIAN_AGE_GROUPS).map(([key, norwegianName]) => ({
+      ageGroups: Object.entries(AGE_GROUP_OPTIONS).map(([key, norwegianName]) => ({
         id: key,
         name: key.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
         norwegianName,
@@ -132,20 +132,20 @@ function formatCategoryName(category: string): string {
 
 function isSubjectRelevantForAgeGroup(subjectId: string, ageGroup: string): boolean {
   const relevanceMap: Record<string, string[]> = {
-    MATHEMATICS: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    ENGLISH: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    NORWEGIAN: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    SCIENCE: ['CHILDREN_7_12', 'TEENAGERS_13_15'],
-    PHYSICS: ['TEENAGERS_13_15', 'YOUTH_16_18'],
-    CHEMISTRY: ['TEENAGERS_13_15', 'YOUTH_16_18'],
-    BIOLOGY: ['TEENAGERS_13_15', 'YOUTH_16_18'],
-    HISTORY: ['TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    GEOGRAPHY: ['TEENAGERS_13_15', 'YOUTH_16_18'],
-    PROGRAMMING: ['TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    SPORTS: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18'],
-    MUSIC: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    ART: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
-    OTHER: ['CHILDREN_7_12', 'TEENAGERS_13_15', 'YOUTH_16_18', 'ADULTS_19_PLUS'],
+    MATHEMATICS: ['PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
+    ENGLISH: ['PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
+    NORWEGIAN: ['PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
+    SCIENCE: ['PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE'],
+    PHYSICS: ['MIDDLE', 'SECONDARY'],
+    CHEMISTRY: ['MIDDLE', 'SECONDARY'],
+    BIOLOGY: ['MIDDLE', 'SECONDARY'],
+    HISTORY: ['MIDDLE', 'SECONDARY', 'ADULTS'],
+    GEOGRAPHY: ['MIDDLE', 'SECONDARY'],
+    PROGRAMMING: ['MIDDLE', 'SECONDARY', 'ADULTS'],
+    SPORTS: ['PRESCHOOL', 'PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY'],
+    MUSIC: ['PRESCHOOL', 'PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
+    ART: ['PRESCHOOL', 'PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
+    OTHER: ['PRESCHOOL', 'PRIMARY_LOWER', 'PRIMARY_UPPER', 'MIDDLE', 'SECONDARY', 'ADULTS'],
   };
 
   return relevanceMap[subjectId]?.includes(ageGroup) || false;
@@ -154,19 +154,20 @@ function isSubjectRelevantForAgeGroup(subjectId: string, ageGroup: string): bool
 function getRecommendedGradesForSubject(subjectId: string, ageGroup: string): string[] {
   const gradeMap: Record<string, Record<string, string[]>> = {
     MATHEMATICS: {
-      CHILDREN_7_12: ['1', '2', '3', '4', '5', '6', '7'],
-      TEENAGERS_13_15: ['8', '9', '10'],
-      YOUTH_16_18: ['VG1', 'VG2', 'VG3'],
-      ADULTS_19_PLUS: ['University'],
+      PRIMARY_LOWER: ['1', '2', '3'],
+      PRIMARY_UPPER: ['4', '5', '6', '7'],
+      MIDDLE: ['8', '9', '10'],
+      SECONDARY: ['VG1', 'VG2', 'VG3'],
+      ADULTS: ['University'],
     },
     PHYSICS: {
-      TEENAGERS_13_15: ['9', '10'],
-      YOUTH_16_18: ['VG1', 'VG2', 'VG3'],
+      MIDDLE: ['9', '10'],
+      SECONDARY: ['VG1', 'VG2', 'VG3'],
     },
     PROGRAMMING: {
-      TEENAGERS_13_15: ['9', '10'],
-      YOUTH_16_18: ['VG1', 'VG2', 'VG3'],
-      ADULTS_19_PLUS: ['University', 'Adult Education'],
+      MIDDLE: ['9', '10'],
+      SECONDARY: ['VG1', 'VG2', 'VG3'],
+      ADULTS: ['University', 'Adult Education'],
     },
   };
 
@@ -242,10 +243,12 @@ function getTypicalHourlyRate(subjectId: string): { min: number; max: number; cu
 
 function getTypicalSubjectsForAgeGroup(ageGroup: string): string[] {
   const typicalSubjects: Record<string, string[]> = {
-    CHILDREN_7_12: ['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'SPORTS', 'MUSIC', 'ART'],
-    TEENAGERS_13_15: ['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'HISTORY', 'GEOGRAPHY'],
-    YOUTH_16_18: ['MATHEMATICS', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'HISTORY', 'ENGLISH', 'PROGRAMMING'],
-    ADULTS_19_PLUS: ['MATHEMATICS', 'ENGLISH', 'PROGRAMMING', 'OTHER'],
+    PRESCHOOL: ['MUSIC', 'ART', 'SPORTS'],
+    PRIMARY_LOWER: ['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'SPORTS', 'MUSIC', 'ART'],
+    PRIMARY_UPPER: ['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'SPORTS', 'MUSIC', 'ART'],
+    MIDDLE: ['MATHEMATICS', 'NORWEGIAN', 'ENGLISH', 'SCIENCE', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'HISTORY', 'GEOGRAPHY'],
+    SECONDARY: ['MATHEMATICS', 'PHYSICS', 'CHEMISTRY', 'BIOLOGY', 'HISTORY', 'ENGLISH', 'PROGRAMMING'],
+    ADULTS: ['MATHEMATICS', 'ENGLISH', 'PROGRAMMING', 'OTHER'],
   };
 
   return typicalSubjects[ageGroup] || [];
