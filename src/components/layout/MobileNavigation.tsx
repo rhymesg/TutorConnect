@@ -35,7 +35,7 @@ export default function MobileNavigation({ unreadMessagesCount = 0 }: MobileNavi
   const navigation: NavigationItem[] = [
     {
       name: 'Hjem',
-      href: '/dashboard',
+      href: '/posts',
       icon: HomeIcon,
       iconSolid: HomeIconSolid,
     },
@@ -67,9 +67,6 @@ export default function MobileNavigation({ unreadMessagesCount = 0 }: MobileNavi
   ];
 
   const isCurrentPage = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard' || pathname === '/';
-    }
     return pathname.startsWith(href);
   };
 
