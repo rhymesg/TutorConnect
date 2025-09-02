@@ -30,6 +30,7 @@ export default function ChatInterface({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(initialChatId || null);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isChangingChat, setIsChangingChat] = useState(false);
   
   // Use centralized chat hook
   const {
@@ -73,11 +74,32 @@ export default function ChatInterface({
     }
   }, [initialChatId, selectedChatId]);
 
+  // Reset isChangingChat when chat changes and loads
+  useEffect(() => {
+    if (isChangingChat && chat && chat.id === selectedChatId) {
+      // Give a small delay to ensure the UI updates smoothly
+      const timer = setTimeout(() => {
+        setIsChangingChat(false);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isChangingChat, chat, selectedChatId]);
+
   // Event handlers
-  const handleSelectChat = (chatId: string) => {
+  const handleSelectChat = async (chatId: string) => {
     if (chatId !== selectedChatId) {
+      setIsChangingChat(true);
       setSelectedChatId(chatId);
       clearErrors(); // Clear any previous errors
+      
+      // Immediately start loading the chat
+      try {
+        await loadChat(chatId);
+      } catch (error) {
+        console.error('Error loading chat:', error);
+        // Reset changing state on error
+        setIsChangingChat(false);
+      }
     }
     
     // Hide sidebar on mobile
@@ -168,7 +190,7 @@ export default function ChatInterface({
           isLoading={isLoadingChats}
           error={chatsError}
           selectedChatId={selectedChatId || undefined}
-          isLoadingChat={isLoadingChat}
+          isLoadingChat={isChangingChat}
           onSelectChat={handleSelectChat}
           onSearch={handleSearchChats}
           onFilter={handleFilterChats}
