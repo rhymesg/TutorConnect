@@ -37,7 +37,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
                       pathname === '/om-oss';
   
   // Hide navigation for public profile pages (viewing other users' profiles)
-  const isPublicProfilePage = pathname.startsWith('/profile/') && pathname !== '/profile';
+  // Only hide for user profile pages like /profile/[userId], not for own profile pages
+  const isPublicProfilePage = pathname.startsWith('/profile/') && 
+                              pathname !== '/profile' && 
+                              pathname !== '/profile/posts' && 
+                              pathname !== '/profile/edit' &&
+                              !pathname.startsWith('/profile/posts/');
   
   // Check if on chat page
   const isChatPage = pathname === '/chat';
@@ -46,6 +51,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const showSidebar = isAuthenticated && !isPublicPage && !isPublicProfilePage;
   const showMobileNav = isAuthenticated && !isPublicPage && !isPublicProfilePage;
   const showHeader = !isPublicProfilePage;
+
 
   return (
     <div className={`${isChatPage ? 'h-screen' : 'min-h-screen'} bg-neutral-50 ${isChatPage ? 'overflow-hidden' : ''}`}>

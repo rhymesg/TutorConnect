@@ -70,26 +70,6 @@ export const NORWEGIAN_EDUCATION_LEVELS = {
 
 export type NorwegianEducationLevel = keyof typeof NORWEGIAN_EDUCATION_LEVELS;
 
-// Norwegian subject translations
-export const NORWEGIAN_SUBJECTS = {
-  MATHEMATICS: 'Matematikk',
-  ENGLISH: 'Engelsk',
-  NORWEGIAN: 'Norsk',
-  SCIENCE: 'Naturvitenskap',
-  PHYSICS: 'Fysikk',
-  CHEMISTRY: 'Kjemi',
-  BIOLOGY: 'Biologi',
-  HISTORY: 'Historie',
-  GEOGRAPHY: 'Geografi',
-  PROGRAMMING: 'Programmering',
-  SPORTS: 'Idrett',
-  MUSIC: 'Musikk',
-  ART: 'Kunst og håndverk',
-  OTHER: 'Annet',
-} as const;
-
-export type NorwegianSubjectKey = keyof typeof NORWEGIAN_SUBJECTS;
-export type NorwegianSubjectValue = typeof NORWEGIAN_SUBJECTS[NorwegianSubjectKey];
 
 // Norwegian age group descriptions
 export const NORWEGIAN_AGE_GROUPS = {

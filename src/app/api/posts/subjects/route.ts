@@ -6,7 +6,8 @@
 import { NextRequest } from 'next/server';
 import { createAPIHandler, createSuccessResponse, APIContext } from '@/lib/api-handler';
 import { NorwegianSubjectCategories, AgeGroupToGrades } from '@/schemas/post';
-import { NORWEGIAN_SUBJECTS, NORWEGIAN_AGE_GROUPS } from '@/types/norwegian';
+import { NORWEGIAN_SUBJECTS } from '@/lib/search-utils';
+import { NORWEGIAN_AGE_GROUPS } from '@/types/norwegian';
 
 /**
  * GET /api/posts/subjects - Get Norwegian curriculum subjects and categories
@@ -21,10 +22,10 @@ async function handleGetSubjects(
   const includeDescriptions = searchParams.get('includeDescriptions') === 'true';
 
   try {
-    let subjects = Object.entries(NORWEGIAN_SUBJECTS).map(([key, norwegianName]) => ({
+    let subjects = Object.entries(NORWEGIAN_SUBJECTS).map(([key, config]) => ({
       id: key,
       name: key.replace('_', ' ').toLowerCase().replace(/\b\w/g, l => l.toUpperCase()),
-      norwegianName,
+      norwegianName: config.no,
       category: findSubjectCategory(key),
     }));
 
