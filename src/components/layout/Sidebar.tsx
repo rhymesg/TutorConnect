@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: Si
                       <Link
                         href={item.href}
                         className={`
-                          group flex items-center rounded-lg px-4 py-3 text-base font-medium transition-colors
+                          group flex items-center rounded-lg px-4 py-3 text-sm font-medium transition-colors
                           ${current 
                             ? 'bg-brand-50 text-brand-700' 
                             : 'text-neutral-700 hover:bg-neutral-50 hover:text-neutral-900'
