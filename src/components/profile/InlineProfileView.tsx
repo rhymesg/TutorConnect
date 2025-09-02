@@ -7,7 +7,6 @@ import {
   MapPinIcon, 
   AcademicCapIcon, 
   DocumentTextIcon,
-  CalendarIcon,
   CheckBadgeIcon,
   PencilIcon,
   CheckIcon,
@@ -20,7 +19,6 @@ import {
 import { formatters } from '@/lib/translations';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
-import { RecentPosts } from './RecentPosts';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { getRegionOptions, getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
@@ -52,13 +50,6 @@ interface ProfileData extends User {
     fileName: string;
     verificationStatus: string;
     uploadedAt: string;
-  }>;
-  posts: Array<{
-    id: string;
-    type: string;
-    subject: string;
-    title: string;
-    createdAt: string;
   }>;
 }
 
@@ -998,16 +989,6 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
         </div>
       )}
 
-      {/* Recent posts section */}
-      {profile.posts && profile.posts.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CalendarIcon className="h-5 w-5 mr-2" />
-            Siste innlegg
-          </h2>
-          <RecentPosts posts={profile.posts} />
-        </div>
-      )}
     </div>
   );
 }
