@@ -18,12 +18,12 @@ const sendMessageSchema = z.object({
 
 // Message query schema
 const messageQuerySchema = z.object({
-  page: z.string().optional().transform(val => val ? parseInt(val) : 1),
-  limit: z.string().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
-  before: z.string().optional(), // Message ID for pagination
-  after: z.string().optional(), // Message ID for pagination
+  page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
+  limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 10),
+  before: z.string().nullable().optional(), // Message ID for pagination
+  after: z.string().nullable().optional(), // Message ID for pagination
   type: z.nativeEnum(MessageType).optional(),
-  search: z.string().optional(),
+  search: z.string().nullable().optional(),
 });
 
 interface RouteParams {

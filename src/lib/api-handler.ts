@@ -127,7 +127,7 @@ export function createAPIHandler(
 
       // Log successful response
       const duration = Date.now() - startTime;
-      console.log(`API Success: ${request.method} ${request.url} - ${duration}ms - ${response.status}`);
+      // console.log(`API Success: ${request.method} ${request.url} - ${duration}ms - ${response.status}`);
 
       // Add standard headers
       response.headers.set('X-Request-ID', requestId);
@@ -369,13 +369,13 @@ function generateRequestId(): string {
  * Log API request
  */
 function logAPIRequest(request: NextRequest, context: APIContext, startTime: number): void {
-  console.log(`API Request: ${request.method} ${request.url}`, {
-    ip: context.ip,
-    userId: context.user?.id,
-    requestId: context.requestId,
-    userAgent: request.headers.get('user-agent'),
-    timestamp: new Date().toISOString(),
-  });
+  // console.log(`API Request: ${request.method} ${request.url}`, {
+  //   ip: context.ip,
+  //   userId: context.user?.id,
+  //   requestId: context.requestId,
+  //   userAgent: request.headers.get('user-agent'),
+  //   timestamp: new Date().toISOString(),
+  // });
 }
 
 /**

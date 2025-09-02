@@ -96,7 +96,7 @@ export default function ChatInterface({
       try {
         await loadChat(chatId);
       } catch (error) {
-        console.error('Error loading chat:', error);
+        // console.error('Error loading chat:', error);
         // Reset changing state on error
         setIsChangingChat(false);
       }
@@ -121,37 +121,37 @@ export default function ChatInterface({
     try {
       await sendMessage(content, type || 'TEXT');
     } catch (error) {
-      console.error('Failed to send message:', error);
+      // console.error('Failed to send message:', error);
       // Error is already handled in the useChat hook
     }
   };
 
   const handleLoadMoreChats = () => {
-    console.log('Load more chats - TODO');
+    // console.log('Load more chats - TODO');
   };
 
   const handleLoadMoreMessages = () => {
-    console.log('Load more messages - TODO');
+    // console.log('Load more messages - TODO');
   };
 
   const handleSearchChats = (query: string) => {
-    console.log('Search chats:', query);
+    // console.log('Search chats:', query);
   };
 
   const handleFilterChats = (filter: any) => {
-    console.log('Filter chats:', filter);
+    // console.log('Filter chats:', filter);
   };
 
   const handleArchiveChat = (chatId: string) => {
-    console.log('Archive chat:', chatId);
+    // console.log('Archive chat:', chatId);
   };
 
   const handleDeleteChat = (chatId: string) => {
-    console.log('Delete chat:', chatId);
+    // console.log('Delete chat:', chatId);
   };
 
   const handlePinChat = (chatId: string) => {
-    console.log('Pin chat:', chatId);
+    // console.log('Pin chat:', chatId);
   };
 
   const handleRetry = async () => {
@@ -167,11 +167,11 @@ export default function ChatInterface({
   };
 
   const handleMessageAction = (action: string, messageId: string) => {
-    console.log('Message action:', action, messageId);
+    // console.log('Message action:', action, messageId);
   };
 
   const handleRetryMessage = (messageId: string) => {
-    console.log('Retry message:', messageId);
+    // console.log('Retry message:', messageId);
   };
 
   return (
@@ -228,15 +228,15 @@ export default function ChatInterface({
 
             {/* Chat Header */}
             <ChatHeader
-              chat={chat}
+              chat={chats.find(c => c.id === selectedChatId) || chat}
               language={language}
               onBack={isMobile ? handleBackToList : undefined}
-              onShowPostDetails={() => console.log('Show post details')}
+              onShowPostDetails={() => {/* console.log('Show post details') */}}
               onArchiveChat={() => handleArchiveChat(selectedChatId)}
               onDeleteChat={() => handleDeleteChat(selectedChatId)}
-              onBlockUser={() => console.log('Block user')}
-              onReportUser={() => console.log('Report user')}
-              onSettings={() => console.log('Settings')}
+              onBlockUser={() => {/* console.log('Block user') */}}
+              onReportUser={() => {/* console.log('Report user') */}}
+              onSettings={() => {/* console.log('Settings') */}}
             />
             
             {/* Messages - scrollable area */}

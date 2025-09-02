@@ -73,7 +73,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       const result = await authRefresh();
       return result;
     } catch (error) {
-      console.error('Auth refresh failed:', error);
+      // console.error('Auth refresh failed:', error);
       return false;
     }
   }, [authRefresh]);
@@ -177,7 +177,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         });
         
       } catch (error) {
-        console.error('Error loading chat:', error);
+        // console.error('Error loading chat:', error);
         setChatError(error instanceof Error ? error.message : 'Failed to load chat');
         throw error;
       }
@@ -271,7 +271,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       } catch (error) {
         // Don't log 401 errors as they're handled by token refresh
         if (!(error instanceof Error && error.message.includes('401'))) {
-          console.error('Error loading chats:', error);
+          // console.error('Error loading chats:', error);
         }
         setChatsError(error instanceof Error ? error.message : 'Failed to load chats');
         throw error;
@@ -311,7 +311,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        console.error('API error response:', errorData);
+        // console.error('API error response:', errorData);
         throw new Error(errorData.error || 'Failed to send message');
       }
 
@@ -333,7 +333,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       setMessages(prev => [...prev, transformedMessage]);
       
     } catch (error) {
-      console.error('Error sending message:', error);
+      // console.error('Error sending message:', error);
       setMessageError(error instanceof Error ? error.message : 'Failed to send message');
       throw error;
     }
@@ -437,7 +437,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               }
             }
           } catch (error) {
-            console.error('Polling error:', error);
+            // console.error('Polling error:', error);
           }
         }, 5000); // Poll every 5 seconds
       };
@@ -518,7 +518,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
               }
             }
           } catch (error) {
-            console.error('Chat list polling error:', error);
+            // console.error('Chat list polling error:', error);
           }
         }, 10000); // Poll every 10 seconds for chat list
       };

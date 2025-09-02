@@ -82,6 +82,10 @@ async function handleGET(request: NextRequest) {
                 isActive: true,
                 lastActive: true,
                 region: true, // Include Norwegian region
+                teacherSessions: true, // For badge calculation
+                teacherStudents: true, // For badge calculation
+                studentSessions: true, // For badge calculation
+                studentTeachers: true, // For badge calculation
               },
             },
           },
@@ -113,6 +117,10 @@ async function handleGET(request: NextRequest) {
                 id: true,
                 name: true,
                 region: true, // Include post owner region
+                teacherSessions: true, // For badge calculation
+                teacherStudents: true, // For badge calculation
+                studentSessions: true, // For badge calculation
+                studentTeachers: true, // For badge calculation
               },
             },
           },
@@ -180,7 +188,7 @@ async function handleGET(request: NextRequest) {
         
         chatsWithUnreadCounts.push(processedChat);
     } catch (error) {
-      console.error(`Failed to process chat ${chat.id}:`, error);
+      // console.error(`Failed to process chat ${chat.id}:`, error);
       // Skip this chat and continue with others
     }
   }
@@ -272,6 +280,10 @@ async function handlePOST(request: NextRequest) {
                 profileImage: true,
                 isActive: true,
                 region: true, // Include Norwegian region
+                teacherSessions: true, // For badge calculation
+                teacherStudents: true, // For badge calculation
+                studentSessions: true, // For badge calculation
+                studentTeachers: true, // For badge calculation
               },
             },
           },
@@ -287,6 +299,10 @@ async function handlePOST(request: NextRequest) {
                 id: true,
                 name: true,
                 region: true,
+                teacherSessions: true, // For badge calculation
+                teacherStudents: true, // For badge calculation
+                studentSessions: true, // For badge calculation
+                studentTeachers: true, // For badge calculation
               },
             },
           },

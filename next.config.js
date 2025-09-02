@@ -18,6 +18,13 @@ const nextConfig = {
   // Performance optimizations
   poweredByHeader: false,
 
+  // Logging configuration  
+  logging: {
+    fetches: {
+      fullUrl: false
+    }
+  },
+
   // Image optimization for Norwegian regions
   images: {
     remotePatterns: [
@@ -115,7 +122,9 @@ const nextConfig = {
 
   // Compiler options
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === 'production' ? true : {
+      exclude: ['error']
+    },
   },
 
   // Enable strict mode for React 19 compatibility

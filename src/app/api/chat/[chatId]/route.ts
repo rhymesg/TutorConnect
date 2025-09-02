@@ -85,6 +85,10 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
               profileImage: true,
               isActive: true,
               lastActive: true,
+              teacherSessions: true, // For badge calculation
+              teacherStudents: true, // For badge calculation
+              studentSessions: true, // For badge calculation
+              studentTeachers: true, // For badge calculation
             },
           },
         },
@@ -103,6 +107,10 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
               id: true,
               name: true,
               profileImage: true,
+              teacherSessions: true, // For badge calculation
+              teacherStudents: true, // For badge calculation
+              studentSessions: true, // For badge calculation
+              studentTeachers: true, // For badge calculation
             },
           },
         },
