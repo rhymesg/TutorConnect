@@ -97,7 +97,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      {showMobileNav && <MobileNavigation />}
+      {showMobileNav && <MobileNavigation unreadMessagesCount={totalUnreadCount} />}
 
       {/* Mobile sidebar overlay */}
       {showSidebar && sidebarOpen && (

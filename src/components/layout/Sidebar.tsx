@@ -185,7 +185,7 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: Si
                         {item.name}
                       </span>
                       
-                      {item.badge && item.badge > 0 && (
+                      {item.badge !== undefined && item.badge > 0 && (
                         <span 
                           className="ml-2 inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800"
                           aria-label={`${item.badge} nye varsler`}
