@@ -265,6 +265,7 @@ async function handleSearchPosts(
     // Build Prisma where clause based on search parameters
     const where: Prisma.PostWhereInput = {
       isActive: true, // Only show active posts
+      ...(searchParams.userId && { userId: searchParams.userId }),
       ...(searchParams.q && {
         OR: [
           { title: { contains: searchParams.q, mode: 'insensitive' } },
@@ -369,7 +370,7 @@ async function handleSearchPosts(
     );
 
     // Execute queries in parallel
-    const [posts, totalCount] = await Promise.all([
+    const [rawPosts, totalCount] = await Promise.all([
       prisma.post.findMany({
         where,
         orderBy,
@@ -398,6 +399,27 @@ async function handleSearchPosts(
       }),
       prisma.post.count({ where }),
     ]);
+
+    // Process posts to add computed fields
+    const posts = rawPosts.map(post => {
+      // Calculate display price
+      let price: number | undefined;
+      if (post.hourlyRate) {
+        price = Number(post.hourlyRate);
+      } else if (post.hourlyRateMin && post.hourlyRateMax) {
+        price = (Number(post.hourlyRateMin) + Number(post.hourlyRateMax)) / 2;
+      } else if (post.hourlyRateMin) {
+        price = Number(post.hourlyRateMin);
+      } else if (post.hourlyRateMax) {
+        price = Number(post.hourlyRateMax);
+      }
+
+      return {
+        ...post,
+        price,
+        viewCount: 0, // TODO: Add actual view counting logic
+      };
+    });
 
     // Calculate actual pagination info
     const pagination = {

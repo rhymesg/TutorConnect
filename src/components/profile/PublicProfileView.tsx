@@ -6,7 +6,6 @@ import {
   MapPinIcon, 
   AcademicCapIcon, 
   DocumentTextIcon,
-  CalendarIcon,
   CheckBadgeIcon,
   ChatBubbleLeftRightIcon,
   InformationCircleIcon,
@@ -15,7 +14,6 @@ import {
 import { formatters } from '@/lib/translations';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
-import { RecentPosts } from './RecentPosts';
 
 interface PublicProfileData extends User {
   documents?: Array<{
@@ -24,13 +22,6 @@ interface PublicProfileData extends User {
     fileName: string;
     verificationStatus: string;
     uploadedAt: string;
-  }>;
-  posts: Array<{
-    id: string;
-    type: string;
-    subject: string;
-    title: string;
-    createdAt: string;
   }>;
 }
 
@@ -235,17 +226,6 @@ export function PublicProfileView({
         </div>
       )}
 
-      {/* Recent posts section */}
-      {profile.posts && profile.posts.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-            <CalendarIcon className="h-5 w-5 mr-2" />
-            Innlegg
-          </h2>
-          <RecentPosts posts={profile.posts} />
-        </div>
-      )}
-
       {/* Info request section */}
       {canRequestInfo && hiddenFields.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
@@ -274,8 +254,7 @@ export function PublicProfileView({
       )}
 
       {/* Empty state for limited profiles */}
-      {(!profile.bio && (!profile.posts || profile.posts.length === 0) && 
-        (!profile.documents || profile.documents.length === 0)) && (
+      {(!profile.bio && (!profile.documents || profile.documents.length === 0)) && (
         <div className="text-center py-12">
           <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
           <h3 className="mt-2 text-sm font-medium text-gray-900">

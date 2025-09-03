@@ -25,13 +25,17 @@ interface NavigationItem {
   badge?: number;
 }
 
-export default function MobileNavigation() {
+interface MobileNavigationProps {
+  unreadMessagesCount?: number;
+}
+
+export default function MobileNavigation({ unreadMessagesCount = 0 }: MobileNavigationProps) {
   const pathname = usePathname();
 
   const navigation: NavigationItem[] = [
     {
       name: 'Hjem',
-      href: '/dashboard',
+      href: '/posts',
       icon: HomeIcon,
       iconSolid: HomeIconSolid,
     },
@@ -46,7 +50,7 @@ export default function MobileNavigation() {
       href: '/chat',
       icon: ChatBubbleLeftRightIcon,
       iconSolid: ChatBubbleLeftRightIconSolid,
-      badge: 3, // TODO: Replace with actual unread count
+      badge: unreadMessagesCount,
     },
     {
       name: 'Timer',
@@ -63,9 +67,6 @@ export default function MobileNavigation() {
   ];
 
   const isCurrentPage = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard' || pathname === '/';
-    }
     return pathname.startsWith(href);
   };
 

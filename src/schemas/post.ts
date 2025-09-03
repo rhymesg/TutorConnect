@@ -435,6 +435,9 @@ export const PostSearchSchema = z.object({
   
   location: NorwegianRegionSchema.optional(),
   
+  // User filter for "Mine annonser" functionality
+  userId: z.string().cuid('Invalid user ID format').optional(),
+  
   // Pricing filters
   minRate: z.coerce.number().min(0).optional(),
   maxRate: z.coerce.number().min(0).optional(),

@@ -73,9 +73,12 @@ export interface PostWithDetails extends Post {
     studentSessions?: number;
     studentTeachers?: number;
   };
-  _count: {
-    chats: number;
+  _count?: {
+    chats?: number;
+    messages?: number;
   };
+  viewCount?: number;
+  price?: number; // Computed field for display
 }
 
 export interface ChatWithParticipants extends Chat {
