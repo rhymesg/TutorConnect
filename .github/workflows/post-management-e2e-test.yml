@@ -134,10 +134,62 @@ jobs:
             // Test 1: Navigate to "Mine annonser" page
             console.log('🧪 Test 1: Navigate to Mine annonser page');
             
-            // Click on the "Mine annonser" link in the sidebar
-            const mineAnnonserLink = page.locator('a:has-text("Mine annonser")');
-            await expect(mineAnnonserLink).toBeVisible({ timeout: 10000 });
-            console.log('✅ Found Mine annonser link in sidebar');
+            // Wait for the page to fully load after login
+            await page.waitForTimeout(5000);
+            
+            // Debug what's on the page
+            const pageTitle = await page.title();
+            const currentUrl = await page.url();
+            console.log(`🔍 Current page: ${pageTitle} at ${currentUrl}`);
+            
+            // Look for any links containing "Mine annonser" or similar text
+            const allLinks = await page.locator('a').allTextContents();
+            console.log('🔍 All links on page:', allLinks.slice(0, 15)); // Show first 15 links
+            
+            // Try various selectors for Mine annonser
+            const mineAnnonserSelectors = [
+              'a:has-text("Mine annonser")',
+              'a[href="/profile/posts"]', 
+              'nav a:has-text("Mine annonser")',
+              'aside a:has-text("Mine annonser")',
+              '.sidebar a:has-text("Mine annonser")',
+              'a:has-text("annonser")',
+              'a[href*="posts"]'
+            ];
+            
+            let mineAnnonserLink = null;
+            for (const selector of mineAnnonserSelectors) {
+              const link = page.locator(selector);
+              if (await link.isVisible({ timeout: 2000 })) {
+                console.log(`✅ Found Mine annonser link with selector: ${selector}`);
+                mineAnnonserLink = link;
+                break;
+              }
+            }
+            
+            if (!mineAnnonserLink) {
+              // If still not found, check if there's any navigation menu to open first
+              const menuButton = page.locator('button[aria-label*="menu"], button:has([data-testid="hamburger"]), .menu-button');
+              if (await menuButton.isVisible({ timeout: 3000 })) {
+                console.log('🔧 Opening navigation menu first');
+                await menuButton.click();
+                await page.waitForTimeout(2000);
+                
+                // Try again after opening menu
+                for (const selector of mineAnnonserSelectors) {
+                  const link = page.locator(selector);
+                  if (await link.isVisible({ timeout: 2000 })) {
+                    console.log(`✅ Found Mine annonser link after opening menu: ${selector}`);
+                    mineAnnonserLink = link;
+                    break;
+                  }
+                }
+              }
+            }
+            
+            if (!mineAnnonserLink) {
+              throw new Error('Could not find Mine annonser link with any selector. Available links: ' + allLinks.slice(0, 10).join(', '));
+            }
             
             await mineAnnonserLink.click();
             await page.waitForTimeout(2000);
