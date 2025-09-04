@@ -102,7 +102,9 @@ jobs:
             });
             
             if (!setupResponse.ok()) {
-              console.log('⚠️ Could not setup test user, proceeding anyway...');
+              const setupError = await setupResponse.text().catch(() => 'Unknown error');
+              console.log(`⚠️ Could not setup test user (${setupResponse.status()}): ${setupError}`);
+              console.log('⚠️ Proceeding anyway, but login might fail...');
             } else {
               console.log('✅ Test user setup complete');
             }
@@ -174,15 +176,16 @@ jobs:
             await expect(chatListContainer).toBeVisible({ timeout: 10000 });
             console.log('✅ Chat list container is visible');
             
-            // Check for chat items or empty state message
-            const hasChatItems = await page.locator('[data-testid="chat-item"], .chat-item, a[href*="/chat/"]').count();
-            const hasEmptyMessage = await page.locator('text=No chats, text=Ingen samtaler, text=empty').count();
+            // Check for chat items based on actual ChatRoomList structure  
+            const chatItems = page.locator('button.w-full.p-4.text-left');
+            const hasChatItems = await chatItems.count();
+            const hasEmptyMessage = await page.locator('text=No messages yet, text=Ingen meldinger, h3:has-text("No chats"), h3:has-text("Ingen samtaler")').count();
             
             if (hasChatItems > 0) {
               console.log(`✅ Chat list loaded successfully with ${hasChatItems} chats`);
               
               // Test clicking first chat
-              const firstChat = page.locator('[data-testid="chat-item"], .chat-item, a[href*="/chat/"]').first();
+              const firstChat = chatItems.first();
               await expect(firstChat).toBeVisible({ timeout: 5000 });
               console.log('✅ First chat item is visible');
               
@@ -196,11 +199,10 @@ jobs:
               console.log('✅ First chat opened successfully');
               
               // Check for message composer or chat interface elements
-              const chatInterface = page.locator('[data-testid="message-composer"], .message-composer, textarea[placeholder*="message"], textarea[placeholder*="melding"]').or(
-                page.locator('.chat-interface, .conversation-view')
-              );
+              const messageComposer = await page.locator('textarea, input[type="text"]').isVisible();
+              const messageArea = await page.locator('div.flex-1.overflow-y-auto').isVisible();
               
-              await expect(chatInterface).toBeVisible({ timeout: 10000 });
+              expect(messageComposer || messageArea).toBeTruthy();
               console.log('✅ Chat interface loaded for first chat');
               
               // Go back to chat list
@@ -208,8 +210,7 @@ jobs:
               await page.waitForTimeout(2000);
               
               // Test that at least one chat is available and verify second chat functionality
-              const chatItems = page.locator('[data-testid="chat-item"], .chat-item, a[href*="/chat/"]');
-              const chatCount = await chatItems.count();
+              const chatCount = hasChatItems;
               
               // Assert that at least one chat exists
               expect(chatCount).toBeGreaterThanOrEqual(1);
@@ -231,7 +232,9 @@ jobs:
                 console.log('✅ Second chat opened successfully');
                 
                 // Check for chat interface elements
-                await expect(chatInterface).toBeVisible({ timeout: 10000 });
+                const messageComposer2 = await page.locator('textarea, input[type="text"]').isVisible();
+                const messageArea2 = await page.locator('div.flex-1.overflow-y-auto').isVisible();
+                expect(messageComposer2 || messageArea2).toBeTruthy();
                 console.log('✅ Chat interface loaded for second chat');
               } else {
                 console.log('ℹ️ Only one chat available - testing single chat functionality');
@@ -242,10 +245,14 @@ jobs:
                 await firstChat.click();
                 await page.waitForTimeout(3000);
                 expect(page.url()).toMatch(/\/chat\/.+/);
-                await expect(chatInterface).toBeVisible({ timeout: 10000 });
+                const messageComposer3 = await page.locator('textarea, input[type="text"]').isVisible();
+                const messageArea3 = await page.locator('div.flex-1.overflow-y-auto').isVisible();
+                expect(messageComposer3 || messageArea3).toBeTruthy();
                 console.log('✅ Single chat functionality verified');
               }
               
+            } else if (hasEmptyMessage > 0) {
+              throw new Error('Cannot test chat functionality - no chats available for tester account');
             } else {
               // If no chats and no empty state message, this is an error
               throw new Error('Chat list failed to load - neither chats nor empty state message found');

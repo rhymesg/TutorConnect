@@ -103,7 +103,9 @@ jobs:
             });
             
             if (!setupResponse.ok()) {
-              console.log('⚠️ Could not setup test user, proceeding anyway...');
+              const setupError = await setupResponse.text().catch(() => 'Unknown error');
+              console.log(`⚠️ Could not setup test user (${setupResponse.status()}): ${setupError}`);
+              console.log('⚠️ Proceeding anyway, but login might fail...');
             } else {
               console.log('✅ Test user setup complete');
             }
