@@ -1,9 +1,19 @@
+# 🧭 Navigation E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for website navigation and routing:
+# - Header navigation links (Registrer deg, Finn en lærer, Finn en student, Om oss)
+# - Footer navigation links (Personvern, Vilkår og betingelser, Kontakt)
+# - Registration page navigation from multiple entry points
+# - Logo/brand navigation back to homepage
+# - Page loading verification for all target pages
+# - URL routing validation and anchor link functionality
+# - Cross-page navigation flow without authentication required
+# - Uses Playwright with Chromium browser on production build
+
 name: Navigation E2E Test
 
 on:
   pull_request:
-    branches: [ main ]
-  push:
     branches: [ main ]
 
 env:

@@ -1,3 +1,14 @@
+# 🔐 Login E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for the authentication system:
+# - Complete login flow testing with test user account (tester@tutorconnect.no)
+# - UI state validation after login (header buttons change from login/register to user menu)
+# - Local storage token verification and management
+# - Logout functionality testing and state cleanup
+# - User menu dropdown interaction testing
+# - Authentication error handling for server/database issues
+# - Uses Playwright with Chromium browser on production build
+
 name: Login E2E Test
 
 on:

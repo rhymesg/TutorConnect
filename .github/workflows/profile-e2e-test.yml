@@ -1,3 +1,14 @@
+# 👤 Profile E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for profile management functionality:
+# - User profile page loading and navigation testing
+# - Privacy settings toggle functionality (gender, location visibility)
+# - Profile field editing (name, bio) with inline edit/save interactions
+# - Public profile popup window testing with navigation buttons
+# - Profile update persistence and UI state management
+# - Requires authenticated user session (login before profile tests)
+# - Uses Playwright with Chromium browser on production build
+
 name: Profile E2E Test
 
 on:
