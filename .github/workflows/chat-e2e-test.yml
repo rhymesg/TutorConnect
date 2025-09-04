@@ -212,8 +212,8 @@ jobs:
             // Wait for chat interface to load
             await page.waitForTimeout(3000);
             
-            // Verify we're now in a specific chat
-            expect(page.url()).toMatch(/\/chat\/.+/);
+            // Verify we're now in a specific chat (URL should contain chat ID as query parameter)
+            expect(page.url()).toMatch(/\/chat\?id=.+/);
             console.log('✅ First chat opened successfully');
             
             // Check for message composer or chat interface elements
@@ -237,8 +237,8 @@ jobs:
             // Wait for chat interface to load
             await page.waitForTimeout(3000);
             
-            // Verify we're now in a different chat
-            expect(page.url()).toMatch(/\/chat\/.+/);
+            // Verify we're now in a different chat (URL should contain different chat ID)
+            expect(page.url()).toMatch(/\/chat\?id=.+/);
             console.log('✅ Second chat opened successfully');
             
             // Check for chat interface elements
