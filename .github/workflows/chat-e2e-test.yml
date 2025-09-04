@@ -207,10 +207,17 @@ jobs:
               await page.goBack();
               await page.waitForTimeout(2000);
               
-              // Test clicking second chat if it exists
-              const secondChat = page.locator('[data-testid="chat-item"], .chat-item, a[href*="/chat/"]').nth(1);
+              // Test that at least one chat is available and verify second chat functionality
+              const chatItems = page.locator('[data-testid="chat-item"], .chat-item, a[href*="/chat/"]');
+              const chatCount = await chatItems.count();
               
-              if (await secondChat.count() > 0) {
+              // Assert that at least one chat exists
+              expect(chatCount).toBeGreaterThanOrEqual(1);
+              console.log(`✅ Found ${chatCount} chat(s) available`);
+              
+              // Test second chat if multiple chats exist
+              if (chatCount > 1) {
+                const secondChat = chatItems.nth(1);
                 await expect(secondChat).toBeVisible({ timeout: 5000 });
                 console.log('✅ Second chat item is visible');
                 
@@ -227,7 +234,16 @@ jobs:
                 await expect(chatInterface).toBeVisible({ timeout: 10000 });
                 console.log('✅ Chat interface loaded for second chat');
               } else {
-                console.log('ℹ️ Only one chat available, skipping second chat test');
+                console.log('ℹ️ Only one chat available - testing single chat functionality');
+                
+                // Verify the single chat is functional
+                const firstChat = chatItems.first();
+                await expect(firstChat).toBeVisible({ timeout: 5000 });
+                await firstChat.click();
+                await page.waitForTimeout(3000);
+                expect(page.url()).toMatch(/\/chat\/.+/);
+                await expect(chatInterface).toBeVisible({ timeout: 10000 });
+                console.log('✅ Single chat functionality verified');
               }
               
             } else {

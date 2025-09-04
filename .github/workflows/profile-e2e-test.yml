@@ -119,9 +119,8 @@ jobs:
               page.click('button[type="submit"]')
             ]);
             
-            if (loginResponse && loginResponse.status() !== 200) {
-              console.log('Login failed, skipping profile test');
-              return;
+            if (loginResponse) {
+              expect(loginResponse.status()).toBe(200);
             }
             
             await page.waitForTimeout(2000);
@@ -132,12 +131,9 @@ jobs:
           });
 
           test('should toggle privacy settings and edit profile fields', async ({ page }) => {
-            // Check if we're on profile page
+            // Verify we're on profile page
             const currentUrl = await page.url();
-            if (!currentUrl.includes('/profile')) {
-              console.log('Not on profile page, skipping test');
-              return;
-            }
+            expect(currentUrl).toContain('/profile');
 
             console.log('✅ Successfully navigated to profile page');
 
