@@ -24,6 +24,7 @@ import { getAgeGroupLabels } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 import { useAuth } from '@/contexts/AuthContext';
+import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
 
 interface PostDetailClientProps {
   post: PostWithDetails;
@@ -37,6 +38,10 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
   const subjectName = getSubjectLabel(post.subject);
   const ageGroupText = getAgeGroupLabels(post.ageGroups);
   const isOwner = user?.id === post.userId;
+  const postStatus = post.status || 'AKTIV'; // Fallback for existing posts
+  
+  // Debug log to check post status
+  console.log('Post status:', post.status, 'Fallback status:', postStatus);
   
   // Format available days
   const formatAvailableDays = (days: string[]) => {
@@ -82,24 +87,35 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               Tilbake til annonser
             </Link>
             
-            {/* Post Type Badge */}
-            <span className={`
-              inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-              ${isTutorPost 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-blue-100 text-blue-800'
-              }
-            `}>
-              {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
-            </span>
+            {/* Status and Type Badges */}
+            <div className="flex items-center gap-2">
+              {/* Status Badge */}
+              <span className={`
+                inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                ${getPostStatusColor(postStatus as any)}
+              `}>
+                {getPostStatusLabel(postStatus as any)}
+              </span>
+              
+              {/* Post Type Badge */}
+              <span className={`
+                inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
+                ${isTutorPost 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-blue-100 text-blue-800'
+                }
+              `}>
+                {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-5 gap-8">
           {/* Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Title and Subject */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex justify-between items-start mb-4">
@@ -203,7 +219,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
           </div>
 
           {/* Sidebar */}
-          <div className="space-y-6">
+          <div className="lg:col-span-2 space-y-6">
             {/* Pricing */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">

@@ -4,7 +4,7 @@
  */
 
 import { z } from 'zod';
-import { PostType, Subject, AgeGroup, NorwegianRegion } from '@prisma/client';
+import { PostType, PostStatus, Subject, AgeGroup, NorwegianRegion } from '@prisma/client';
 import { forms } from '@/lib/translations';
 
 // Helper function to create Norwegian error messages
@@ -21,6 +21,10 @@ const norMsg = (key: string, params?: Record<string, any>) => {
 // Base schemas with Norwegian error messages
 export const PostTypeFormSchema = z.enum(['TEACHER', 'STUDENT'], {
   errorMap: () => ({ message: 'Ugyldig annonse-type' })
+});
+
+export const PostStatusFormSchema = z.enum(['AKTIV', 'PAUSET'], {
+  errorMap: () => ({ message: 'Ugyldig annonse-status' })
 });
 
 // Updated subjects to match form options
@@ -167,6 +171,7 @@ export const SpecificLocationFormSchema = z.string()
 // Enhanced create post schema with Norwegian validation
 export const CreatePostFormSchema = z.object({
   type: PostTypeFormSchema,
+  status: PostStatusFormSchema.optional().default('AKTIV'),
   title: TitleFormSchema,
   subject: SubjectFormSchema,
   customSubject: z.string()
@@ -277,6 +282,7 @@ export const CreatePostFormSchema = z.object({
 // Update schema (similar validation but all fields optional)
 export const UpdatePostFormSchema = z.object({
   type: PostTypeFormSchema.optional(),
+  status: PostStatusFormSchema.optional(),
   title: TitleFormSchema.optional(),
   subject: SubjectFormSchema.optional(),
   customSubject: z.string()
