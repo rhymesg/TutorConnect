@@ -11,6 +11,7 @@ import type {
   Gender,
   PrivacySetting,
   PostType,
+  PostStatus,
   Subject,
   AgeGroup,
   AppointmentStatus,
@@ -33,6 +34,7 @@ export type {
   Gender,
   PrivacySetting,
   PostType,
+  PostStatus,
   Subject,
   AgeGroup,
   AppointmentStatus,
@@ -134,6 +136,7 @@ export interface PostFilters {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  includePaused?: boolean;
 }
 
 export interface UserFilters {

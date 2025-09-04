@@ -6,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PostWithDetails } from '@/types/database';
 import { PostListLoading } from '@/components/posts/LoadingStates';
 import { getSubjectLabel } from '@/constants/subjects';
+import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
 import { 
   DocumentTextIcon,
   MapPinIcon,
@@ -156,10 +157,15 @@ export default function MyPostsPageClient() {
             <Link href={`/posts/${post.id}`} className="flex flex-col flex-1">
               <div className="p-6 flex-1">
                 {/* Type Badge */}
-                <div className="mb-3">
+                <div className="mb-3 flex items-center gap-2">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPostTypeBadgeColor(post.type)}`}>
                     {getPostTypeLabel(post.type)}
                   </span>
+                  {post.status === 'PAUSET' && (
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${getPostStatusColor('PAUSET')}`}>
+                      {getPostStatusLabel('PAUSET')}
+                    </span>
+                  )}
                 </div>
 
                 {/* Title */}
@@ -181,9 +187,13 @@ export default function MyPostsPageClient() {
                     <span>{post.location || post.region}</span>
                   </div>
                   
-                  {post.price && (
+                  {(post.hourlyRate || post.hourlyRateMin) && (
                     <div className="flex items-center text-sm text-neutral-900 font-medium">
-                      <span>{Math.round(post.price)} kr/time</span>
+                      {post.hourlyRate ? (
+                        <span>{Math.round(Number(post.hourlyRate))} kr/time</span>
+                      ) : (
+                        <span>{Math.round(Number(post.hourlyRateMin))} - {Math.round(Number(post.hourlyRateMax))} kr/time</span>
+                      )}
                     </div>
                   )}
                 </div>

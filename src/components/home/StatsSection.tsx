@@ -16,13 +16,25 @@ export default function StatsSection() {
   useEffect(() => {
     async function fetchStats() {
       try {
+        console.log('Fetching stats from /api/stats...');
         const response = await fetch('/api/stats');
+        console.log('Response status:', response.status, response.statusText);
+        
         if (response.ok) {
           const data = await response.json();
+          console.log('Stats data received:', data);
           setStats(data);
+        } else {
+          const errorText = await response.text();
+          console.error('API response not ok:', response.status, errorText);
         }
       } catch (error) {
         console.error('Failed to fetch stats:', error);
+        console.error('Error details:', {
+          name: error instanceof Error ? error.name : 'Unknown',
+          message: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined
+        });
         // Keep stats as null to show fallback content
       } finally {
         setLoading(false);

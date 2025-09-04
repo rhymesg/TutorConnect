@@ -251,7 +251,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
       await tx.message.create({
         data: {
           content: `${user.name} added ${addedUser.name} to the chat`,
-          type: MessageType.SYSTEM_MESSAGE,
+          
           chatId,
           senderId: user.id,
         },
@@ -383,7 +383,7 @@ async function handlePATCH(request: NextRequest, { params }: { params: RoutePara
       await tx.message.create({
         data: {
           content: systemMessageContent,
-          type: MessageType.SYSTEM_MESSAGE,
+          
           chatId,
           senderId: user.id,
         },

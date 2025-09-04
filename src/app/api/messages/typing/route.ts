@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { verifyJWT } from '@/lib/jwt';
 import { APIError } from '@/lib/errors';
 
-const prisma = new PrismaClient();
 
 // In-memory store for typing indicators (in production, use Redis)
 const typingUsers = new Map<string, Map<string, { timestamp: number; userName: string }>>();

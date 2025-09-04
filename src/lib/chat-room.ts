@@ -1,8 +1,7 @@
-import { PrismaClient, MessageType, Subject, PostType, NorwegianRegion } from '@prisma/client';
+import { Subject, PostType, NorwegianRegion } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { ForbiddenError, BadRequestError, NotFoundError } from './errors';
 import { validateChatParticipantCompatibility, validateChatMessageContent, CHAT_PARTICIPANT_LIMITS } from '@/schemas/chat';
-
-const prisma = new PrismaClient();
 
 /**
  * Chat Room Management Utilities
@@ -286,7 +285,6 @@ export async function createChatRoom(options: CreateChatRoomOptions): Promise<Ch
       await tx.message.create({
         data: {
           content: initialMessage,
-          type: MessageType.TEXT,
           chatId: chat.id,
           senderId: creatorId,
         },
@@ -309,7 +307,6 @@ export async function createChatRoom(options: CreateChatRoomOptions): Promise<Ch
     await tx.message.create({
       data: {
         content: `${creator?.name || 'User'} created this chat${postInfo ? ` for "${postInfo.title}"` : ''}`,
-        type: MessageType.SYSTEM_MESSAGE,
         chatId: chat.id,
         senderId: creatorId,
       },
@@ -473,7 +470,6 @@ export async function archiveChat(chatId: string, userId: string): Promise<void>
   await prisma.message.create({
     data: {
       content: `${user?.name || 'User'} archived this chat`,
-      type: MessageType.SYSTEM_MESSAGE,
       chatId,
       senderId: userId,
     },

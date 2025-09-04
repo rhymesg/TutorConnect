@@ -1,37 +1,68 @@
-/**
- * Individual Post API endpoints
- * Handles GET, PATCH, and DELETE operations for specific posts
- */
-
-import { NextRequest } from 'next/server';
-import { PrismaClient, Prisma } from '@prisma/client';
-import { 
-  createAPIHandler, 
-  createSuccessResponse,
-  APIContext
-} from '@/lib/api-handler';
-import { UpdatePostSchema, PostIdSchema } from '@/schemas/post';
-import { APIError } from '@/lib/errors';
-
-const prisma = new PrismaClient();
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { cookies } from 'next/headers';
+import { verifyAccessToken } from '@/lib/jwt';
 
 /**
- * GET /api/posts/[postId] - Get individual post with full details
+ * Get current user from JWT token (either from Authorization header or cookie)
  */
-async function handleGetPost(
-  request: NextRequest,
-  context: APIContext,
-  params: any
-) {
-  const { user } = context;
-  const { postId } = params;
+async function getCurrentUser(request: NextRequest) {
+  let accessToken: string | undefined;
   
+  // First try Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    accessToken = authHeader.substring(7);
+    console.log('Using token from Authorization header');
+  }
+  
+  // Fallback to cookie
+  if (!accessToken) {
+    const cookieStore = await cookies();
+    accessToken = cookieStore.get('accessToken')?.value;
+    if (accessToken) {
+      console.log('Using token from cookie');
+    }
+  }
+  
+  if (!accessToken) {
+    console.log('No token found in header or cookie');
+    return null;
+  }
+
   try {
+    const payload = await verifyAccessToken(accessToken);
+    return payload;
+  } catch (error) {
+    console.error('JWT verification error:', error);
+    return null;
+  }
+}
+
+/**
+ * GET /api/posts/[postId]
+ * Fetch a single post for editing (owner check included)
+ */
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Promise<{ postId: string }> }
+) {
+  try {
+    // Await params (Next.js 15 requirement)
+    const { postId } = await params;
+    
+    // Verify authentication
+    const user = await getCurrentUser(req);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Ikke autorisert' },
+        { status: 401 }
+      );
+    }
+
+    // Fetch the post
     const post = await prisma.post.findUnique({
-      where: {
-        id: postId,
-        isActive: true, // Only return active posts
-      },
+      where: { id: postId },
       include: {
         user: {
           select: {
@@ -40,41 +71,10 @@ async function handleGetPost(
             profileImage: true,
             isActive: true,
             region: true,
-            school: true,
-            degree: true,
-            certifications: true,
-            bio: true,
-            // Privacy-aware fields
-            gender: true,
-            birthYear: true,
-            privacyGender: true,
-            privacyAge: true,
-            privacyDocuments: true,
-            privacyContact: true,
-          },
-        },
-        chats: {
-          where: {
-            isActive: true,
-            // Only include chats if user is authenticated and is a participant
-            ...(user && {
-              participants: {
-                some: {
-                  userId: user.id,
-                  isActive: true,
-                },
-              },
-            }),
-          },
-          select: {
-            id: true,
-            createdAt: true,
-            lastMessageAt: true,
-            _count: {
-              select: {
-                messages: true,
-              },
-            },
+            teacherSessions: true,
+            teacherStudents: true,
+            studentSessions: true,
+            studentTeachers: true,
           },
         },
         _count: {
@@ -86,101 +86,101 @@ async function handleGetPost(
     });
 
     if (!post) {
-      throw new APIError('Post not found', 404, 'POST_NOT_FOUND');
+      return NextResponse.json(
+        { error: 'Annonsen ble ikke funnet' },
+        { status: 404 }
+      );
     }
 
-    // Apply privacy settings to user data
-    const sanitizedUser = {
-      ...post.user,
-      gender: post.user.privacyGender === 'PRIVATE' ? undefined : post.user.gender,
-      birthYear: post.user.privacyAge === 'PRIVATE' ? undefined : post.user.birthYear,
-      school: post.user.privacyDocuments === 'PRIVATE' ? undefined : post.user.school,
-      degree: post.user.privacyDocuments === 'PRIVATE' ? undefined : post.user.degree,
-      certifications: post.user.privacyDocuments === 'PRIVATE' ? undefined : post.user.certifications,
-    };
+    // Check if user is the owner of the post
+    if (post.userId !== (user.sub || user.userId || user.id)) {
+      return NextResponse.json(
+        { error: 'Du har ikke tilgang til å redigere denne annonsen' },
+        { status: 403 }
+      );
+    }
 
-    const responseData = {
+    // Convert Decimal to number for client component compatibility
+    const serializedPost = {
       ...post,
-      user: sanitizedUser,
-      // Add convenience fields
-      isOwner: user?.id === post.user.id,
-      hasActiveChat: post.chats.length > 0,
-      canContact: post.user.privacyContact !== 'PRIVATE' || user?.id === post.user.id,
+      hourlyRate: post.hourlyRate ? Number(post.hourlyRate) : null,
+      hourlyRateMin: post.hourlyRateMin ? Number(post.hourlyRateMin) : null,
+      hourlyRateMax: post.hourlyRateMax ? Number(post.hourlyRateMax) : null,
     };
 
-    return createSuccessResponse(
-      responseData,
-      'Post retrieved successfully',
-      {
-        viewedAt: new Date().toISOString(),
-        postType: post.type,
-        subject: post.subject,
-        location: post.location,
-      }
-    );
+    return NextResponse.json(serializedPost);
   } catch (error) {
-    console.error('Error retrieving post:', error);
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new Error('Failed to retrieve post');
+    console.error('Error fetching post:', error);
+    return NextResponse.json(
+      { error: 'Noe gikk galt ved henting av annonsen' },
+      { status: 500 }
+    );
   }
 }
 
 /**
- * PATCH /api/posts/[postId] - Update post (only by owner)
+ * PATCH /api/posts/[postId] - Update a post
  */
-async function handleUpdatePost(
+export async function PATCH(
   request: NextRequest,
-  context: APIContext,
-  params: any
+  { params }: { params: Promise<{ postId: string }> }
 ) {
-  const { user, validatedData } = context;
-  const { postId } = params;
-  
-  if (!user) {
-    throw new APIError('Authentication required', 401, 'UNAUTHORIZED');
-  }
-
-  const updateData = validatedData!.body;
-
   try {
-    // First, verify the post exists and user owns it
+    // Await params (Next.js 15 requirement)
+    const { postId } = await params;
+    
+    // Verify authentication
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Ikke autorisert' },
+        { status: 401 }
+      );
+    }
+
+    // Get request body
+    const body = await request.json();
+
+    // Check if user owns the post
     const existingPost = await prisma.post.findUnique({
       where: { id: postId },
-      select: { userId: true, isActive: true },
+      select: { userId: true }
     });
 
     if (!existingPost) {
-      throw new APIError('Post not found', 404, 'POST_NOT_FOUND');
+      return NextResponse.json(
+        { error: 'Annonsen ble ikke funnet' },
+        { status: 404 }
+      );
     }
 
-    if (!existingPost.isActive) {
-      throw new APIError('Cannot update inactive post', 400, 'POST_INACTIVE');
+    if (existingPost.userId !== (user.sub || user.userId || user.id)) {
+      return NextResponse.json(
+        { error: 'Du har ikke tilgang til å redigere denne annonsen' },
+        { status: 403 }
+      );
     }
 
-    if (existingPost.userId !== user.id) {
-      throw new APIError('Not authorized to update this post', 403, 'FORBIDDEN');
-    }
-
-    // Prepare update data with proper Decimal conversion for pricing
-    const updatePayload: Prisma.PostUpdateInput = {
-      ...updateData,
-      ...(updateData.hourlyRate !== undefined && {
-        hourlyRate: updateData.hourlyRate ? new Prisma.Decimal(updateData.hourlyRate) : null,
-      }),
-      ...(updateData.hourlyRateMin !== undefined && {
-        hourlyRateMin: updateData.hourlyRateMin ? new Prisma.Decimal(updateData.hourlyRateMin) : null,
-      }),
-      ...(updateData.hourlyRateMax !== undefined && {
-        hourlyRateMax: updateData.hourlyRateMax ? new Prisma.Decimal(updateData.hourlyRateMax) : null,
-      }),
-      updatedAt: new Date(),
-    };
-
+    // Update the post
     const updatedPost = await prisma.post.update({
       where: { id: postId },
-      data: updatePayload,
+      data: {
+        title: body.title,
+        description: body.description,
+        subject: body.subject,
+        customSubject: body.customSubject,
+        ageGroups: body.ageGroups,
+        location: body.location,
+        postnummer: body.postnummer,
+        hourlyRate: body.hourlyRate ? parseFloat(body.hourlyRate) : null,
+        hourlyRateMin: body.hourlyRateMin ? parseFloat(body.hourlyRateMin) : null,
+        hourlyRateMax: body.hourlyRateMax ? parseFloat(body.hourlyRateMax) : null,
+        currency: body.currency || 'NOK',
+        availableDays: body.availableDays,
+        startTime: body.startTime,
+        endTime: body.endTime,
+        updatedAt: new Date(),
+      },
       include: {
         user: {
           select: {
@@ -189,6 +189,10 @@ async function handleUpdatePost(
             profileImage: true,
             isActive: true,
             region: true,
+            teacherSessions: true,
+            teacherStudents: true,
+            studentSessions: true,
+            studentTeachers: true,
           },
         },
         _count: {
@@ -199,138 +203,20 @@ async function handleUpdatePost(
       },
     });
 
-    return createSuccessResponse(
-      updatedPost,
-      'Post updated successfully',
-      {
-        updatedFields: Object.keys(updateData),
-        updatedAt: updatedPost.updatedAt,
-      }
-    );
+    // Convert Decimal to number for client component compatibility
+    const serializedPost = {
+      ...updatedPost,
+      hourlyRate: updatedPost.hourlyRate ? Number(updatedPost.hourlyRate) : null,
+      hourlyRateMin: updatedPost.hourlyRateMin ? Number(updatedPost.hourlyRateMin) : null,
+      hourlyRateMax: updatedPost.hourlyRateMax ? Number(updatedPost.hourlyRateMax) : null,
+    };
+
+    return NextResponse.json(serializedPost);
   } catch (error) {
     console.error('Error updating post:', error);
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new Error('Failed to update post');
-  }
-}
-
-/**
- * DELETE /api/posts/[postId] - Soft delete post (deactivate)
- */
-async function handleDeletePost(
-  request: NextRequest,
-  context: APIContext,
-  params: any
-) {
-  const { user } = context;
-  const { postId } = params;
-  
-  if (!user) {
-    throw new APIError('Authentication required', 401, 'UNAUTHORIZED');
-  }
-
-  try {
-    // Verify the post exists and user owns it
-    const existingPost = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { 
-        userId: true, 
-        isActive: true,
-        _count: {
-          select: {
-            chats: {
-              where: {
-                isActive: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!existingPost) {
-      throw new APIError('Post not found', 404, 'POST_NOT_FOUND');
-    }
-
-    if (existingPost.userId !== user.id) {
-      throw new APIError('Not authorized to delete this post', 403, 'FORBIDDEN');
-    }
-
-    if (!existingPost.isActive) {
-      throw new APIError('Post is already inactive', 400, 'POST_ALREADY_INACTIVE');
-    }
-
-    // Soft delete - set isActive to false
-    // Note: We keep related chats active but mark the post as inactive
-    const deletedPost = await prisma.post.update({
-      where: { id: postId },
-      data: {
-        isActive: false,
-        updatedAt: new Date(),
-      },
-      select: {
-        id: true,
-        title: true,
-        isActive: true,
-        updatedAt: true,
-      },
-    });
-
-    return createSuccessResponse(
-      {
-        postId: deletedPost.id,
-        title: deletedPost.title,
-        isActive: deletedPost.isActive,
-        deletedAt: deletedPost.updatedAt,
-      },
-      'Post deleted successfully',
-      {
-        affectedChats: existingPost._count.chats,
-        note: 'Post has been deactivated. Existing chats remain active.',
-      }
+    return NextResponse.json(
+      { error: 'Noe gikk galt ved oppdatering av annonsen' },
+      { status: 500 }
     );
-  } catch (error) {
-    console.error('Error deleting post:', error);
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new Error('Failed to delete post');
   }
 }
-
-// Export handlers with proper middleware
-export const GET = createAPIHandler(handleGetPost, {
-  optionalAuth: true,
-  validation: {
-    params: PostIdSchema,
-  },
-  rateLimit: {
-    maxAttempts: 30,
-    windowMs: 60 * 1000, // 1 minute
-  },
-});
-
-export const PATCH = createAPIHandler(handleUpdatePost, {
-  requireAuth: true,
-  validation: {
-    params: PostIdSchema,
-    body: UpdatePostSchema,
-  },
-  rateLimit: {
-    maxAttempts: 10,
-    windowMs: 60 * 1000, // 1 minute
-  },
-});
-
-export const DELETE = createAPIHandler(handleDeletePost, {
-  requireAuth: true,
-  validation: {
-    params: PostIdSchema,
-  },
-  rateLimit: {
-    maxAttempts: 5,
-    windowMs: 60 * 1000, // 1 minute
-  },
-});

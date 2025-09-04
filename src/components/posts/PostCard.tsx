@@ -9,6 +9,7 @@ import { getSubjectLabel } from '@/constants/subjects';
 import { getAgeGroupLabels } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
+import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -88,15 +89,26 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
       {/* Post Type Badge */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center justify-between">
-          <span className={`
-            inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-            ${isTutorPost 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-blue-100 text-blue-800'
-            }
-          `}>
-{isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
-          </span>
+          <div className="flex items-center gap-2">
+            {post.status === 'PAUSET' ? (
+              <span className={`
+                inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                ${getPostStatusColor('PAUSET')}
+              `}>
+                {getPostStatusLabel('PAUSET')}
+              </span>
+            ) : (
+              <span className={`
+                inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                ${isTutorPost 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-blue-100 text-blue-800'
+                }
+              `}>
+                {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+              </span>
+            )}
+          </div>
           <span className="text-sm text-neutral-500">
             {formatters.date(new Date(post.createdAt))}
           </span>

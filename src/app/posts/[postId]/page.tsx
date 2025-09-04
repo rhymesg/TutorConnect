@@ -4,9 +4,9 @@ import PostDetailClient from './PostDetailClient';
 import { getPostById } from '@/lib/actions/posts';
 
 interface PostPageProps {
-  params: {
+  params: Promise<{
     postId: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: PostPageProps): Promise<Metadata> {

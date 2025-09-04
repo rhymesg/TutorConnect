@@ -94,6 +94,7 @@ export default function SearchAndFiltersEnhanced({
       limit: filters.limit,
       sortBy: 'createdAt',
       sortOrder: 'desc',
+      includePaused: false,
     });
   };
 
@@ -105,7 +106,8 @@ export default function SearchAndFiltersEnhanced({
       filters.location || 
       filters.minRate || 
       filters.maxRate ||
-      filters.search
+      filters.search ||
+      filters.includePaused
     );
   };
 
@@ -117,6 +119,7 @@ export default function SearchAndFiltersEnhanced({
     if (filters.location) count++;
     if (filters.minRate || filters.maxRate) count++;
     if (filters.search) count++;
+    if (filters.includePaused) count++;
     return count;
   };
 
@@ -401,6 +404,25 @@ export default function SearchAndFiltersEnhanced({
         )}
       </div>
       */}
+
+      {/* Status Filter */}
+      <div>
+        <label className="block text-sm font-medium text-neutral-700 mb-3">
+          Status
+        </label>
+        <div className="flex items-center">
+          <input
+            id="include-paused"
+            type="checkbox"
+            checked={filters.includePaused || false}
+            onChange={(e) => updateFilter('includePaused', e.target.checked)}
+            className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500 focus:ring-offset-0"
+          />
+          <label htmlFor="include-paused" className="ml-3 text-sm text-neutral-700">
+            Inkluder pauserte annonser
+          </label>
+        </div>
+      </div>
     </div>
   );
 

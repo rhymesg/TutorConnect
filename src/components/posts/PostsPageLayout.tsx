@@ -25,6 +25,7 @@ export default function PostsPageLayout({
     sortBy: 'createdAt' as const,
     sortOrder: 'desc' as const,
     type: type,
+    includePaused: false,
   };
 
   // Handle post contact
@@ -38,7 +39,7 @@ export default function PostsPageLayout({
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="bg-neutral-50">
       {/* Page Header */}
       <div className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-12 sm:py-16">
@@ -64,7 +65,7 @@ export default function PostsPageLayout({
           onPostContact={handlePostContact}
           showSearchHistory={true}
           enableOfflineMode={true}
-          className="min-h-screen"
+          className=""
         />
       </Suspense>
     </div>

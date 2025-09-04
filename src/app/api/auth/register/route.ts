@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { registerUserSchema } from '@/schemas/auth';
 import { 
@@ -14,7 +14,6 @@ import { generateEmailVerificationToken, generateTokenPair } from '@/lib/jwt';
 import { AuthRateLimiter, getClientIP } from '@/middleware/auth';
 import { sendVerificationEmail } from '@/lib/email';
 
-const prisma = new PrismaClient();
 
 /**
  * POST /api/auth/register

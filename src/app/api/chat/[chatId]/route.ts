@@ -279,7 +279,7 @@ async function handlePATCH(request: NextRequest, { params }: { params: Promise<R
     await prisma.message.create({
       data: {
         content: `${user.name} left the chat`,
-        type: MessageType.SYSTEM_MESSAGE,
+        
         chatId,
         senderId: user.id,
       },
@@ -370,7 +370,7 @@ async function handleDELETE(request: NextRequest, { params }: { params: RoutePar
     await tx.message.create({
       data: {
         content: 'This chat has been deleted',
-        type: MessageType.SYSTEM_MESSAGE,
+        
         chatId,
         senderId: user.id,
       },

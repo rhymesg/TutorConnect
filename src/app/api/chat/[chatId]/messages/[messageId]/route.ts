@@ -1,12 +1,9 @@
 import { NextRequest } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
-import { MessageType } from '@prisma/client';
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
 
 // Update message schema
 const updateMessageSchema = z.object({
@@ -139,7 +136,6 @@ async function handleGET(request: NextRequest, { params }: { params: RouteParams
 
   const messageAge = Date.now() - message.sentAt.getTime();
   const canEdit = message.senderId === user.id && 
-    message.type === MessageType.TEXT &&
     messageAge < 15 * 60 * 1000; // 15 minutes
 
   const canDelete = message.senderId === user.id && 
@@ -187,10 +183,6 @@ async function handlePATCH(request: NextRequest, { params }: { params: RoutePara
     throw new BadRequestError('Message is too old to edit (15 minute limit)');
   }
 
-  // Only text messages can be edited
-  if (message.type !== MessageType.TEXT) {
-    throw new BadRequestError('Only text messages can be edited');
-  }
 
   // Validate input
   const { content } = updateMessageSchema.parse(body);
@@ -279,10 +271,6 @@ async function handleDELETE(request: NextRequest, { params }: { params: RoutePar
     throw new BadRequestError('Message is too old to delete (1 hour limit)');
   }
 
-  // System messages cannot be deleted
-  if (message.type === MessageType.SYSTEM_MESSAGE) {
-    throw new BadRequestError('System messages cannot be deleted');
-  }
 
   // Check if message has replies
   const replyCount = await prisma.message.count({
@@ -312,7 +300,6 @@ async function handleDELETE(request: NextRequest, { params }: { params: RoutePar
       where: { id: messageId },
       data: {
         content: '[Message deleted]',
-        type: MessageType.SYSTEM_MESSAGE,
         isEdited: true,
         editedAt: new Date(),
       },
