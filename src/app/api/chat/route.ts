@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { BadRequestError, NotFoundError } from '@/lib/errors';
-import { CreateChatData, ChatWithParticipants, MessageType } from "@prisma/client";
+import { CreateChatData, ChatWithParticipants } from "@prisma/client";
 import { z } from 'zod';
 import { 
   createChatRoom, 
@@ -12,7 +12,6 @@ import {
 } from '@/lib/chat-room';
 import { chat as chatTranslations } from '@/lib/translations';
 
-const prisma = new PrismaClient();
 
 // Chat creation schema
 const createChatSchema = z.object({

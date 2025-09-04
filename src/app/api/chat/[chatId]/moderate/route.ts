@@ -131,7 +131,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         await tx.message.create({
           data: {
             content: `⚠️ Warning: ${reason}`,
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: user.id,
           },
@@ -149,7 +149,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         await tx.message.create({
           data: {
             content: `🔇 Chat muted for ${duration} minutes. Reason: ${reason}`,
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: user.id,
           },
@@ -173,7 +173,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         await tx.message.create({
           data: {
             content: `🚫 Chat banned. Reason: ${reason}`,
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: user.id,
           },
@@ -201,7 +201,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
           },
           data: {
             content: '[Message deleted by moderator]',
-            type: MessageType.SYSTEM_MESSAGE,
+            
             isEdited: true,
             editedAt: new Date(),
           },
@@ -219,7 +219,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         await tx.message.create({
           data: {
             content: `📁 Chat archived. Reason: ${reason}`,
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: user.id,
           },
@@ -237,7 +237,7 @@ async function handlePOST(request: NextRequest, { params }: { params: RouteParam
         await tx.message.create({
           data: {
             content: `🔓 Chat restored by moderator`,
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: user.id,
           },
@@ -323,7 +323,7 @@ async function handleReport(request: NextRequest, { params }: { params: RoutePar
       await tx.message.create({
         data: {
           content: `Report submitted for review`,
-          type: MessageType.SYSTEM_MESSAGE,
+          
           chatId,
           senderId: user.id,
         },

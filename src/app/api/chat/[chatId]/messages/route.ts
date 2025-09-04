@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
-import { CreateMessageData, MessageType } from "@prisma/client";
 import { z } from 'zod';
-
-const prisma = new PrismaClient();
 
 // Send message schema
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
-  type: z.nativeEnum(MessageType).optional().default(MessageType.TEXT),
   appointmentId: z.string().optional(),
   replyToMessageId: z.string().optional(),
 });
@@ -22,7 +18,6 @@ const messageQuerySchema = z.object({
   limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 10),
   before: z.string().nullable().optional(), // Message ID for pagination
   after: z.string().nullable().optional(), // Message ID for pagination
-  type: z.nativeEnum(MessageType).optional(),
   search: z.string().nullable().optional(),
 });
 
@@ -75,22 +70,16 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
   await validateChatMessageAccess(chatId, user.id);
 
   // Validate query parameters
-  const { page, limit, before, after, type, search } = messageQuerySchema.parse({
+  const { page, limit, before, after, search } = messageQuerySchema.parse({
     page: searchParams.get('page'),
     limit: searchParams.get('limit'),
     before: searchParams.get('before'),
     after: searchParams.get('after'),
-    type: searchParams.get('type'),
     search: searchParams.get('search'),
   });
 
   // Build message query
   let messageWhere: any = { chatId };
-
-  // Add type filter
-  if (type) {
-    messageWhere.type = type;
-  }
 
   // Add search filter
   if (search) {
@@ -164,7 +153,7 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
       take: limit,
     }),
     search ? undefined : prisma.message.count({
-      where: { chatId, ...(type && { type }) },
+      where: { chatId },
     }),
   ]);
 
@@ -199,7 +188,6 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
         readBy: readBy.map(p => p.user),
         isOwnMessage: message.senderId === user.id,
         canEdit: message.senderId === user.id && 
-          message.type === MessageType.TEXT &&
           Date.now() - message.sentAt.getTime() < 15 * 60 * 1000, // 15 minutes
         canDelete: message.senderId === user.id ||
           // Add admin check here if needed
@@ -239,12 +227,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   const participant = await validateChatMessageAccess(chatId, user.id);
 
   // Validate input
-  const { content, type, appointmentId, replyToMessageId } = sendMessageSchema.parse(body);
+  const { content, appointmentId, replyToMessageId } = sendMessageSchema.parse(body);
 
-  // Additional validations based on message type
-  if (type === MessageType.APPOINTMENT_REQUEST && !appointmentId) {
-    throw new BadRequestError('Appointment ID required for appointment messages');
-  }
 
   if (appointmentId) {
     // Verify appointment exists and is related to this chat
@@ -308,7 +292,6 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     const message = await tx.message.create({
       data: {
         content,
-        type,
         chatId,
         senderId: user.id,
         appointmentId,
@@ -392,7 +375,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
         ...newMessage,
         readBy: [], // New message hasn't been read by others yet
         isOwnMessage: true,
-        canEdit: type === MessageType.TEXT,
+        canEdit: true,
         canDelete: true,
       },
     },

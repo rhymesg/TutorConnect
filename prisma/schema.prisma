@@ -143,7 +143,7 @@ model Message {
   id               String       @id @default(cuid())
   content          String
   content_search   String?
-  type             MessageType  @default(TEXT)
+  type             MessageType?
   chatId           String
   senderId         String
   isEdited         Boolean      @default(false)

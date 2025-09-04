@@ -136,7 +136,7 @@ async function bulkArchiveChats(
         await tx.message.create({
           data: {
             content: 'Chat archived',
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: userId,
           },
@@ -182,7 +182,7 @@ async function bulkUnarchiveChats(
         await tx.message.create({
           data: {
             content: 'Chat unarchived',
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: userId,
           },
@@ -246,7 +246,7 @@ async function bulkDeleteChats(
         await tx.message.create({
           data: {
             content: 'User left the chat',
-            type: MessageType.SYSTEM_MESSAGE,
+            
             chatId,
             senderId: userId,
           },
