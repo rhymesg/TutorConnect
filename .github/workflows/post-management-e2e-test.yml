@@ -97,20 +97,7 @@ jobs:
 
         test.describe('Post Management Flow', () => {
           test.beforeEach(async ({ page }) => {
-            // Setup test user first
-            const setupResponse = await page.request.post('/api/test/setup-tester', {
-              data: { password: process.env.TESTER_PASSWORD || 'defaultPassword123!' }
-            });
-            
-            if (!setupResponse.ok()) {
-              const setupError = await setupResponse.text().catch(() => 'Unknown error');
-              console.log(`⚠️ Could not setup test user (${setupResponse.status()}): ${setupError}`);
-              console.log('⚠️ Proceeding anyway, but login might fail...');
-            } else {
-              console.log('✅ Test user setup complete');
-            }
-            
-            // Login
+            // Login with existing test user
             await page.goto('/auth/login');
             await page.fill('input[type="email"]', 'tester@tutorconnect.no');
             await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');

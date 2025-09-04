@@ -97,19 +97,6 @@ jobs:
 
         test.describe('Login Flow', () => {
           test('should login successfully and update header state', async ({ page }) => {
-            // Setup test user first
-            const setupResponse = await page.request.post('/api/test/setup-tester', {
-              data: { password: process.env.TESTER_PASSWORD || 'defaultPassword123!' }
-            });
-            
-            if (!setupResponse.ok()) {
-              const setupError = await setupResponse.text().catch(() => 'Unknown error');
-              console.log(`⚠️ Could not setup test user (${setupResponse.status()}): ${setupError}`);
-              console.log('⚠️ Proceeding anyway, but login might fail...');
-            } else {
-              console.log('✅ Test user setup complete');
-            }
-            
             // First visit home page to check initial header state
             await page.goto('/');
             
