@@ -147,17 +147,21 @@ jobs:
               throw new Error('Login failed - no tokens found in localStorage');
             }
             
-            // Try to find "Mine annonser" link like chat test finds "Mine samtaler"
-            const mineAnnonserButton = page.locator('text=Mine annonser').or(
-              page.locator('a[href="/profile/posts"]')
-            ).or(
-              page.locator('a:has-text("annonser")')
-            ).first();
+            // Follow login test pattern: look for user menu button first
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible({ timeout: 10000 });
+            console.log('✅ User menu button visible after login');
             
-            await expect(mineAnnonserButton).toBeVisible({ timeout: 10000 });
-            console.log('✅ Found "Mine annonser" link');
+            // Click user menu to open dropdown
+            await userMenuButton.click();
+            await page.waitForTimeout(1000);
             
-            await mineAnnonserButton.click();
+            // Look for "Mine annonser" in the dropdown (like login test looks for "Min side")
+            const mineAnnonserLink = page.locator('a:has-text("Mine annonser")');
+            await expect(mineAnnonserLink).toBeVisible({ timeout: 5000 });
+            console.log('✅ Found "Mine annonser" link in user menu');
+            
+            await mineAnnonserLink.click();
             await page.waitForTimeout(2000);
             
             // Verify we're on the correct page
