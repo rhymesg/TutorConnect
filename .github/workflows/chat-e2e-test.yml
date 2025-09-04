@@ -166,16 +166,6 @@ jobs:
               }
             }
             
-            // Check if chat list loads (either shows chats or empty state)
-            const chatListContainer = page.locator('[data-testid="chat-list"]').or(
-              page.locator('.chat-list')
-            ).or(
-              page.locator('main').or(page.locator('.container'))
-            );
-            
-            await expect(chatListContainer).toBeVisible({ timeout: 10000 });
-            console.log('✅ Chat list container is visible');
-            
             // Use post management test pattern - wait for specific structure to load
             // Based on ChatRoomList.tsx: div.divide-y.divide-gray-100 contains the chat buttons
             console.log('⏳ Looking for chat list container...');
