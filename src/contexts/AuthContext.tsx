@@ -56,6 +56,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         if (accessToken && refreshToken && userStr) {
           const user = JSON.parse(userStr);
+          
+          // Sync cookies with localStorage on load
+          document.cookie = `accessToken=${accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure=${location.protocol === 'https:'}; samesite=lax`;
+          document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${30 * 24 * 60 * 60}; secure=${location.protocol === 'https:'}; samesite=lax`;
+          
           setState({
             user,
             isLoading: false,
@@ -82,12 +87,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadAuthState();
   }, []);
 
-  // Save auth state to localStorage
+  // Save auth state to localStorage and cookies
   const saveAuthState = useCallback((user: User, accessToken: string, refreshToken: string) => {
     try {
       localStorage.setItem('accessToken', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(user));
+      
+      // Also set cookies for server-side access
+      document.cookie = `accessToken=${accessToken}; path=/; max-age=${7 * 24 * 60 * 60}; secure=${location.protocol === 'https:'}; samesite=lax`;
+      document.cookie = `refreshToken=${refreshToken}; path=/; max-age=${30 * 24 * 60 * 60}; secure=${location.protocol === 'https:'}; samesite=lax`;
       
       setState({
         user,
@@ -102,12 +111,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Clear auth state
+  // Clear auth state from localStorage and cookies
   const clearAuth = useCallback(() => {
     try {
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
+      
+      // Also clear cookies
+      document.cookie = 'accessToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'refreshToken=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
       
       setState({
         user: null,

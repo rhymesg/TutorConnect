@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useState, useOptimistic } from 'react';
+import { useActionState, useState, useOptimistic, useEffect } from 'react';
 import { 
   Save, 
   AlertTriangle,
@@ -17,6 +17,7 @@ import { createPostAction, updatePostAction, type PostFormState } from '@/lib/ac
 import PostFormFields19 from './PostFormFields19';
 import { PostWithDetails } from '@/types/database';
 import { education, forms, actions, posts } from '@/lib/translations';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PostForm19Props {
   mode: 'create' | 'edit';
@@ -35,6 +36,7 @@ export default function PostForm19({
   onCancel, 
   className = '' 
 }: PostForm19Props) {
+  const { accessToken } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
 
@@ -54,6 +56,14 @@ export default function PostForm19({
 
   // Network status tracking
   const updateOnlineStatus = () => setIsOnline(navigator.onLine);
+
+  // Handle successful form submission
+  useEffect(() => {
+    if (state?.success && state?.post && onSuccess) {
+      console.log('Form submission successful, calling onSuccess');
+      onSuccess(state.post);
+    }
+  }, [state?.success, state?.post, onSuccess]);
   
   // Enhanced form submission with optimistic updates
   const handleSubmitWithOptimistic = (formData: FormData) => {
@@ -206,14 +216,13 @@ export default function PostForm19({
                         onClick={async () => {
                           try {
                             console.log('Updating post status to PAUSET...');
-                            const token = localStorage.getItem('auth-token');
-                            console.log('Auth token:', token ? 'exists' : 'missing');
+                            console.log('Auth token:', accessToken ? 'exists' : 'missing');
                             
                             const response = await fetch(`/api/posts/${post?.id}/status`, {
                               method: 'PATCH',
                               headers: { 
                                 'Content-Type': 'application/json',
-                                'Authorization': token ? `Bearer ${token}` : ''
+                                'Authorization': accessToken ? `Bearer ${accessToken}` : ''
                               },
                               body: JSON.stringify({ status: 'PAUSET' })
                             });
@@ -244,14 +253,13 @@ export default function PostForm19({
                         onClick={async () => {
                           try {
                             console.log('Updating post status to AKTIV...');
-                            const token = localStorage.getItem('auth-token');
-                            console.log('Auth token:', token ? 'exists' : 'missing');
+                            console.log('Auth token:', accessToken ? 'exists' : 'missing');
                             
                             const response = await fetch(`/api/posts/${post?.id}/status`, {
                               method: 'PATCH',
                               headers: { 
                                 'Content-Type': 'application/json',
-                                'Authorization': token ? `Bearer ${token}` : ''
+                                'Authorization': accessToken ? `Bearer ${accessToken}` : ''
                               },
                               body: JSON.stringify({ status: 'AKTIV' })
                             });
