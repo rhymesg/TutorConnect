@@ -208,7 +208,7 @@ export async function updatePostAction(
       };
     }
 
-    if (existingPost.userId !== user.userId) {
+    if (existingPost.userId !== (user.sub || user.userId)) {
       return {
         error: 'Du har ikke tilgang til å redigere denne annonsen.',
       };

@@ -22,7 +22,7 @@ export default function NewPostPage() {
     <div className="min-h-screen bg-neutral-50">
       <Suspense fallback={
         <div className="flex items-center justify-center min-h-screen">
-          <LoadingSpinner size="large" />
+          <LoadingSpinner size="lg" />
         </div>
       }>
         <div className="container mx-auto px-4 py-8">

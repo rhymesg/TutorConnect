@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
 import { 
   MapPin, 
   Clock, 
@@ -16,7 +14,8 @@ import {
   ExternalLink,
   Star,
   Shield,
-  Award
+  Award,
+  PencilIcon
 } from 'lucide-react';
 import { PostWithDetails } from '@/types/database';
 import { formatters } from '@/lib/translations';
@@ -24,6 +23,7 @@ import { getSubjectLabel } from '@/constants/subjects';
 import { getAgeGroupLabels } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PostDetailClientProps {
   post: PostWithDetails;
@@ -31,14 +31,12 @@ interface PostDetailClientProps {
 
 export default function PostDetailClient({ post }: PostDetailClientProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [isCreatingChat, setIsCreatingChat] = useState(false);
-  const [chatError, setChatError] = useState<string | null>(null);
-  const router = useRouter();
-  const { user, isAuthenticated, refreshAuth } = useAuth();
+  const { user } = useAuth();
   
   const isTutorPost = post.type === 'TEACHER';
   const subjectName = getSubjectLabel(post.subject);
   const ageGroupText = getAgeGroupLabels(post.ageGroups);
+  const isOwner = user?.id === post.userId;
   
   // Format available days
   const formatAvailableDays = (days: string[]) => {
@@ -68,91 +66,6 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
     e.preventDefault();
     const { openProfilePopup } = require('@/constants/ui');
     openProfilePopup(post.userId);
-  };
-
-  const handleStartChat = async () => {
-    // Check if user is authenticated
-    if (!isAuthenticated || !user) {
-      router.push(`/auth/login?returnUrl=/posts/${post.id}`);
-      return;
-    }
-
-    // Check if trying to chat with own post
-    if (user.id === post.userId) {
-      setChatError('Du kan ikke starte en samtale med din egen annonse');
-      return;
-    }
-
-    setIsCreatingChat(true);
-    setChatError(null);
-
-    try {
-      // Try to refresh token first to ensure we have a valid token
-      const refreshed = await refreshAuth();
-      
-      // Get the fresh token after refresh
-      const accessToken = localStorage.getItem('accessToken');
-      
-      if (!refreshed || !accessToken) {
-        // If refresh failed, redirect to login
-        router.push(`/auth/login?returnUrl=/posts/${post.id}`);
-        return;
-      }
-
-      // Create chat via API (without initial message)
-      const response = await fetch(`/api/posts/${post.id}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
-          // No initial message - let users start their own conversation
-        }),
-      });
-
-      if (!response.ok) {
-        let errorMessage = 'Kunne ikke starte samtalen';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.error || errorMessage;
-          
-          // Handle specific authentication errors
-          if (response.status === 401) {
-            // Token is invalid or expired, redirect to login
-            localStorage.removeItem('accessToken');
-            router.push(`/auth/login?returnUrl=/posts/${post.id}`);
-            return;
-          }
-        } catch {
-          // If parsing error response fails, use status-based message
-          if (response.status === 401) {
-            errorMessage = 'Du må logge inn på nytt';
-          } else if (response.status === 400) {
-            errorMessage = 'Ugyldig forespørsel';
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
-      console.log('Chat creation response:', data);
-      
-      if (data.data.existing) {
-        // If chat already exists, navigate to it
-        router.push(`/chat?id=${data.data.chatId}`);
-      } else if (data.data.chat && data.data.chat.id) {
-        // Navigate to the new chat
-        router.push(`/chat?id=${data.data.chat.id}`);
-      } else {
-        throw new Error('Invalid response from chat creation');
-      }
-    } catch (error) {
-      console.error('Failed to start chat:', error);
-      setChatError(error instanceof Error ? error.message : 'En feil oppstod');
-    } finally {
-      setIsCreatingChat(false);
-    }
   };
 
   return (
@@ -189,9 +102,20 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
           <div className="lg:col-span-2 space-y-6">
             {/* Title and Subject */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h1 className="text-2xl font-bold text-neutral-900 mb-4">
-                {post.title}
-              </h1>
+              <div className="flex justify-between items-start mb-4">
+                <h1 className="text-2xl font-bold text-neutral-900">
+                  {post.title}
+                </h1>
+                {isOwner && (
+                  <Link
+                    href={`/posts/${post.id}/edit`}
+                    className="inline-flex items-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
+                  >
+                    <PencilIcon className="h-4 w-4 mr-2" />
+                    Rediger
+                  </Link>
+                )}
+              </div>
               
               <div className="flex flex-wrap gap-3 mb-6">
                 <span className="inline-flex items-center px-3 py-1.5 rounded-lg bg-brand-50 text-brand-700 font-medium">
@@ -375,38 +299,14 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             {/* Contact Button */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <button
-                onClick={handleStartChat}
-                disabled={isCreatingChat || user?.id === post.userId}
-                className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                  user?.id === post.userId
-                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
-                    : isCreatingChat
-                    ? 'bg-brand-400 text-white cursor-wait'
-                    : 'bg-brand-600 text-white hover:bg-brand-700'
-                }`}
+                className="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors"
               >
-                {isCreatingChat ? (
-                  <>
-                    <div className="w-5 h-5 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Starter samtale...
-                  </>
-                ) : (
-                  <>
-                    <MessageCircle className="w-5 h-5 mr-2" />
-                    {user?.id === post.userId ? 'Din egen annonse' : 'Start samtale'}
-                  </>
-                )}
+                <MessageCircle className="w-5 h-5 mr-2" />
+                Start samtale
               </button>
-              {!isAuthenticated && (
-                <p className="text-xs text-neutral-500 text-center mt-3">
-                  Du må være innlogget for å starte en samtale
-                </p>
-              )}
-              {chatError && (
-                <p className="text-xs text-red-500 text-center mt-3">
-                  {chatError}
-                </p>
-              )}
+              <p className="text-xs text-neutral-500 text-center mt-3">
+                Du må være innlogget for å starte en samtale
+              </p>
             </div>
 
             {/* Post Meta */}

@@ -181,9 +181,13 @@ export default function MyPostsPageClient() {
                     <span>{post.location || post.region}</span>
                   </div>
                   
-                  {post.price && (
+                  {(post.hourlyRate || post.hourlyRateMin) && (
                     <div className="flex items-center text-sm text-neutral-900 font-medium">
-                      <span>{Math.round(post.price)} kr/time</span>
+                      {post.hourlyRate ? (
+                        <span>{Math.round(Number(post.hourlyRate))} kr/time</span>
+                      ) : (
+                        <span>{Math.round(Number(post.hourlyRateMin))} - {Math.round(Number(post.hourlyRateMax))} kr/time</span>
+                      )}
                     </div>
                   )}
                 </div>
