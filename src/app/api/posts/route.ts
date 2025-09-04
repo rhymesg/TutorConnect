@@ -65,7 +65,8 @@ export async function GET(request: NextRequest) {
     }
 
     // CRITICAL: Add status filter - exclude PAUSET posts by default
-    if (!params.includePaused) {
+    // BUT: Don't filter by status for "Mine annonser" (when userId is provided)
+    if (!params.includePaused && !params.userId) {
       where.status = 'AKTIV';
     }
 
