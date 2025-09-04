@@ -198,14 +198,96 @@ export default function PostForm19({
             {/* Enhanced Actions */}
             <div className="flex items-center justify-between pt-6">
               <div className="flex items-center space-x-4">
-                <button
-                  type="button"
-                  onClick={() => setShowPreview(!showPreview)}
-                  className="inline-flex items-center px-4 py-2 text-sm text-neutral-600 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50"
-                >
-                  <Eye className="w-4 h-4 mr-2" />
-                  {showPreview ? actions.no.hidePreview : actions.no.preview}
-                </button>
+                {mode === 'edit' ? (
+                  <div className="flex items-center">
+                    {post?.status === 'AKTIV' || !post?.status ? (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            console.log('Updating post status to PAUSET...');
+                            const token = localStorage.getItem('auth-token');
+                            console.log('Auth token:', token ? 'exists' : 'missing');
+                            
+                            const response = await fetch(`/api/posts/${post?.id}/status`, {
+                              method: 'PATCH',
+                              headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': token ? `Bearer ${token}` : ''
+                              },
+                              body: JSON.stringify({ status: 'PAUSET' })
+                            });
+                            
+                            console.log('Response status:', response.status);
+                            
+                            if (response.ok) {
+                              const result = await response.json();
+                              console.log('Success:', result);
+                              window.location.reload();
+                            } else {
+                              const error = await response.json();
+                              console.error('Error response:', error);
+                              alert(`오류: ${error.error}`);
+                            }
+                          } catch (error) {
+                            console.error('Failed to update status:', error);
+                            alert('네트워크 오류가 발생했습니다.');
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-red-600 border border-red-300 hover:bg-red-50"
+                      >
+                        Set Pauset
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            console.log('Updating post status to AKTIV...');
+                            const token = localStorage.getItem('auth-token');
+                            console.log('Auth token:', token ? 'exists' : 'missing');
+                            
+                            const response = await fetch(`/api/posts/${post?.id}/status`, {
+                              method: 'PATCH',
+                              headers: { 
+                                'Content-Type': 'application/json',
+                                'Authorization': token ? `Bearer ${token}` : ''
+                              },
+                              body: JSON.stringify({ status: 'AKTIV' })
+                            });
+                            
+                            console.log('Response status:', response.status);
+                            
+                            if (response.ok) {
+                              const result = await response.json();
+                              console.log('Success:', result);
+                              window.location.reload();
+                            } else {
+                              const error = await response.json();
+                              console.error('Error response:', error);
+                              alert(`오류: ${error.error}`);
+                            }
+                          } catch (error) {
+                            console.error('Failed to update status:', error);
+                            alert('네트워크 오류가 발생했습니다.');
+                          }
+                        }}
+                        className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-blue-600 border border-blue-300 hover:bg-blue-50"
+                      >
+                        Set Aktiv
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowPreview(!showPreview)}
+                    className="inline-flex items-center px-4 py-2 text-sm text-neutral-600 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50"
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    {showPreview ? actions.no.hidePreview : actions.no.preview}
+                  </button>
+                )}
               </div>
               
               <div className="flex items-center space-x-3">

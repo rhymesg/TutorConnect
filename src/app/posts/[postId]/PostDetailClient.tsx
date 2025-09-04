@@ -315,13 +315,30 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             {/* Contact Button */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <button
-                className="w-full inline-flex items-center justify-center px-6 py-3 rounded-lg bg-brand-600 text-white font-medium hover:bg-brand-700 transition-colors"
+                onClick={() => {
+                  if (isOwner || !user) {
+                    return; // Do nothing for own post or if not logged in
+                  }
+                  // Navigate to chat or create chat functionality
+                  window.location.href = `/chat/new?postId=${post.id}&userId=${post.userId}`;
+                }}
+                disabled={isOwner || !user}
+                className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                  isOwner || !user
+                    ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
+                    : 'bg-brand-600 text-white hover:bg-brand-700'
+                }`}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
                 Start samtale
               </button>
               <p className="text-xs text-neutral-500 text-center mt-3">
-                Du må være innlogget for å starte en samtale
+                {isOwner 
+                  ? 'Du kan ikke starte en samtale med deg selv'
+                  : !user 
+                    ? 'Du må være innlogget for å starte en samtale'
+                    : 'Klikk for å starte en samtale'
+                }
               </p>
             </div>
 
