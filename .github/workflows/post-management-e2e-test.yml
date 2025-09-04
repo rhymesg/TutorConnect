@@ -139,8 +139,8 @@ jobs:
             
             // Debug what's on the page
             const pageTitle = await page.title();
-            const currentUrl = await page.url();
-            console.log(`🔍 Current page: ${pageTitle} at ${currentUrl}`);
+            const pageUrl = await page.url();
+            console.log(`🔍 Current page: ${pageTitle} at ${pageUrl}`);
             
             // Look for any links containing "Mine annonser" or similar text
             const allLinks = await page.locator('a').allTextContents();
