@@ -134,64 +134,30 @@ jobs:
             // Test 1: Navigate to "Mine annonser" page
             console.log('🧪 Test 1: Navigate to Mine annonser page');
             
-            // Wait for the page to fully load after login
-            await page.waitForTimeout(5000);
+            // Wait for UI to update after login (similar to login test)
+            await page.waitForTimeout(3000);
             
-            // Debug what's on the page
-            const pageTitle = await page.title();
-            const pageUrl = await page.url();
-            console.log(`🔍 Current page: ${pageTitle} at ${pageUrl}`);
+            // Check if login state is reflected in UI (like chat test does)
+            const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'));
+            const user = await page.evaluate(() => localStorage.getItem('user'));
+            console.log('AccessToken exists:', !!accessToken);
+            console.log('User data exists:', !!user);
             
-            // Look for any links containing "Mine annonser" or similar text
-            const allLinks = await page.locator('a').allTextContents();
-            console.log('🔍 All links on page:', allLinks.slice(0, 15)); // Show first 15 links
-            
-            // Try various selectors for Mine annonser
-            const mineAnnonserSelectors = [
-              'a:has-text("Mine annonser")',
-              'a[href="/profile/posts"]', 
-              'nav a:has-text("Mine annonser")',
-              'aside a:has-text("Mine annonser")',
-              '.sidebar a:has-text("Mine annonser")',
-              'a:has-text("annonser")',
-              'a[href*="posts"]'
-            ];
-            
-            let mineAnnonserLink = null;
-            for (const selector of mineAnnonserSelectors) {
-              const link = page.locator(selector);
-              if (await link.isVisible({ timeout: 2000 })) {
-                console.log(`✅ Found Mine annonser link with selector: ${selector}`);
-                mineAnnonserLink = link;
-                break;
-              }
+            if (!accessToken || !user) {
+              throw new Error('Login failed - no tokens found in localStorage');
             }
             
-            if (!mineAnnonserLink) {
-              // If still not found, check if there's any navigation menu to open first
-              const menuButton = page.locator('button[aria-label*="menu"], button:has([data-testid="hamburger"]), .menu-button');
-              if (await menuButton.isVisible({ timeout: 3000 })) {
-                console.log('🔧 Opening navigation menu first');
-                await menuButton.click();
-                await page.waitForTimeout(2000);
-                
-                // Try again after opening menu
-                for (const selector of mineAnnonserSelectors) {
-                  const link = page.locator(selector);
-                  if (await link.isVisible({ timeout: 2000 })) {
-                    console.log(`✅ Found Mine annonser link after opening menu: ${selector}`);
-                    mineAnnonserLink = link;
-                    break;
-                  }
-                }
-              }
-            }
+            // Try to find "Mine annonser" link like chat test finds "Mine samtaler"
+            const mineAnnonserButton = page.locator('text=Mine annonser').or(
+              page.locator('a[href="/profile/posts"]')
+            ).or(
+              page.locator('a:has-text("annonser")')
+            ).first();
             
-            if (!mineAnnonserLink) {
-              throw new Error('Could not find Mine annonser link with any selector. Available links: ' + allLinks.slice(0, 10).join(', '));
-            }
+            await expect(mineAnnonserButton).toBeVisible({ timeout: 10000 });
+            console.log('✅ Found "Mine annonser" link');
             
-            await mineAnnonserLink.click();
+            await mineAnnonserButton.click();
             await page.waitForTimeout(2000);
             
             // Verify we're on the correct page

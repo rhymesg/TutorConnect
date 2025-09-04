@@ -176,193 +176,86 @@ jobs:
             await expect(chatListContainer).toBeVisible({ timeout: 10000 });
             console.log('✅ Chat list container is visible');
             
-            // Look for chat items using only structural elements (not dynamic content)
-            const chatItemSelectors = [
-              // Primary: exact ChatRoomList structure - buttons with specific classes
-              'div.divide-y.divide-gray-100 > button.w-full.p-4.text-left',
-              // Alternative: any button in divide-y container
-              'div.divide-y > button',
-              // Alternative: buttons with chat item structure (w-full + p-4)
-              'button.w-full.p-4',
-              // Alternative: buttons with avatar structure (contains w-12 h-12 elements)
-              'button:has(.w-12.h-12)',
-              // Alternative: buttons with flex layout typical of chat items
-              'button:has(.flex.items-start.gap-3)',
-              // Alternative: any clickable chat item structure
-              'button.hover\\:bg-gray-50',
-              // Fallback: any button in the chat area
-              'button.text-left'
-            ];
+            // Use post management test pattern - wait for specific structure to load
+            // Based on ChatRoomList.tsx: div.divide-y.divide-gray-100 contains the chat buttons
+            console.log('⏳ Looking for chat list container...');
             
-            let chatItems = null;
+            const chatListContainer = page.locator('div.divide-y.divide-gray-100');
+            await expect(chatListContainer).toBeVisible({ timeout: 10000 });
+            console.log('✅ Chat list container found');
+            
+            // Wait for chat buttons to load (like post management waits for post cards)
+            const chatItems = page.locator('div.divide-y.divide-gray-100 > button.w-full.p-4.text-left');
+            
+            // Wait up to 8 seconds for chat items to appear
             let hasChatItems = 0;
-            
-            // Try each selector until we find chat items
-            for (let i = 0; i < chatItemSelectors.length; i++) {
-              const selector = chatItemSelectors[i];
-              chatItems = page.locator(selector);
+            for (let attempt = 0; attempt < 8; attempt++) {
               hasChatItems = await chatItems.count();
+              console.log(`🔍 Attempt ${attempt + 1}: Found ${hasChatItems} chat items`);
               
-              console.log(`🔍 Selector ${i + 1} (${selector}): ${hasChatItems} items`);
-              
-              if (hasChatItems > 0) {
-                console.log(`✅ Found chat items with selector: ${selector}`);
+              if (hasChatItems >= 2) {
+                console.log(`✅ Found sufficient chat items: ${hasChatItems}`);
                 break;
               }
+              
+              await page.waitForTimeout(1000);
             }
             
-            // Additional debugging if still no chats found
-            if (hasChatItems === 0) {
-              console.log('🔍 No chats found with any selector, trying broader search...');
-              
-              // Debug what's actually on the page
-              const allButtons = await page.locator('button').count();
-              const allButtonTexts = await page.locator('button').allTextContents();
-              console.log(`🔍 Total buttons on page: ${allButtons}`);
-              console.log(`🔍 Button texts:`, allButtonTexts.slice(0, 15)); // Show first 15 buttons
-              
-              // Look for structural elements that should be in chat items
-              const avatarElements = await page.locator('.w-12.h-12').count();
-              const flexContainers = await page.locator('.flex.items-start.gap-3').count();
-              const chatButtons = await page.locator('button.text-left').count();
-              console.log(`🔍 Structural elements - Avatars: ${avatarElements}, Flex containers: ${flexContainers}, Text-left buttons: ${chatButtons}`);
-              
-              // Check for any divide-y containers
-              const anyDivideY = await page.locator('div.divide-y').count();
-              console.log(`🔍 Any div.divide-y elements: ${anyDivideY}`);
-              
-              // If we still have no chats, the data may not be loaded yet
-              console.log('⚠️ No chat items found with any selector - data may still be loading');
+            // Follow user's directive: fail if less than 2 chats found
+            if (hasChatItems < 2) {
+              console.log(`❌ Expected at least 2 chats but found ${hasChatItems} chats`);
+              throw new Error(`Test failed: Expected at least 2 chats for tester account but found only ${hasChatItems}. Tester account should have multiple chat conversations.`);
             }
             
-            // Look for actual empty state components with proper selectors
-            const noChatsText = await page.locator('h3:has-text("No chats"), h3:has-text("Ingen samtaler")').count();
-            const exploreButton = await page.locator('text=Utforsk innlegg, text=Explore posts').count();
-            const emptyStateIcon = await page.locator('.text-blue-600').count(); // MessageCircle icon
-            const hasEmptyMessage = noChatsText + exploreButton + emptyStateIcon;
+            console.log(`✅ Chat test requirements met with ${hasChatItems} chats`);
             
-            console.log(`Debug: Found ${hasChatItems} chat items, ${hasEmptyMessage} empty state elements`);
+            // Verify we have at least 2 chats as required
+            expect(hasChatItems).toBeGreaterThanOrEqual(2);
             
-            if (hasChatItems >= 2) {
-              console.log(`✅ Chat list loaded successfully with ${hasChatItems} chats`);
-              
-              // Verify we have at least 2 chats as required
-              expect(hasChatItems).toBeGreaterThanOrEqual(2);
-              
-              // Use the chatItems we already found above
-              const actualChatItems = chatItems;
-              
-              // Test clicking first chat
-              const firstChat = actualChatItems.first();
-              await expect(firstChat).toBeVisible({ timeout: 5000 });
-              console.log('✅ First chat item is visible');
-              
-              await firstChat.click();
-              
-              // Wait for chat interface to load
-              await page.waitForTimeout(3000);
-              
-              // Verify we're now in a specific chat
-              expect(page.url()).toMatch(/\/chat\/.+/);
-              console.log('✅ First chat opened successfully');
-              
-              // Check for message composer or chat interface elements
-              const messageComposer = await page.locator('textarea, input[type="text"]').isVisible();
-              const messageArea = await page.locator('div.flex-1.overflow-y-auto').isVisible();
-              
-              expect(messageComposer || messageArea).toBeTruthy();
-              console.log('✅ Chat interface loaded for first chat');
-              
-              // Go back to chat list
-              await page.goBack();
-              await page.waitForTimeout(2000);
-              
-              // Test that at least one chat is available and verify second chat functionality
-              const chatCount = hasChatItems;
-              
-              // Assert that at least one chat exists
-              expect(chatCount).toBeGreaterThanOrEqual(1);
-              console.log(`✅ Found ${chatCount} chat(s) available`);
-              
-              // Test second chat if multiple chats exist
-              if (chatCount > 1) {
-                const secondChat = actualChatItems.nth(1);
-                await expect(secondChat).toBeVisible({ timeout: 5000 });
-                console.log('✅ Second chat item is visible');
-                
-                await secondChat.click();
-                
-                // Wait for chat interface to load
-                await page.waitForTimeout(3000);
-                
-                // Verify we're now in a different chat
-                expect(page.url()).toMatch(/\/chat\/.+/);
-                console.log('✅ Second chat opened successfully');
-                
-                // Check for chat interface elements
-                const messageComposer2 = await page.locator('textarea, input[type="text"]').isVisible();
-                const messageArea2 = await page.locator('div.flex-1.overflow-y-auto').isVisible();
-                expect(messageComposer2 || messageArea2).toBeTruthy();
-                console.log('✅ Chat interface loaded for second chat');
-              } else {
-                console.log('❌ Only one chat available - expected at least 2 chats');
-                throw new Error(`Test failed: Expected at least 2 chats but found only ${chatCount} chat. Tester account should have multiple chat conversations.`);
-              }
-              
-            } else if (hasChatItems === 1) {
-              console.log('ℹ️ Found only 1 chat - testing single chat functionality');
-              
-              // Test the single available chat
-              const singleChat = chatItems.first();
-              await expect(singleChat).toBeVisible({ timeout: 5000 });
-              await singleChat.click();
-              await page.waitForTimeout(3000);
-              
-              expect(page.url()).toMatch(/\/chat\/.+/);
-              const messageComposer = await page.locator('textarea, input[type="text"]').isVisible();
-              const messageArea = await page.locator('div.flex-1.overflow-y-auto').isVisible();
-              expect(messageComposer || messageArea).toBeTruthy();
-              console.log('✅ Single chat functionality verified');
-              
-            } else if (hasEmptyMessage > 0) {
-              console.log('ℹ️ Chat list shows empty state - no chats available for tester account');
-              
-              // Verify empty state is working correctly
-              const exploreBtn = await page.locator('button:has-text("Utforsk innlegg"), button:has-text("Explore Posts")').isVisible();
-              if (exploreBtn) {
-                console.log('✅ Empty state with explore button is working correctly');
-              } else {
-                console.log('✅ Empty state is displayed correctly');
-              }
-              
-              console.log('✅ Empty state functionality verified');
-            } else {
-              // Debug what's actually on the page
-              const pageContent = await page.content();
-              console.log('Debug: Page title:', await page.title());
-              console.log('Debug: Current URL:', page.url());
-              
-              // Look for any visible text on the page
-              const allText = await page.locator('body').textContent();
-              console.log('Debug: Page contains text:', allText ? allText.substring(0, 200) + '...' : 'No text found');
-              
-              // Check if there are any loading states
-              const loadingSpinner = await page.locator('text=Loading, .animate-spin').count();
-              console.log('Debug: Loading indicators found:', loadingSpinner);
-              
-              // This might be a loading issue, so let's wait a bit longer
-              await page.waitForTimeout(5000);
-              
-              // Re-check after waiting
-              const retryChats = await page.locator('button.w-full.p-4.text-left').count();
-              const retryEmpty = await page.locator('h3:has-text("No chats"), h3:has-text("Ingen samtaler"), text=Utforsk innlegg, text=Explore posts').count();
-              
-              if (retryChats > 0 || retryEmpty > 0) {
-                console.log('✅ Chat list loaded after additional wait');
-              } else {
-                throw new Error(`Chat list failed to load - found ${retryChats} chats and ${retryEmpty} empty state elements after retry`);
-              }
-            }
+            // Test clicking first chat
+            const firstChat = chatItems.first();
+            await expect(firstChat).toBeVisible({ timeout: 5000 });
+            console.log('✅ First chat item is visible');
+            
+            await firstChat.click();
+            
+            // Wait for chat interface to load
+            await page.waitForTimeout(3000);
+            
+            // Verify we're now in a specific chat
+            expect(page.url()).toMatch(/\/chat\/.+/);
+            console.log('✅ First chat opened successfully');
+            
+            // Check for message composer or chat interface elements
+            const messageComposer = await page.locator('textarea, input[type="text"]').isVisible();
+            const messageArea = await page.locator('div.flex-1.overflow-y-auto').isVisible();
+            
+            expect(messageComposer || messageArea).toBeTruthy();
+            console.log('✅ Chat interface loaded for first chat');
+            
+            // Go back to chat list
+            await page.goBack();
+            await page.waitForTimeout(2000);
+            
+            // Test second chat
+            const secondChat = chatItems.nth(1);
+            await expect(secondChat).toBeVisible({ timeout: 5000 });
+            console.log('✅ Second chat item is visible');
+            
+            await secondChat.click();
+            
+            // Wait for chat interface to load
+            await page.waitForTimeout(3000);
+            
+            // Verify we're now in a different chat
+            expect(page.url()).toMatch(/\/chat\/.+/);
+            console.log('✅ Second chat opened successfully');
+            
+            // Check for chat interface elements
+            const messageComposer2 = await page.locator('textarea, input[type="text"]').isVisible();
+            const messageArea2 = await page.locator('div.flex-1.overflow-y-auto').isVisible();
+            expect(messageComposer2 || messageArea2).toBeTruthy();
+            console.log('✅ Chat interface loaded for second chat');
             
             console.log('✅ Chat E2E test completed successfully');
           });
