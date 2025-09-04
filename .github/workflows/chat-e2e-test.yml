@@ -164,8 +164,21 @@ jobs:
             console.log('✅ Chat list container is visible');
             
             // Check for chat items based on actual ChatRoomList structure  
-            const chatItems = page.locator('button.w-full.p-4.text-left');
+            const chatItems = page.locator('button.w-full.p-4.text-left, .divide-y button, [role="button"]:has(img), button:has(.w-12.h-12)');
             const hasChatItems = await chatItems.count();
+            
+            // If no chats found with primary selector, try alternative selectors
+            if (hasChatItems === 0) {
+              console.log('🔍 No chats found with primary selector, trying alternatives...');
+              const altChatItems = await page.locator('div.divide-y > button, .chat-item, button:has-text("Youngjoo")').count();
+              console.log(`🔍 Alternative selectors found: ${altChatItems} items`);
+              
+              // Debug what's actually on the page
+              const allButtons = await page.locator('button').count();
+              const allButtonTexts = await page.locator('button').allTextContents();
+              console.log(`🔍 Total buttons on page: ${allButtons}`);
+              console.log(`🔍 Button texts:`, allButtonTexts.slice(0, 10)); // Show first 10 buttons
+            }
             
             // Look for actual empty state components with proper selectors
             const noChatsText = await page.locator('h3:has-text("No chats"), h3:has-text("Ingen samtaler")').count();
@@ -175,8 +188,11 @@ jobs:
             
             console.log(`Debug: Found ${hasChatItems} chat items, ${hasEmptyMessage} empty state elements`);
             
-            if (hasChatItems > 0) {
+            if (hasChatItems >= 2) {
               console.log(`✅ Chat list loaded successfully with ${hasChatItems} chats`);
+              
+              // Verify we have at least 2 chats as required
+              expect(hasChatItems).toBeGreaterThanOrEqual(2);
               
               // Test clicking first chat
               const firstChat = chatItems.first();
@@ -231,23 +247,16 @@ jobs:
                 expect(messageComposer2 || messageArea2).toBeTruthy();
                 console.log('✅ Chat interface loaded for second chat');
               } else {
-                console.log('ℹ️ Only one chat available - testing single chat functionality');
-                
-                // Verify the single chat is functional
-                const firstChat = chatItems.first();
-                await expect(firstChat).toBeVisible({ timeout: 5000 });
-                await firstChat.click();
-                await page.waitForTimeout(3000);
-                expect(page.url()).toMatch(/\/chat\/.+/);
-                const messageComposer3 = await page.locator('textarea, input[type="text"]').isVisible();
-                const messageArea3 = await page.locator('div.flex-1.overflow-y-auto').isVisible();
-                expect(messageComposer3 || messageArea3).toBeTruthy();
-                console.log('✅ Single chat functionality verified');
+                console.log('❌ Only one chat available - expected at least 2 chats');
+                throw new Error(`Test failed: Expected at least 2 chats but found only ${chatCount} chat. Tester account should have multiple chat conversations.`);
               }
               
+            } else if (hasChatItems === 1) {
+              console.log('❌ Found only 1 chat - expected at least 2 chats');
+              throw new Error('Test failed: Expected at least 2 chats but found only 1 chat. Tester account should have multiple chat conversations.');
             } else if (hasEmptyMessage > 0) {
-              console.log('ℹ️ Chat list shows empty state - no chats available for tester account');
-              console.log('✅ Empty state component is working correctly');
+              console.log('❌ Chat list shows empty state - no chats available for tester account');
+              throw new Error('Test failed: Expected at least 2 chats but found 0 chats. Tester account should have existing chat conversations.');
             } else {
               // Debug what's actually on the page
               const pageContent = await page.content();
