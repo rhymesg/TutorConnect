@@ -114,6 +114,16 @@ export default function ActiveFiltersEnhanced({
     });
   }
 
+  // Include paused filter
+  if (filters.includePaused) {
+    activeFilters.push({
+      key: 'includePaused' as keyof PostFilters,
+      label: 'Inkluderer pauserte annonser',
+      icon: Filter,
+      onRemove: () => removeFilter('includePaused')
+    });
+  }
+
   // Show component even if no active filters to display filter buttons
 
   const clearFilters = () => {
@@ -136,6 +146,7 @@ export default function ActiveFiltersEnhanced({
     if (filters.location) count++;
     if (filters.minRate || filters.maxRate) count++;
     if (filters.search) count++;
+    if (filters.includePaused) count++;
     return count;
   };
 
@@ -148,7 +159,8 @@ export default function ActiveFiltersEnhanced({
       filters.location || 
       filters.minRate || 
       filters.maxRate ||
-      filters.search
+      filters.search ||
+      filters.includePaused
     );
   };
 

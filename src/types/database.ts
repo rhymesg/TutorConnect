@@ -136,6 +136,7 @@ export interface PostFilters {
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  includePaused?: boolean;
 }
 
 export interface UserFilters {

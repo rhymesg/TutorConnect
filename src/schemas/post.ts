@@ -467,6 +467,9 @@ export const PostSearchSchema = z.object({
   // Norwegian-specific filters
   includeNearbyRegions: z.coerce.boolean().default(false),
   onlyVerifiedUsers: z.coerce.boolean().default(false),
+  
+  // Status filters
+  includePaused: z.coerce.boolean().default(false),
 }).superRefine((data, ctx) => {
   // Validate price range
   if (data.minRate !== undefined && data.maxRate !== undefined) {

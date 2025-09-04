@@ -291,7 +291,7 @@ export default function PostListEnhanced({
       // Only fetch with default filters if no initialFilters will be provided
       fetchPosts(filters);
     }
-  }, [filters.type, filters.subject, filters.ageGroups, filters.location, filters.minRate, filters.maxRate, filters.search, filters.sortBy, filters.sortOrder]); // Only specific filter dependencies
+  }, [filters.type, filters.subject, filters.ageGroups, filters.location, filters.minRate, filters.maxRate, filters.search, filters.sortBy, filters.sortOrder, filters.includePaused]); // Only specific filter dependencies
 
   // Cleanup
   useEffect(() => {
@@ -316,7 +316,7 @@ export default function PostListEnhanced({
   ];
 
   return (
-    <div className={`bg-neutral-50 min-h-screen ${className}`}>
+    <div className={`bg-neutral-50 ${className}`}>
       
       {/* Offline indicator */}
       {enableOfflineMode && !isOnline && (
@@ -329,7 +329,7 @@ export default function PostListEnhanced({
       )}
 
       {/* Search and Filters */}
-      <div className="bg-white border-b border-neutral-200 sticky top-16 z-30">
+      <div className="bg-white border-b border-neutral-200 sticky top-0 z-30">
         <SearchAndFiltersEnhanced 
           filters={filters}
           onFiltersChange={handleFiltersChange}

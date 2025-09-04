@@ -316,15 +316,15 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <button
                 onClick={() => {
-                  if (isOwner || !user) {
-                    return; // Do nothing for own post or if not logged in
+                  if (isOwner || !user || post.status === 'PAUSET') {
+                    return; // Do nothing for own post, not logged in, or paused post
                   }
                   // Navigate to chat or create chat functionality
                   window.location.href = `/chat/new?postId=${post.id}&userId=${post.userId}`;
                 }}
-                disabled={isOwner || !user}
+                disabled={isOwner || !user || post.status === 'PAUSET'}
                 className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                  isOwner || !user
+                  isOwner || !user || post.status === 'PAUSET'
                     ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                     : 'bg-brand-600 text-white hover:bg-brand-700'
                 }`}
@@ -337,7 +337,9 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                   ? 'Du kan ikke starte en samtale med deg selv'
                   : !user 
                     ? 'Du må være innlogget for å starte en samtale'
-                    : 'Klikk for å starte en samtale'
+                    : post.status === 'PAUSET'
+                      ? 'Denne annonsen er satt på pause'
+                      : 'Klikk for å starte en samtale'
                 }
               </p>
             </div>
