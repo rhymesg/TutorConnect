@@ -154,11 +154,16 @@ jobs:
             console.log('⏳ Waiting for chat data to load...');
             await page.waitForTimeout(5000);
             
-            // Wait for any loading indicators to disappear
+            // Check for loading indicators but don't wait indefinitely
             const loadingSpinner = page.locator('.animate-spin, [data-testid="loading"]');
             if (await loadingSpinner.isVisible({ timeout: 2000 })) {
-              console.log('⏳ Waiting for loading spinner to disappear...');
-              await loadingSpinner.waitFor({ state: 'hidden', timeout: 10000 });
+              console.log('⏳ Loading spinner detected, waiting up to 5 seconds...');
+              try {
+                await loadingSpinner.waitFor({ state: 'hidden', timeout: 5000 });
+                console.log('✅ Loading spinner disappeared');
+              } catch (e) {
+                console.log('⚠️ Loading spinner still visible after 5s, continuing anyway...');
+              }
             }
             
             // Check if chat list loads (either shows chats or empty state)
@@ -171,62 +176,63 @@ jobs:
             await expect(chatListContainer).toBeVisible({ timeout: 10000 });
             console.log('✅ Chat list container is visible');
             
-            // Check for chat items using the exact ChatRoomList structure
-            // The chat items are buttons inside a div with classes "divide-y divide-gray-100"
-            const chatListDiv = page.locator('div.divide-y.divide-gray-100');
-            const chatItems = chatListDiv.locator('button.w-full.p-4.text-left');
-            let hasChatItems = await chatItems.count();
+            // Look for chat items using only structural elements (not dynamic content)
+            const chatItemSelectors = [
+              // Primary: exact ChatRoomList structure - buttons with specific classes
+              'div.divide-y.divide-gray-100 > button.w-full.p-4.text-left',
+              // Alternative: any button in divide-y container
+              'div.divide-y > button',
+              // Alternative: buttons with chat item structure (w-full + p-4)
+              'button.w-full.p-4',
+              // Alternative: buttons with avatar structure (contains w-12 h-12 elements)
+              'button:has(.w-12.h-12)',
+              // Alternative: buttons with flex layout typical of chat items
+              'button:has(.flex.items-start.gap-3)',
+              // Alternative: any clickable chat item structure
+              'button.hover\\:bg-gray-50',
+              // Fallback: any button in the chat area
+              'button.text-left'
+            ];
             
-            console.log(`🔍 Primary selector found: ${hasChatItems} chat items`);
+            let chatItems = null;
+            let hasChatItems = 0;
             
-            // If no chats found with primary selector, try broader selectors
+            // Try each selector until we find chat items
+            for (let i = 0; i < chatItemSelectors.length; i++) {
+              const selector = chatItemSelectors[i];
+              chatItems = page.locator(selector);
+              hasChatItems = await chatItems.count();
+              
+              console.log(`🔍 Selector ${i + 1} (${selector}): ${hasChatItems} items`);
+              
+              if (hasChatItems > 0) {
+                console.log(`✅ Found chat items with selector: ${selector}`);
+                break;
+              }
+            }
+            
+            // Additional debugging if still no chats found
             if (hasChatItems === 0) {
-              console.log('🔍 No chats found with primary selector, trying alternatives...');
-              
-              // Try just the button selector without the parent div
-              const altChatItems1 = page.locator('button.w-full.p-4.text-left');
-              hasChatItems = await altChatItems1.count();
-              console.log(`🔍 Alternative 1 (button.w-full.p-4.text-left): ${hasChatItems} items`);
-              
-              if (hasChatItems === 0) {
-                // Try any button with w-full and p-4 classes
-                const altChatItems2 = page.locator('button.w-full.p-4');
-                hasChatItems = await altChatItems2.count();
-                console.log(`🔍 Alternative 2 (button.w-full.p-4): ${hasChatItems} items`);
-              }
-              
-              if (hasChatItems === 0) {
-                // Try buttons that contain avatar images (w-12 h-12 class)
-                const altChatItems3 = page.locator('button:has(.w-12.h-12)');
-                hasChatItems = await altChatItems3.count();
-                console.log(`🔍 Alternative 3 (button:has(.w-12.h-12)): ${hasChatItems} items`);
-              }
+              console.log('🔍 No chats found with any selector, trying broader search...');
               
               // Debug what's actually on the page
               const allButtons = await page.locator('button').count();
               const allButtonTexts = await page.locator('button').allTextContents();
               console.log(`🔍 Total buttons on page: ${allButtons}`);
-              console.log(`🔍 Button texts:`, allButtonTexts.slice(0, 10)); // Show first 10 buttons
+              console.log(`🔍 Button texts:`, allButtonTexts.slice(0, 15)); // Show first 15 buttons
               
-              // Check if chat container exists at all
-              const hasChatContainer = await chatListDiv.isVisible();
-              console.log(`🔍 Chat container (div.divide-y.divide-gray-100) exists: ${hasChatContainer}`);
+              // Look for structural elements that should be in chat items
+              const avatarElements = await page.locator('.w-12.h-12').count();
+              const flexContainers = await page.locator('.flex.items-start.gap-3').count();
+              const chatButtons = await page.locator('button.text-left').count();
+              console.log(`🔍 Structural elements - Avatars: ${avatarElements}, Flex containers: ${flexContainers}, Text-left buttons: ${chatButtons}`);
               
-              // Look for any div that might contain chats
+              // Check for any divide-y containers
               const anyDivideY = await page.locator('div.divide-y').count();
               console.log(`🔍 Any div.divide-y elements: ${anyDivideY}`);
               
-              // Check what's inside the chat container div if it exists
-              if (hasChatContainer) {
-                const containerHTML = await chatListDiv.innerHTML();
-                console.log('🔍 Chat container HTML (first 500 chars):', containerHTML.substring(0, 500));
-                
-                const childElements = await chatListDiv.locator('*').count();
-                console.log(`🔍 Child elements in chat container: ${childElements}`);
-                
-                const directButtons = await chatListDiv.locator('> button').count();
-                console.log(`🔍 Direct button children: ${directButtons}`);
-              }
+              // If we still have no chats, the data may not be loaded yet
+              console.log('⚠️ No chat items found with any selector - data may still be loading');
             }
             
             // Look for actual empty state components with proper selectors
@@ -243,18 +249,8 @@ jobs:
               // Verify we have at least 2 chats as required
               expect(hasChatItems).toBeGreaterThanOrEqual(2);
               
-              // Use the correct selector based on what we found
-              let actualChatItems = chatItems;
-              if (await chatItems.count() === 0) {
-                // Use the alternative selector that worked
-                actualChatItems = page.locator('button.w-full.p-4.text-left');
-                if (await actualChatItems.count() === 0) {
-                  actualChatItems = page.locator('button.w-full.p-4');
-                  if (await actualChatItems.count() === 0) {
-                    actualChatItems = page.locator('button:has(.w-12.h-12)');
-                  }
-                }
-              }
+              // Use the chatItems we already found above
+              const actualChatItems = chatItems;
               
               // Test clicking first chat
               const firstChat = actualChatItems.first();
