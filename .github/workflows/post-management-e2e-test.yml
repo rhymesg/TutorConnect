@@ -128,33 +128,38 @@ jobs:
             // Test 1: Navigate to "Mine annonser" page
             console.log('🧪 Test 1: Navigate to Mine annonser page');
             
-            // First check if user menu is available (indicating logged in state)
-            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
-            if (await userMenuButton.isVisible({ timeout: 5000 })) {
-              await userMenuButton.click();
+            // Look for sidebar menu button (mobile) or direct sidebar link
+            const menuButton = page.locator('button[aria-label="Åpne hovedmeny"]');
+            const sidebarLink = page.locator('a:has-text("Mine annonser")');
+            
+            // Try sidebar link first (desktop)
+            if (await sidebarLink.isVisible({ timeout: 3000 })) {
+              console.log('✅ Found Mine annonser in sidebar (desktop)');
+              await sidebarLink.click();
+              await page.waitForTimeout(2000);
+            } 
+            // Try mobile menu
+            else if (await menuButton.isVisible({ timeout: 3000 })) {
+              console.log('🔧 Opening mobile sidebar menu');
+              await menuButton.click();
               await page.waitForTimeout(1000);
               
-              // Look for "Mine annonser" link in dropdown
-              const mineAnnonserLink = page.locator('a:has-text("Mine annonser")');
-              if (await mineAnnonserLink.isVisible({ timeout: 3000 })) {
-                await mineAnnonserLink.click();
-                await page.waitForTimeout(2000);
-                
-                // Verify we're on the correct page
-                await expect(page).toHaveURL('/profile/posts');
-                await expect(page.locator('h1:has-text("Mine annonser")')).toBeVisible({ timeout: 10000 });
-                
-                console.log('✅ Successfully navigated to Mine annonser page');
-              } else {
-                console.log('⚠️ Mine annonser link not found in user menu, trying direct navigation');
-                await page.goto('/profile/posts');
-                await page.waitForTimeout(3000);
-              }
-            } else {
-              console.log('⚠️ User menu not found, trying direct navigation to Mine annonser');
+              const mobileSidebarLink = page.locator('a:has-text("Mine annonser")');
+              await expect(mobileSidebarLink).toBeVisible({ timeout: 5000 });
+              await mobileSidebarLink.click();
+              await page.waitForTimeout(2000);
+            } 
+            // Fallback to direct navigation
+            else {
+              console.log('⚠️ Sidebar not found, trying direct navigation');
               await page.goto('/profile/posts');
               await page.waitForTimeout(3000);
             }
+            
+            // Verify we're on the correct page
+            await expect(page).toHaveURL('/profile/posts');
+            await expect(page.locator('h1:has-text("Mine annonser")')).toBeVisible({ timeout: 10000 });
+            console.log('✅ Successfully navigated to Mine annonser page');
 
             // Verify we successfully reached the page
             const currentPageUrl = await page.url();
@@ -208,22 +213,32 @@ jobs:
             // Test 5: Test status toggle buttons
             console.log('🧪 Test 5: Test status toggle functionality');
             
-            // Look for either "Sett Aktiv" or "Sett Pauset" button
-            const settAktivBtn = page.locator('button:has-text("Sett Aktiv")');
-            const settPausetBtn = page.locator('button:has-text("Sett Pauset")');
+            // Look for either "Set Aktiv" or "Set Pauset" button (note: no "t" in "Set")
+            const setAktivBtn = page.locator('button:has-text("Set Aktiv")');
+            const setPausetBtn = page.locator('button:has-text("Set Pauset")');
             
             let statusButton;
             let initialButtonText;
             let toggledButtonText;
             
-            if (await settAktivBtn.isVisible({ timeout: 3000 })) {
-              statusButton = settAktivBtn;
-              initialButtonText = "Sett Aktiv";
-              toggledButtonText = "Sett Pauset";
-            } else if (await settPausetBtn.isVisible({ timeout: 3000 })) {
-              statusButton = settPausetBtn;
-              initialButtonText = "Sett Pauset";
-              toggledButtonText = "Sett Aktiv";
+            // Wait a bit for the page to load completely
+            await page.waitForTimeout(2000);
+            
+            if (await setAktivBtn.isVisible({ timeout: 5000 })) {
+              statusButton = setAktivBtn;
+              initialButtonText = "Set Aktiv";
+              toggledButtonText = "Set Pauset";
+              console.log('✅ Found "Set Aktiv" button');
+            } else if (await setPausetBtn.isVisible({ timeout: 5000 })) {
+              statusButton = setPausetBtn;
+              initialButtonText = "Set Pauset";
+              toggledButtonText = "Set Aktiv";
+              console.log('✅ Found "Set Pauset" button');
+            } else {
+              // Debug what buttons are actually on the page
+              const allButtons = await page.locator('button').allTextContents();
+              console.log('🔍 All buttons on page:', allButtons);
+              throw new Error('Status toggle button not found. Available buttons: ' + allButtons.join(', '));
             }
             
             expect(statusButton).toBeTruthy();
@@ -231,19 +246,19 @@ jobs:
             
             // First toggle
             await statusButton.click();
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(3000);
             
             // Check if button text changed
             const newButton = page.locator(`button:has-text("${toggledButtonText}")`);
-            await expect(newButton).toBeVisible({ timeout: 5000 });
+            await expect(newButton).toBeVisible({ timeout: 8000 });
             console.log(`✅ Status toggled successfully: ${initialButtonText} → ${toggledButtonText}`);
             
             // Second toggle (back to original)
             await newButton.click();
-            await page.waitForTimeout(2000);
+            await page.waitForTimeout(3000);
             
             const originalButton = page.locator(`button:has-text("${initialButtonText}")`);
-            await expect(originalButton).toBeVisible({ timeout: 5000 });
+            await expect(originalButton).toBeVisible({ timeout: 8000 });
             console.log(`✅ Status toggled back successfully: ${toggledButtonText} → ${initialButtonText}`);
                       
             // Test 6: Save changes and verify navigation to post detail
