@@ -1,18 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient, PostStatus } from '@prisma/client';
+import { PostStatus } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyAccessToken } from '@/lib/jwt';
 
-const prisma = new PrismaClient();
-
 /**
- * Get current user from JWT token
+ * Get current user from JWT token (either from Authorization header or cookie)
  */
-async function getCurrentUser() {
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get('accessToken')?.value;
+async function getCurrentUser(request: NextRequest) {
+  let accessToken: string | undefined;
+  
+  // First try Authorization header
+  const authHeader = request.headers.get('authorization');
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    accessToken = authHeader.substring(7);
+    console.log('Using token from Authorization header');
+  }
+  
+  // Fallback to cookie
+  if (!accessToken) {
+    const cookieStore = await cookies();
+    accessToken = cookieStore.get('accessToken')?.value;
+    if (accessToken) {
+      console.log('Using token from cookie');
+    }
+  }
   
   if (!accessToken) {
+    console.log('No token found in header or cookie');
     return null;
   }
 
@@ -33,7 +48,7 @@ export async function PATCH(
     const { postId } = await params;
     
     // Verify authentication
-    const user = await getCurrentUser();
+    const user = await getCurrentUser(request);
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required' },

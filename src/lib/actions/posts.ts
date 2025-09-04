@@ -1,14 +1,12 @@
 'use server';
 
 import { redirect } from 'next/navigation';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { CreatePostFormSchema, UpdatePostFormSchema } from '@/schemas/post-form';
 import { PostWithDetails } from '@/types/database';
 import { verifyAccessToken } from '@/lib/jwt';
-
-const prisma = new PrismaClient();
 
 export type PostFormState = {
   error?: string;
@@ -27,7 +25,8 @@ async function getCurrentUser() {
   console.log('AccessToken exists:', !!accessToken);
   
   if (!accessToken) {
-    throw new Error('Ikke autorisert. Vennligst logg inn.');
+    console.log('No accessToken found in cookies');
+    return null;
   }
 
   try {
@@ -36,7 +35,7 @@ async function getCurrentUser() {
     return payload;
   } catch (error) {
     console.error('JWT verification error:', error);
-    throw new Error('Ugyldig autentisering. Vennligst logg inn på nytt.');
+    return null;
   }
 }
 
@@ -193,8 +192,19 @@ export async function updatePostAction(
   formData: FormData
 ): Promise<PostFormState> {
   try {
+    console.log('=== updatePostAction called ===');
+    console.log('Post ID:', postId);
+    
     // Verify authentication
     const user = await getCurrentUser();
+    console.log('Update post - User authenticated:', !!user);
+    
+    if (!user) {
+      console.log('No user found - returning error instead of redirect');
+      return {
+        error: 'Du må være logget inn for å redigere annonser. Vennligst logg inn på nytt.',
+      };
+    }
 
     // Check if post exists and user owns it
     const existingPost = await prisma.post.findUnique({
@@ -247,10 +257,27 @@ export async function updatePostAction(
             region: true,
             profileImage: true,
             isActive: true,
+            teacherSessions: true,
+            teacherStudents: true,
+            studentSessions: true,
+            studentTeachers: true,
           }
-        }
+        },
+        _count: {
+          select: {
+            chats: true,
+          },
+        },
       }
     });
+
+    // Convert Decimal to number for client component compatibility
+    const serializedPost = {
+      ...updatedPost,
+      hourlyRate: updatedPost.hourlyRate ? Number(updatedPost.hourlyRate) : null,
+      hourlyRateMin: updatedPost.hourlyRateMin ? Number(updatedPost.hourlyRateMin) : null,
+      hourlyRateMax: updatedPost.hourlyRateMax ? Number(updatedPost.hourlyRateMax) : null,
+    };
 
     // Revalidate relevant paths
     revalidatePath('/posts');
@@ -258,8 +285,11 @@ export async function updatePostAction(
     revalidatePath(`/posts/${postId}`);
     revalidatePath(`/posts/${postId}/edit`);
 
-    // Redirect to the updated post
-    redirect(`/posts/${postId}?updated=true`);
+    // Return success response instead of redirecting
+    return {
+      success: true,
+      post: serializedPost as PostWithDetails,
+    };
 
   } catch (error) {
     console.error('Update post action error:', error);

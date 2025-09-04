@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAccessToken, extractTokenFromHeader, validateTokenStructure, generateTokenFingerprint } from '@/lib/jwt';
 import { UnauthorizedError, TokenExpiredError, InvalidTokenError, ForbiddenError } from '@/lib/errors';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { securityLogger } from './security';
 import { extractClientIP } from './security';
-
-const prisma = new PrismaClient();
 
 /**
  * Extended request interface with user data

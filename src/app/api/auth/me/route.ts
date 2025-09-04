@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '@/lib/prisma';
 import { authMiddleware, getAuthenticatedUser, optionalAuthMiddleware } from '@/middleware/auth';
 import { createErrorResponse } from '@/lib/errors';
-
-const prisma = new PrismaClient();
 
 /**
  * GET /api/auth/me
