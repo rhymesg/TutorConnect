@@ -302,8 +302,8 @@ jobs:
             await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
             
             // Get the href before clicking to know where we're going
-            const postHref = await firstDetailPostCard.getAttribute('href');
-            console.log(`🔗 Clicking post card with href: ${postHref}`);
+            const detailPostHref = await firstDetailPostCard.getAttribute('href');
+            console.log(`🔗 Clicking post card with href: ${detailPostHref}`);
             
             await firstDetailPostCard.click();
             
