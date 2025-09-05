@@ -216,19 +216,6 @@ jobs:
             expect(editUrl).toContain('/edit');
             console.log('✅ Successfully navigated to edit page');
             
-            // Test 4.5: Check that "Rediger" button exists on edit page (important UI element)
-            console.log('🧪 Test 4.5: Verify Rediger button exists on edit page');
-            const redigerButton = page.locator('button:has-text("Rediger"), a:has-text("Rediger")');
-            
-            if (await redigerButton.isVisible({ timeout: 5000 })) {
-              console.log('✅ Rediger button found on edit page');
-            } else {
-              // This is a critical UI element that must be present
-              const allButtons = await page.locator('button').allTextContents();
-              console.log('❌ Rediger button not found on edit page');
-              console.log('🔍 All buttons on edit page:', allButtons);
-              throw new Error('Rediger button is missing from edit page - this is a critical UI element that must be present');
-            }
                     
             // Test 5: Test status toggle buttons
             console.log('🧪 Test 5: Test status toggle functionality');
@@ -300,6 +287,39 @@ jobs:
               const anyStatusButton = page.locator('button:has-text("Set Aktiv"), button:has-text("Set Pauset")');
               await expect(anyStatusButton).toBeVisible({ timeout: 5000 });
               console.log('✅ Status button is still present and clickable');
+            }
+            
+            // Test 6: Go to post detail page and verify Rediger button exists
+            console.log('🧪 Test 6: Navigate to post detail page to check Rediger button');
+            
+            // Go back to Mine annonser page
+            await page.goto('/profile/posts');
+            await page.waitForTimeout(3000);
+            
+            // Click first post card to go to detail page
+            const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"])');
+            const firstDetailPostCard = detailPostCards.first();
+            await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
+            await firstDetailPostCard.click();
+            await page.waitForTimeout(3000);
+            
+            // Verify we're on post detail page
+            const detailPageUrl = await page.url();
+            expect(detailPageUrl).toMatch(/\/posts\/[^\/]+$/);
+            expect(detailPageUrl).not.toContain('/edit');
+            console.log('✅ Successfully navigated to post detail page');
+            
+            // Check that "Rediger" button exists (critical UI element)
+            const redigerButton = page.locator('button:has-text("Rediger"), a:has-text("Rediger")');
+            
+            if (await redigerButton.isVisible({ timeout: 5000 })) {
+              console.log('✅ Rediger button found on post detail page');
+            } else {
+              // This is a critical UI element that must be present
+              const allButtons = await page.locator('button').allTextContents();
+              console.log('❌ Rediger button not found on post detail page');
+              console.log('🔍 All buttons on detail page:', allButtons);
+              throw new Error('Rediger button is missing from post detail page - this is a critical UI element that must be present');
             }
 
             console.log('✅ Post management workflow test completed');
