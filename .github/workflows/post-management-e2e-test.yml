@@ -152,19 +152,23 @@ jobs:
             await expect(userMenuButton).toBeVisible({ timeout: 10000 });
             console.log('✅ User menu button visible after login');
             
-            // Look for "Mine annonser" button similar to how chat test finds "Mine samtaler"
-            const mineAnnonserButton = page.locator('text=Mine annonser').or(
-              page.locator('a[href="/profile/posts"]')
-            ).or(
-              page.locator('a:has-text("annonser")')
-            ).or(
-              page.locator('button:has-text("annonser")')
-            ).first();
+            // Click the hamburger menu button to open sidebar
+            const hamburgerMenuButton = page.locator('button[aria-label="Åpne sidemeny"]');
+            await expect(hamburgerMenuButton).toBeVisible({ timeout: 10000 });
+            console.log('✅ Found hamburger menu button');
             
-            await expect(mineAnnonserButton).toBeVisible({ timeout: 10000 });
-            console.log('✅ Found "Mine annonser" button');
+            await hamburgerMenuButton.click();
+            console.log('📱 Opened sidebar menu');
+            await page.waitForTimeout(1500); // Wait for sidebar animation
             
-            await mineAnnonserButton.click();
+            // Look for "Mine annonser" in the opened sidebar
+            const mineAnnonserLink = page.locator('nav a:has-text("Mine annonser")').or(
+              page.locator('a[href="/profile/posts"]:has-text("Mine annonser")')
+            );
+            await expect(mineAnnonserLink).toBeVisible({ timeout: 10000 });
+            console.log('✅ Found "Mine annonser" link in sidebar');
+            
+            await mineAnnonserLink.click();
             await page.waitForTimeout(2000);
             
             // Verify we're on the correct page
