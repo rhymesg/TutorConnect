@@ -219,12 +219,15 @@ jobs:
             // Test 4.5: Check that "Rediger" button exists on edit page (important UI element)
             console.log('🧪 Test 4.5: Verify Rediger button exists on edit page');
             const redigerButton = page.locator('button:has-text("Rediger"), a:has-text("Rediger")');
+            
             if (await redigerButton.isVisible({ timeout: 5000 })) {
               console.log('✅ Rediger button found on edit page');
             } else {
-              console.log('⚠️ Rediger button not found on edit page');
+              // This is a critical UI element that must be present
               const allButtons = await page.locator('button').allTextContents();
+              console.log('❌ Rediger button not found on edit page');
               console.log('🔍 All buttons on edit page:', allButtons);
+              throw new Error('Rediger button is missing from edit page - this is a critical UI element that must be present');
             }
                     
             // Test 5: Test status toggle buttons
