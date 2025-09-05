@@ -296,14 +296,17 @@ jobs:
             await page.goto('/profile/posts');
             await page.waitForTimeout(2000);
             
-            // Click first post card to go to detail page
-            const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"])');
+            // Click first post card to go to detail page (exclude search pages like /posts/teachers)
+            const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
             const firstDetailPostCard = detailPostCards.first();
             await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
             
             // Get the href before clicking to know where we're going
             const detailPostHref = await firstDetailPostCard.getAttribute('href');
             console.log(`🔗 Clicking post card with href: ${detailPostHref}`);
+            
+            // Verify it's actually a post detail page (should have alphanumeric ID)
+            expect(detailPostHref).toMatch(/^\/posts\/[a-zA-Z0-9]+$/);
             
             await firstDetailPostCard.click();
             
