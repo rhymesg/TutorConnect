@@ -132,7 +132,7 @@ export default function Header({
                 {/* Notifications */}
                 <Link
                   href="/chat"
-                  className="relative block rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                  className="relative block rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
                   aria-label="Vis meldinger"
                 >
                   <BellIcon className="h-6 w-6" aria-hidden="true" />

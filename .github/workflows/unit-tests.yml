@@ -1,3 +1,13 @@
+# 🧪 Unit Tests Workflow
+# 
+# This workflow runs the following unit tests:
+# - Jest-based JavaScript/TypeScript unit tests
+# - Code coverage measurement and report generation
+# - Coverage analysis for files changed in PRs
+# - Test environment variables setup and dependency installation
+# - Runs on Node.js 20 with npm ci --include=dev for dependency installation
+# - Uses passWithNoTests option to pass even when no test files exist
+
 name: Unit Tests
 
 on:

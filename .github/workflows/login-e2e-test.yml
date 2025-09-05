@@ -1,3 +1,14 @@
+# 🔐 Login E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for the authentication system:
+# - Complete login flow testing with test user account (tester@tutorconnect.no)
+# - UI state validation after login (header buttons change from login/register to user menu)
+# - Local storage token verification and management
+# - Logout functionality testing and state cleanup
+# - User menu dropdown interaction testing
+# - Authentication error handling for server/database issues
+# - Uses Playwright with Chromium browser on production build
+
 name: Login E2E Test
 
 on:
@@ -86,17 +97,6 @@ jobs:
 
         test.describe('Login Flow', () => {
           test('should login successfully and update header state', async ({ page }) => {
-            // Setup test user first
-            const setupResponse = await page.request.post('/api/test/setup-tester', {
-              data: { password: process.env.TESTER_PASSWORD || 'defaultPassword123!' }
-            });
-            
-            if (!setupResponse.ok()) {
-              console.log('⚠️ Could not setup test user, proceeding anyway...');
-            } else {
-              console.log('✅ Test user setup complete');
-            }
-            
             // First visit home page to check initial header state
             await page.goto('/');
             
@@ -129,20 +129,8 @@ jobs:
               console.log('Login response status:', loginResponse.status());
               console.log('Login response data:', JSON.stringify(responseData, null, 2));
               
-              // If login failed due to server error (500) or missing account (401), 
-              // we'll consider this test as "skipped" rather than failed
-              // since it indicates infrastructure issues, not code issues
-              if (loginResponse.status() === 500) {
-                console.log('⚠️ Server error during login - likely environment/database issue');
-                console.log('⚠️ Skipping UI state test due to infrastructure problem');
-                return; // Skip the rest of the test
-              } else if (loginResponse.status() === 401) {
-                console.log('⚠️ Authentication failed - test account may not exist');
-                console.log('⚠️ Skipping UI state test due to missing test data');
-                return; // Skip the rest of the test
-              } else if (loginResponse.status() !== 200) {
-                throw new Error(`Unexpected login status: ${loginResponse.status()}`);
-              }
+              // Verify login was successful
+              expect(loginResponse.status()).toBe(200);
             }
             
             // Wait a bit for any redirects or UI updates

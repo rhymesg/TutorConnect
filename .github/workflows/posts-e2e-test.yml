@@ -1,3 +1,15 @@
+# 📝 Posts E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for the posts/listings functionality:
+# - Teacher posts browsing and individual post detail view testing
+# - Student posts browsing and individual post detail view testing
+# - Empty state handling when no posts are available
+# - Post card navigation and URL routing validation
+# - Profile popup interaction from post detail pages (username buttons)
+# - Page loading states and content rendering verification
+# - Tests both /posts/teachers and /posts/students flows without authentication
+# - Uses Playwright with Chromium browser on production build
+
 name: Posts E2E Test
 
 on:

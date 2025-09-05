@@ -1,0 +1,247 @@
+# 💬 Chat E2E Test Workflow
+# 
+# This workflow runs end-to-end tests for the chat system:
+# - Login with test user account (tester@tutorconnect.no)
+# - Navigate to "Mine samtaler" (chat list)
+# - Verify chat list loads correctly with at least 2 chats
+# - Click first chat and verify chat interface loads properly
+# - Uses Playwright with Chromium browser on production build
+
+name: Chat E2E Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_ENV: production
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  chat-test:
+    name: Test Chat Flow
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --include=dev
+      
+    - name: Setup environment
+      run: |
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
+        echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
+        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        echo "TESTER_PASSWORD=${{ secrets.TESTER_PASSWORD }}" >> $GITHUB_ENV
+        echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
+        
+    - name: Build application
+      run: npm run build
+      
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+      
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 10
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:3000
+      
+    - name: Run chat E2E test
+      run: |
+        cat > playwright-chat.config.ts << 'EOF'
+        import { defineConfig } from '@playwright/test';
+
+        export default defineConfig({
+          testDir: './tests/e2e',
+          timeout: 30000,
+          expect: { timeout: 10000 },
+          fullyParallel: false,
+          forbidOnly: !!process.env.CI,
+          retries: process.env.CI ? 2 : 0,
+          workers: 1,
+          reporter: 'html',
+          use: {
+            baseURL: 'http://localhost:3000',
+            trace: 'on-first-retry',
+            screenshot: 'only-on-failure',
+          },
+          projects: [
+            {
+              name: 'chromium',
+              use: { browserName: 'chromium' },
+            },
+          ],
+        });
+        EOF
+        
+        mkdir -p tests/e2e
+        cat > tests/e2e/chat.test.ts << 'EOF'
+        import { test, expect } from '@playwright/test';
+
+        test.describe('Chat Flow', () => {
+          test.beforeEach(async ({ page }) => {
+            // Login with existing test user
+            await page.goto('/auth/login');
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            let loginResponse;
+            await Promise.all([
+              page.waitForResponse(response => response.url().includes('/api/auth/login'), { timeout: 10000 }).then(res => { loginResponse = res; }),
+              page.click('button[type="submit"]')
+            ]);
+            
+            // Check login response
+            if (loginResponse) {
+              const status = loginResponse.status();
+              if (status !== 200) {
+                const responseData = await loginResponse.json().catch(() => ({}));
+                throw new Error(`Login failed with status ${status}: ${JSON.stringify(responseData)}`);
+              }
+            }
+            
+            // Wait for login to complete
+            await page.waitForTimeout(3000);
+            
+            // Verify login success
+            const accessToken = await page.evaluate(() => localStorage.getItem('accessToken'));
+            if (!accessToken) {
+              throw new Error('Login failed - no tokens found');
+            }
+            
+            console.log('✅ Login successful for chat tests');
+          });
+
+          test('should navigate to chat list and load chats properly', async ({ page }) => {
+            // Navigate to home page first
+            await page.goto('/');
+            
+            // Look for "Mine samtaler" button and click it
+            const mineSamtalerButton = page.locator('text=Mine samtaler').or(
+              page.locator('a[href="/chat"]')
+            ).or(
+              page.locator('a:has-text("samtaler")')
+            ).or(
+              page.locator('button:has-text("samtaler")')
+            ).first();
+            
+            await expect(mineSamtalerButton).toBeVisible({ timeout: 10000 });
+            console.log('✅ Found "Mine samtaler" button');
+            
+            await mineSamtalerButton.click();
+            
+            // Wait for navigation to chat page
+            await page.waitForURL('**/chat**', { timeout: 10000 });
+            console.log('✅ Navigated to chat page');
+            
+            // Wait for chat list to load - give more time for data fetching
+            console.log('⏳ Waiting for chat data to load...');
+            await page.waitForTimeout(5000);
+            
+            // Check for loading indicators but don't wait indefinitely
+            const loadingSpinner = page.locator('.animate-spin, [data-testid="loading"]');
+            if (await loadingSpinner.isVisible({ timeout: 2000 })) {
+              console.log('⏳ Loading spinner detected, waiting up to 5 seconds...');
+              try {
+                await loadingSpinner.waitFor({ state: 'hidden', timeout: 5000 });
+                console.log('✅ Loading spinner disappeared');
+              } catch (e) {
+                console.log('⚠️ Loading spinner still visible after 5s, continuing anyway...');
+              }
+            }
+            
+            // Use post management test pattern - wait for specific structure to load
+            // Based on ChatRoomList.tsx: div.divide-y.divide-gray-100 contains the chat buttons
+            console.log('⏳ Looking for chat list container...');
+            
+            const chatListContainer = page.locator('div.divide-y.divide-gray-100');
+            await expect(chatListContainer).toBeVisible({ timeout: 10000 });
+            console.log('✅ Chat list container found');
+            
+            // Wait for chat buttons to load (like post management waits for post cards)
+            const chatItems = page.locator('div.divide-y.divide-gray-100 > button.w-full.p-4.text-left');
+            
+            // Wait up to 8 seconds for chat items to appear
+            let hasChatItems = 0;
+            for (let attempt = 0; attempt < 8; attempt++) {
+              hasChatItems = await chatItems.count();
+              console.log(`🔍 Attempt ${attempt + 1}: Found ${hasChatItems} chat items`);
+              
+              if (hasChatItems >= 2) {
+                console.log(`✅ Found sufficient chat items: ${hasChatItems}`);
+                break;
+              }
+              
+              await page.waitForTimeout(1000);
+            }
+            
+            // Follow user's directive: fail if less than 2 chats found
+            if (hasChatItems < 2) {
+              console.log(`❌ Expected at least 2 chats but found ${hasChatItems} chats`);
+              throw new Error(`Test failed: Expected at least 2 chats for tester account but found only ${hasChatItems}. Tester account should have multiple chat conversations.`);
+            }
+            
+            console.log(`✅ Chat test requirements met with ${hasChatItems} chats`);
+            
+            // Verify we have at least 2 chats as required
+            expect(hasChatItems).toBeGreaterThanOrEqual(2);
+            
+            // Test clicking first chat
+            const firstChat = chatItems.first();
+            await expect(firstChat).toBeVisible({ timeout: 5000 });
+            console.log('✅ First chat item is visible');
+            
+            await firstChat.click();
+            
+            // Wait for chat interface to load
+            await page.waitForTimeout(3000);
+            
+            // Verify chat selection by checking if the chat item has the selected state
+            await expect(firstChat).toHaveClass(/bg-blue-50/);
+            console.log('✅ First chat selected successfully');
+            
+            // Wait for chat messages area to load
+            await page.waitForSelector('div.flex-1.overflow-y-auto', { timeout: 10000 });
+            console.log('✅ Chat messages area loaded');
+            
+            // Check for message composer
+            const messageComposer = page.locator('textarea, input[type="text"]').first();
+            await expect(messageComposer).toBeVisible({ timeout: 10000 });
+            console.log('✅ Message composer is visible for first chat');
+            
+            console.log('✅ Chat E2E test completed successfully');
+            
+            // Note: Testing switching between chats would require either:
+            // 1. Mobile-specific back button in the chat header
+            // 2. Desktop sidebar remaining visible
+            // Since the implementation uses state management and hides the chat list
+            // when a chat is selected (especially on mobile), we've verified the core
+            // functionality: loading chat list and opening a chat successfully.
+          });
+        });
+        EOF
+        
+        npx playwright test --config=playwright-chat.config.ts
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: chat-playwright-report
+        path: playwright-report/
+        retention-days: 30

@@ -306,7 +306,6 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                         <ExternalLink className="w-4 h-4" />
                       </button>
                     </div>
-                    <p className="text-sm text-neutral-600">Se profil</p>
                   </div>
                 </div>
               </div>
