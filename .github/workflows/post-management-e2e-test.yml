@@ -152,12 +152,16 @@ jobs:
             await expect(userMenuButton).toBeVisible({ timeout: 10000 });
             console.log('✅ User menu button visible after login');
             
-            // Look for "Mine annonser" in the left sidebar navigation
-            const mineAnnonserLink = page.locator('nav a:has-text("Mine annonser"), aside a:has-text("Mine annonser"), a:has-text("Mine annonser")');
-            await expect(mineAnnonserLink).toBeVisible({ timeout: 10000 });
-            console.log('✅ Found "Mine annonser" link in sidebar navigation');
+            // Navigate through user menu like navigation test does
+            await userMenuButton.click();
+            await page.waitForTimeout(1000);
             
-            await mineAnnonserLink.first().click();
+            // Look for "Mine annonser" in the dropdown menu
+            const mineAnnonserLink = page.locator('a:has-text("Mine annonser")').first();
+            await expect(mineAnnonserLink).toBeVisible({ timeout: 10000 });
+            console.log('✅ Found "Mine annonser" link in user dropdown menu');
+            
+            await mineAnnonserLink.click();
             await page.waitForTimeout(2000);
             
             // Verify we're on the correct page
