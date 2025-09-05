@@ -294,14 +294,21 @@ jobs:
             
             // Go back to Mine annonser page
             await page.goto('/profile/posts');
-            await page.waitForTimeout(3000);
+            await page.waitForTimeout(2000);
             
             // Click first post card to go to detail page
             const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"])');
             const firstDetailPostCard = detailPostCards.first();
             await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
+            
+            // Get the href before clicking to know where we're going
+            const postHref = await firstDetailPostCard.getAttribute('href');
+            console.log(`🔗 Clicking post card with href: ${postHref}`);
+            
             await firstDetailPostCard.click();
-            await page.waitForTimeout(3000);
+            
+            // Wait for navigation to complete using URL change
+            await page.waitForURL(/\/posts\/[^\/]+$/, { timeout: 10000 });
             
             // Verify we're on post detail page
             const detailPageUrl = await page.url();
