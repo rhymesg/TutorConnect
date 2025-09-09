@@ -8,6 +8,7 @@ import { z } from 'zod';
 // Send message schema
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
+  type: z.enum(['TEXT', 'APPOINTMENT_REQUEST', 'APPOINTMENT_RESPONSE', 'SYSTEM_MESSAGE']).optional().default('TEXT'),
   appointmentId: z.string().optional(),
   replyToMessageId: z.string().optional(),
 });
@@ -112,11 +113,22 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 
   const skip = before || after ? 0 : (page - 1) * limit;
 
+  console.log('🔍 [DEBUG] Loading messages for chatId:', chatId);
+  
   // Get messages with sender details
   const [messages, totalCount] = await Promise.all([
     prisma.message.findMany({
       where: messageWhere,
-      include: {
+      select: {
+        id: true,
+        content: true,
+        type: true,
+        chatId: true,
+        senderId: true,
+        sentAt: true,
+        isEdited: true,
+        appointmentId: true,
+        replyToMessageId: true,
         sender: {
           select: {
             id: true,
@@ -198,6 +210,24 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : 0;
 
+  // Debug appointment messages
+  const appointmentMessages = messagesWithReadStatus.filter(msg => 
+    msg.type === 'APPOINTMENT_REQUEST' || msg.type === 'APPOINTMENT_RESPONSE'
+  );
+  
+  console.log('📅 [DEBUG] Appointment messages found:', appointmentMessages.length);
+  appointmentMessages.forEach(msg => {
+    console.log(`📅 [DEBUG] Message ${msg.id}:`);
+    console.log(`  - Type: ${msg.type}`);
+    console.log(`  - Has appointment:`, !!msg.appointment);
+    if (msg.appointment) {
+      console.log(`  - DateTime: ${msg.appointment.dateTime}`);
+      console.log(`  - Duration: ${msg.appointment.duration} minutes`);
+      console.log(`  - Status: ${msg.appointment.status}`);
+    }
+    console.log(`  - Content preview: ${msg.content.substring(0, 100)}...`);
+  });
+
   return NextResponse.json({
     success: true,
     data: {
@@ -227,7 +257,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   const participant = await validateChatMessageAccess(chatId, user.id);
 
   // Validate input
-  const { content, appointmentId, replyToMessageId } = sendMessageSchema.parse(body);
+  const { content, type, appointmentId, replyToMessageId } = sendMessageSchema.parse(body);
 
 
   if (appointmentId) {
@@ -286,15 +316,70 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     throw new BadRequestError('Message contains inappropriate content');
   }
 
+  // Handle appointment messages
+  let createdAppointmentId = appointmentId;
+  
+  if (type === 'APPOINTMENT_REQUEST') {
+    // Parse appointment data from content
+    const appointmentData = JSON.parse(content);
+    
+    // Calculate duration from start and end times
+    const startTime = appointmentData.startTime; // e.g., "15:14"
+    const endTime = appointmentData.endTime; // e.g., "16:14"
+    
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const [endHour, endMinute] = endTime.split(':').map(Number);
+    
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const duration = endTotalMinutes - startTotalMinutes;
+    
+    // Use the original dateTime from the request (which includes the correct local time)
+    const appointmentDateTime = new Date(appointmentData.dateTime);
+    
+    // Create appointment
+    const appointment = await prisma.appointment.create({
+      data: {
+        chatId,
+        dateTime: appointmentDateTime,
+        location: 'online', // Default to online
+        duration: duration, // Calculated duration in minutes
+        status: 'PENDING',
+      }
+    });
+    
+    createdAppointmentId = appointment.id;
+  } else if (type === 'APPOINTMENT_RESPONSE') {
+    // Parse response data
+    const responseData = JSON.parse(content);
+    const originalMessage = await prisma.message.findUnique({
+      where: { id: responseData.originalMessageId },
+      include: { appointment: true }
+    });
+    
+    if (originalMessage?.appointment) {
+      // Update appointment status
+      await prisma.appointment.update({
+        where: { id: originalMessage.appointment.id },
+        data: {
+          status: responseData.accepted ? 'CONFIRMED' : 'CANCELLED',
+        }
+      });
+      
+      createdAppointmentId = originalMessage.appointment.id;
+    }
+  }
+
   // Create message in transaction
   const newMessage = await prisma.$transaction(async (tx) => {
     // Create the message
     const message = await tx.message.create({
       data: {
         content,
+        type,
         chatId,
         senderId: user.id,
-        appointmentId,
+        appointmentId: createdAppointmentId,
         replyToMessageId,
       },
       include: {

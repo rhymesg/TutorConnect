@@ -18,6 +18,8 @@ interface MessageListProps {
   onLoadMore?: () => void;
   onMessageAction?: (action: string, messageId: string) => void;
   onRetryMessage?: (messageId: string) => void;
+  onAcceptAppointment?: (messageId: string) => void;
+  onRejectAppointment?: (messageId: string) => void;
   className?: string;
 }
 
@@ -31,6 +33,8 @@ export default function MessageList({
   onLoadMore,
   onMessageAction,
   onRetryMessage,
+  onAcceptAppointment,
+  onRejectAppointment,
   className = '',
 }: MessageListProps) {
   const t = chatTranslations[language];
@@ -242,7 +246,9 @@ export default function MessageList({
             
             {/* Messages in group */}
             <div className="space-y-2">
-              {group.messages.map((message) => (
+              {group.messages.map((message) => {
+                console.log('MessageList - Rendering message:', message.id, 'type:', message.type);
+                return (
                 <MessageBubble
                   key={message.id || message.tempId}
                   message={message}
@@ -262,8 +268,10 @@ export default function MessageList({
                   onForward={() => handleForward(message.id)}
                   onReport={() => handleReport(message.id)}
                   onRetry={() => onRetryMessage?.(message.id || message.tempId!)}
+                  onAcceptAppointment={onAcceptAppointment}
+                  onRejectAppointment={onRejectAppointment}
                 />
-              ))}
+              )})}
             </div>
           </div>
         ))}

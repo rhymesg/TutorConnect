@@ -29,6 +29,7 @@ import {
 import { Message, MessageAttachment } from '@/types/chat';
 import { Language, chat as chatTranslations, formatters } from '@/lib/translations';
 import { MessageTimestamp } from './MessageStatus';
+import AppointmentMessage from './AppointmentMessage';
 
 interface MessageBubbleProps {
   message: Message & {
@@ -66,6 +67,8 @@ interface MessageBubbleProps {
   onForward?: () => void;
   onReport?: () => void;
   onRetry?: () => void;
+  onAcceptAppointment?: (messageId: string) => void;
+  onRejectAppointment?: (messageId: string) => void;
 }
 
 export default function MessageBubble({
@@ -86,6 +89,8 @@ export default function MessageBubble({
   onForward,
   onReport,
   onRetry,
+  onAcceptAppointment,
+  onRejectAppointment,
 }: MessageBubbleProps) {
   const t = chatTranslations[language];
   const [showMenu, setShowMenu] = useState(false);
@@ -183,12 +188,6 @@ export default function MessageBubble({
   );
 
   const renderAppointmentMessage = () => {
-    if (!message.appointment) return null;
-
-    const { appointment } = message;
-    const isRequest = message.type === 'APPOINTMENT_REQUEST';
-    const isResponse = message.type === 'APPOINTMENT_RESPONSE';
-
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
         <div className={`max-w-sm ${isOwn ? 'ml-12' : 'mr-12'}`}>
@@ -205,92 +204,38 @@ export default function MessageBubble({
                   <User className="h-4 w-4 text-gray-400" />
                 </div>
               )}
-            </div>
-          )}
-
-          <div
-            className={`p-4 rounded-2xl shadow-sm border ${
-              isOwn
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-gray-900 border-gray-200'
-            }`}
-          >
-            <div className="flex items-center gap-2 mb-3">
-              <Calendar className="h-4 w-4" />
-              <span className="font-medium">
-                {isRequest ? t.appointment.request : t.appointment.confirmed}
+              <span className="text-xs text-gray-500 mb-1">
+                {message.sender.name}
               </span>
             </div>
-
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <Clock className="h-3 w-3" />
-                <span>{formatDateTime(appointment.dateTime)}</span>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <MapPin className="h-3 w-3" />
-                <span>{appointment.location}</span>
-              </div>
-              
-              {appointment.hourlyRate && (
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-3 w-3" />
-                  <span>{formatters.currency(appointment.hourlyRate)}/time</span>
-                </div>
-              )}
-              
-              {message.content && (
-                <div className="pt-2 border-t border-white/20">
-                  <p>{message.content}</p>
-                </div>
-              )}
-            </div>
-
-            {isRequest && !isOwn && (
-              <div className="flex gap-2 mt-3">
-                <button 
-                  onClick={() => {
-                    // TODO: Handle appointment acceptance
-                    console.log('Accept appointment:', message.appointment);
-                  }}
-                  className="flex-1 px-3 py-1 bg-green-500 hover:bg-green-600 text-white text-sm rounded-lg transition-colors font-medium"
-                >
-                  {t.appointment.accept}
-                </button>
-                <button 
-                  onClick={() => {
-                    // TODO: Handle appointment decline
-                    console.log('Decline appointment:', message.appointment);
-                  }}
-                  className="flex-1 px-3 py-1 bg-gray-500 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors"
-                >
-                  {t.appointment.decline}
-                </button>
-              </div>
-            )}
-          </div>
-
-          {showTimestamp && (
-            <div className={`text-xs text-gray-500 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-              {formatDateTime(message.sentAt)}
-              {isOwn && (
-                <span className="ml-1">
-                  {getMessageStatusIcon()}
-                </span>
-              )}
-            </div>
           )}
+          
+          <AppointmentMessage
+            message={message}
+            isOwn={isOwn}
+            language={language}
+            onAccept={() => onAcceptAppointment?.(message.id)}
+            onReject={() => onRejectAppointment?.(message.id)}
+          />
         </div>
       </div>
     );
   };
 
+  // Debug all messages to see what's happening
+  console.log('MessageBubble - ALL MESSAGES DEBUG:');
+  console.log('- message.type:', message.type);
+  console.log('- message.id:', message.id);
+  console.log('- message.content:', message.content?.substring(0, 50) + '...');
+  console.log('- message.appointment:', message.appointment);
+  console.log('- full message keys:', Object.keys(message));
+
   if (message.type === 'SYSTEM_MESSAGE') {
     return renderSystemMessage();
   }
-
+  
   if (message.type === 'APPOINTMENT_REQUEST' || message.type === 'APPOINTMENT_RESPONSE') {
+    console.log('Rendering appointment message');
     return renderAppointmentMessage();
   }
 

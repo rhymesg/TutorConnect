@@ -10,6 +10,7 @@ import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import AppointmentModal, { AppointmentData } from './AppointmentModal';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
@@ -31,6 +32,7 @@ export default function ChatInterface({
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [isChangingChat, setIsChangingChat] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
   // Use centralized chat hook
   const {
@@ -174,6 +176,66 @@ export default function ChatInterface({
     // console.log('Retry message:', messageId);
   };
 
+  const handleAcceptAppointment = async (messageId: string) => {
+    console.log('Accepting appointment:', messageId);
+    try {
+      // Send appointment response message
+      const responseData = {
+        originalMessageId: messageId,
+        accepted: true
+      };
+      console.log('Sending appointment response:', responseData);
+      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_RESPONSE');
+      console.log('Appointment accepted successfully');
+    } catch (error) {
+      console.error('Failed to accept appointment:', error);
+    }
+  };
+
+  const handleRejectAppointment = async (messageId: string) => {
+    try {
+      // Send appointment response message
+      await sendMessage(JSON.stringify({
+        originalMessageId: messageId,
+        accepted: false
+      }), 'APPOINTMENT_RESPONSE');
+    } catch (error) {
+      console.error('Failed to reject appointment:', error);
+    }
+  };
+
+  const handleScheduleAppointment = () => {
+    setShowAppointmentModal(true);
+  };
+
+  const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
+    console.log('Sending appointment request:', appointmentData);
+    
+    // Combine date and time
+    const dateTime = `${appointmentData.date}T${appointmentData.startTime}`;
+    const endDateTime = `${appointmentData.date}T${appointmentData.endTime}`;
+    
+    // Create appointment request message
+    const appointmentMessage = JSON.stringify({
+      dateTime,
+      endDateTime,
+      date: appointmentData.date,
+      startTime: appointmentData.startTime,
+      endTime: appointmentData.endTime
+    });
+    
+    console.log('Appointment message content:', appointmentMessage);
+    console.log('Message type:', 'APPOINTMENT_REQUEST');
+    
+    try {
+      await sendMessage(appointmentMessage, 'APPOINTMENT_REQUEST');
+      console.log('Appointment request sent successfully');
+      setShowAppointmentModal(false);
+    } catch (error) {
+      console.error('Failed to send appointment request:', error);
+    }
+  };
+
   return (
     <div className={`flex h-full bg-gray-50 ${className}`}>
       {/* Chat List Sidebar */}
@@ -237,6 +299,7 @@ export default function ChatInterface({
               onBlockUser={() => {/* console.log('Block user') */}}
               onReportUser={() => {/* console.log('Report user') */}}
               onSettings={() => {/* console.log('Settings') */}}
+              onScheduleAppointment={handleScheduleAppointment}
             />
             
             {/* Messages - scrollable area */}
@@ -251,6 +314,8 @@ export default function ChatInterface({
                 onLoadMore={handleLoadMoreMessages}
                 onMessageAction={handleMessageAction}
                 onRetryMessage={handleRetryMessage}
+                onAcceptAppointment={handleAcceptAppointment}
+                onRejectAppointment={handleRejectAppointment}
               />
             </div>
             
@@ -307,6 +372,14 @@ export default function ChatInterface({
           <X className="h-5 w-5" />
         </button>
       )}
+
+      {/* Appointment Modal */}
+      <AppointmentModal
+        isOpen={showAppointmentModal}
+        onClose={() => setShowAppointmentModal(false)}
+        onSubmit={handleAppointmentSubmit}
+        language={language}
+      />
     </div>
   );
 }

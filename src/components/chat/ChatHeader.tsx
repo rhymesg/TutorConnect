@@ -30,6 +30,7 @@ interface ChatHeaderProps {
   onBlockUser?: () => void;
   onReportUser?: () => void;
   onSettings?: () => void;
+  onScheduleAppointment?: () => void;
 }
 
 export default function ChatHeader({
@@ -44,6 +45,7 @@ export default function ChatHeader({
   onBlockUser,
   onReportUser,
   onSettings,
+  onScheduleAppointment,
 }: ChatHeaderProps) {
   const t = chatTranslations[language];
   // const [showMenu, setShowMenu] = useState(false); // TODO: Re-enable when menu functionality is implemented
@@ -181,10 +183,7 @@ export default function ChatHeader({
                 )}
                 
                 <button
-                  onClick={() => {
-                    // TODO: Open appointment scheduling modal
-                    // console.log('Schedule appointment');
-                  }}
+                  onClick={onScheduleAppointment}
                   className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-md hover:bg-purple-200 border border-purple-100 hover:border-purple-200 transition-colors"
                   title="Avtale undervisningstime"
                 >

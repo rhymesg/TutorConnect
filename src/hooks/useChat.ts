@@ -143,6 +143,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           isEdited: msg.isEdited || false,
           sentAt: new Date(msg.sentAt),
           sender: msg.sender,
+          appointment: msg.appointment,
         }));
         
         setChat(transformedChat);
@@ -328,6 +329,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         isEdited: newMessage.isEdited || false,
         sentAt: new Date(newMessage.sentAt),
         sender: newMessage.sender,
+        appointment: newMessage.appointment,
       };
       
       setMessages(prev => [...prev, transformedMessage]);
@@ -422,6 +424,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
                     isEdited: msg.isEdited || false,
                     sentAt: new Date(msg.sentAt),
                     sender: msg.sender,
+                    appointment: msg.appointment,
                   }));
                   
                   setMessages(prev => [...prev, ...transformedMessages]);
