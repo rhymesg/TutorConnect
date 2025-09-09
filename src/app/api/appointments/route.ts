@@ -1,203 +1,137 @@
-/**
- * Appointments API Routes
- * Main CRUD operations for Norwegian tutoring appointments
- * Integrated with chat system and Norwegian calendar features
- */
+import { NextRequest, NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
+import { apiHandler } from '@/lib/api-handler';
+import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
+import { z } from 'zod';
 
-import { NextRequest } from 'next/server';
-import { createAPIHandler, createSuccessResponse, createPaginatedResponse, APIContext } from '@/lib/api-handler';
-import { authMiddleware, requireEmailVerification } from '@/middleware/auth';
-import { 
-  createAppointmentSchema, 
-  listAppointmentsSchema,
-  ListAppointmentsInput,
-  CreateAppointmentInput 
-} from '@/schemas/appointments';
-import { 
-  createAppointment, 
-  getUserAppointments,
-  getAppointmentStats,
-  AppointmentUtils
-} from '@/lib/appointments';
-import { BadRequestError, NotFoundError } from '@/lib/errors';
-import { handleZodError } from '@/lib/errors';
-
+// Query schema
+const appointmentQuerySchema = z.object({
+  status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']).nullable().optional(),
+  limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
+  page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
+});
 
 /**
- * POST /api/appointments - Create new appointment with Norwegian validation
+ * GET /api/appointments - Get user's appointments
  */
-async function handlePOST(request: NextRequest, context: APIContext) {
-  const { user, validatedData } = context;
-  const appointmentData = validatedData?.body as CreateAppointmentInput;
-
-  try {
-    const result = await createAppointment(user!.id, appointmentData);
-
-    // Format response with Norwegian context
-    const formattedResult = {
-      ...result,
-      appointment: {
-        ...result.appointment,
-        norwegianContext: AppointmentUtils.formatNorwegianDateTime(result.appointment.dateTime),
-        userRole: determineUserRole(result.appointment, user!.id),
-        otherParticipants: result.appointment.chat.participants
-          .filter(p => p.user.id !== user!.id)
-          .map(p => ({
-            id: p.user.id,
-            name: p.user.name,
-            region: p.user.region,
-          })),
-        subject: result.appointment.chat.relatedPost?.subject,
-        postTitle: result.appointment.chat.relatedPost?.title,
-      },
-    };
-
-    return createSuccessResponse(
-      formattedResult,
-      result.message,
-      {
-        hasWarnings: result.warnings.length > 0,
-        warnings: result.warnings,
-        hasRecurring: !!result.recurringAppointments,
-        recurringCount: result.recurringAppointments?.length || 0,
-        language: context.language,
-      },
-      201
-    );
-
-  } catch (error) {
-    if (error instanceof BadRequestError) {
-      throw error;
-    }
-    console.error('Error creating appointment:', error);
-    throw new BadRequestError('Failed to create appointment');
-  }
-}
-
-/**
- * Helper function to determine user role in appointment
- */
-function determineUserRole(
-  appointment: any,
-  userId: string
-): 'tutor' | 'student' | 'participant' {
-  if (!appointment.chat.relatedPost) {
-    return 'participant';
-  }
-
-  if (appointment.chat.relatedPost.user.id === userId) {
-    return appointment.chat.relatedPost.type === 'TEACHER' ? 'tutor' : 'student';
-  } else {
-    return appointment.chat.relatedPost.type === 'TEACHER' ? 'student' : 'tutor';
-  }
-}
-
-/**
- * Enhanced validation for query parameters
- */
-const validateQuery = (request: NextRequest) => {
+async function handleGET(request: NextRequest) {
+  const user = getAuthenticatedUser(request);
   const { searchParams } = new URL(request.url);
-  
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
-  const status = searchParams.getAll('status').filter(Boolean);
-  const dateFrom = searchParams.get('dateFrom') || undefined;
-  const dateTo = searchParams.get('dateTo') || undefined;
-  const chatId = searchParams.get('chatId') || undefined;
-  const sortBy = (searchParams.get('sortBy') || 'dateTime') as 'dateTime' | 'createdAt' | 'updatedAt';
-  const sortOrder = (searchParams.get('sortOrder') || 'asc') as 'asc' | 'desc';
 
-  return listAppointmentsSchema.parse({
-    page,
-    limit,
-    status: status.length > 0 ? status : undefined,
-    dateFrom,
-    dateTo,
-    chatId,
-    sortBy,
-    sortOrder,
+  // Validate query parameters
+  const { status, limit, page } = appointmentQuerySchema.parse({
+    status: searchParams.get('status') as any,
+    limit: searchParams.get('limit'),
+    page: searchParams.get('page'),
   });
-};
 
-/**
- * Export route handlers with enhanced Norwegian tutoring features
- */
-export const GET = createAPIHandler(async (request: NextRequest, context: APIContext) => {
-  // Manual validation for GET request
-  const filters = validateQuery(request);
-  const { user } = context;
+  const skip = (page - 1) * limit;
 
-  const result = await getUserAppointments(user!.id, filters);
+  // Build where clause
+  let appointmentWhere: any = {
+    chat: {
+      participants: {
+        some: {
+          userId: user.id,
+          isActive: true,
+        },
+      },
+    },
+  };
 
-  // Add Norwegian context to each appointment
-  const appointmentsWithContext = result.appointments.map(appointment => {
-    const norwegianContext = AppointmentUtils.formatNorwegianDateTime(appointment.dateTime);
-    
-    // Determine user's role in the appointment
-    const currentUserParticipant = appointment.chat.participants.find(p => p.user.id === user!.id);
-    const otherParticipants = appointment.chat.participants.filter(p => p.user.id !== user!.id);
-    
-    // Check if user is tutor or student based on post
-    let userRole: 'tutor' | 'student' | 'participant' = 'participant';
-    if (appointment.chat.relatedPost) {
-      if (appointment.chat.relatedPost.user.id === user!.id) {
-        userRole = appointment.chat.relatedPost.type === 'TEACHER' ? 'tutor' : 'student';
-      } else {
-        userRole = appointment.chat.relatedPost.type === 'TEACHER' ? 'student' : 'tutor';
-      }
-    }
+  if (status) {
+    appointmentWhere.status = status;
+  }
+
+  // Get appointments with related data
+  const [appointments, totalCount] = await Promise.all([
+    prisma.appointment.findMany({
+      where: appointmentWhere,
+      include: {
+        chat: {
+          include: {
+            participants: {
+              where: {
+                userId: { not: user.id },
+                isActive: true,
+              },
+              include: {
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    profileImage: true,
+                  },
+                },
+              },
+            },
+            relatedPost: {
+              select: {
+                id: true,
+                title: true,
+                subject: true,
+                type: true,
+                user: {
+                  select: {
+                    id: true,
+                    name: true,
+                    profileImage: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { dateTime: 'asc' },
+      skip,
+      take: limit,
+    }),
+    prisma.appointment.count({
+      where: appointmentWhere,
+    }),
+  ]);
+
+  // Transform appointments for frontend
+  const transformedAppointments = appointments.map(appointment => {
+    const otherParticipant = appointment.chat.participants[0];
+    const relatedPost = appointment.chat.relatedPost;
 
     return {
-      ...appointment,
-      norwegianContext,
-      userRole,
-      otherParticipants: otherParticipants.map(p => ({
-        id: p.user.id,
-        name: p.user.name,
-        region: p.user.region,
-      })),
-      subject: appointment.chat.relatedPost?.subject,
-      postTitle: appointment.chat.relatedPost?.title,
+      id: appointment.id,
+      dateTime: appointment.dateTime,
+      duration: appointment.duration,
+      location: appointment.location,
+      status: appointment.status,
+      chatId: appointment.chatId,
+      otherUser: otherParticipant?.user || relatedPost?.user || null,
+      relatedPost: relatedPost ? {
+        id: relatedPost.id,
+        title: relatedPost.title,
+        subject: relatedPost.subject,
+        type: relatedPost.type,
+      } : null,
     };
   });
 
-  return createPaginatedResponse(
-    appointmentsWithContext,
-    result.pagination,
-    'Appointments retrieved successfully',
-    {
-      totalAppointments: result.pagination.total,
-      language: context.language,
-    }
-  );
-}, {
-  requireAuth: true,
-  language: 'no',
-});
+  const totalPages = Math.ceil(totalCount / limit);
 
-export const POST = createAPIHandler(handlePOST, {
-  requireAuth: true,
-  validation: {
-    body: createAppointmentSchema,
-  },
-  language: 'no',
-  rateLimit: {
-    maxAttempts: 10, // Limit appointment creation to prevent spam
-    windowMs: 60 * 1000, // 1 minute window
-  },
-});
-
-/**
- * OPTIONS handler for CORS preflight requests
- */
-export async function OPTIONS() {
-  return new Response(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      'Access-Control-Max-Age': '86400',
+  return NextResponse.json({
+    success: true,
+    data: {
+      appointments: transformedAppointments,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasMore: page < totalPages,
+      },
     },
   });
 }
+
+export const GET = apiHandler(async (request: NextRequest) => {
+  await authMiddleware(request);
+  return handleGET(request);
+});

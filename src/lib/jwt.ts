@@ -29,7 +29,7 @@ const refreshSecretKey = new TextEncoder().encode(JWT_REFRESH_SECRET);
 // JWT Configuration
 export const JWT_CONFIG = {
   accessToken: {
-    expiresIn: '2h', // 2 hours
+    expiresIn: '24h', // 24 hours for development
     algorithm: 'HS256' as const,
   },
   refreshToken: {
@@ -50,7 +50,7 @@ export async function generateAccessToken(payload: {
   region: string;
 }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
-  const exp = now + (2 * 60 * 60); // 2 hours from now
+  const exp = now + (24 * 60 * 60); // 24 hours from now
 
   const tokenPayload: AccessTokenPayload = {
     sub: payload.userId,

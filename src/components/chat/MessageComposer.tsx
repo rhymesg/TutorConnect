@@ -4,6 +4,7 @@ import { useState, useRef, useCallback } from 'react';
 import { Send, Paperclip, Smile, Mic, X, Image, FileText, Calendar, MessageSquare } from 'lucide-react';
 import { Message } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
+import AppointmentModal, { AppointmentData } from './AppointmentModal';
 
 interface MessageComposerProps {
   onSendMessage: (content: string, type?: Message['type']) => Promise<void>;
@@ -35,6 +36,7 @@ export default function MessageComposer({
   const [showAttachMenu, setShowAttachMenu] = useState(false);
   const [showTemplates, setShowTemplates] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -137,6 +139,27 @@ export default function MessageComposer({
     
     // Clear file input
     e.target.value = '';
+  };
+
+  const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
+    // Combine date and time
+    const dateTime = `${appointmentData.date}T${appointmentData.startTime}`;
+    const endDateTime = `${appointmentData.date}T${appointmentData.endTime}`;
+    
+    // Create appointment request message
+    const appointmentMessage = JSON.stringify({
+      dateTime,
+      endDateTime,
+      date: appointmentData.date,
+      startTime: appointmentData.startTime,
+      endTime: appointmentData.endTime
+    });
+    
+    try {
+      await onSendMessage(appointmentMessage, 'APPOINTMENT_REQUEST');
+    } catch (error) {
+      console.error('Failed to send appointment request:', error);
+    }
   };
 
   const removeAttachment = (id: string) => {
@@ -260,6 +283,7 @@ export default function MessageComposer({
           {showAttachMenu && (
             <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
               <button
+                type="button"
                 onClick={() => handleFileSelect('image/*')}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
               >
@@ -268,6 +292,7 @@ export default function MessageComposer({
               </button>
               
               <button
+                type="button"
                 onClick={() => handleFileSelect('.pdf,.doc,.docx,.txt')}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
               >
@@ -276,6 +301,7 @@ export default function MessageComposer({
               </button>
               
               <button
+                type="button"
                 onClick={() => handleFileSelect('audio/*')}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
               >
@@ -284,15 +310,17 @@ export default function MessageComposer({
               </button>
               
               <button
-                onClick={() => {
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
                   setShowAttachMenu(false);
-                  // TODO: Open appointment booking modal - this should trigger a modal for scheduling
-                  console.log('Open appointment booking modal');
+                  setShowAppointmentModal(true);
                 }}
                 className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 rounded-b-lg font-medium"
               >
                 <Calendar className="h-4 w-4 text-blue-500" />
-                {language === 'no' ? 'Book undervisningstime' : 'Schedule tutoring session'}
+                {language === 'no' ? 'Avtale time' : 'Schedule time'}
               </button>
             </div>
           )}
@@ -367,6 +395,14 @@ export default function MessageComposer({
           <span>{t.composer.uploading}</span>
         </div>
       )}
+      
+      {/* Appointment Modal */}
+      <AppointmentModal
+        isOpen={showAppointmentModal}
+        onClose={() => setShowAppointmentModal(false)}
+        onSubmit={handleAppointmentSubmit}
+        language={language}
+      />
     </div>
   );
 }

@@ -80,22 +80,31 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
   // Get headers with auth token
   const getAuthHeaders = useCallback(async () => {
-    if (!accessToken) {
-      const refreshed = await refreshAuth();
-      if (!refreshed) {
-        throw new Error('Authentication required');
+    try {
+      if (!accessToken) {
+        console.log('No access token, trying to refresh...');
+        const refreshed = await refreshAuth();
+        if (!refreshed) {
+          throw new Error('Authentication required');
+        }
+        // After refresh, we need to get the new token
+        const newToken = localStorage.getItem('accessToken');
+        if (!newToken) {
+          throw new Error('Authentication required');
+        }
+        return {
+          'Authorization': `Bearer ${newToken}`,
+          'Content-Type': 'application/json',
+        };
       }
-      // After refresh, we need to get the new token
-      const newToken = localStorage.getItem('accessToken');
       return {
-        'Authorization': `Bearer ${newToken}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
       };
+    } catch (error) {
+      console.error('Auth error in getAuthHeaders:', error);
+      throw new Error('Authentication required');
     }
-    return {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-    };
   }, [accessToken, refreshAuth]);
 
   // Load specific chat with messages
@@ -143,6 +152,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
           isEdited: msg.isEdited || false,
           sentAt: new Date(msg.sentAt),
           sender: msg.sender,
+          appointment: msg.appointment,
         }));
         
         setChat(transformedChat);
@@ -310,9 +320,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        // console.error('API error response:', errorData);
-        throw new Error(errorData.error || 'Failed to send message');
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+        // Server can return error in 'error' or 'message' field
+        const errorMessage = errorData.error || errorData.message || 'Failed to send message';
+        console.log('Server error:', errorMessage);
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -328,14 +340,16 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         isEdited: newMessage.isEdited || false,
         sentAt: new Date(newMessage.sentAt),
         sender: newMessage.sender,
+        appointment: newMessage.appointment,
       };
       
       setMessages(prev => [...prev, transformedMessage]);
       
     } catch (error) {
-      // console.error('Error sending message:', error);
-      setMessageError(error instanceof Error ? error.message : 'Failed to send message');
-      throw error;
+      console.error('Error sending message:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      setMessageError(errorMessage);
+      throw new Error(errorMessage);
     }
   }, [chatId, getAuthHeaders]);
 
@@ -422,6 +436,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
                     isEdited: msg.isEdited || false,
                     sentAt: new Date(msg.sentAt),
                     sender: msg.sender,
+                    appointment: msg.appointment,
                   }));
                   
                   setMessages(prev => [...prev, ...transformedMessages]);

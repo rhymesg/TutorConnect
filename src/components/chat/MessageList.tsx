@@ -18,6 +18,7 @@ interface MessageListProps {
   onLoadMore?: () => void;
   onMessageAction?: (action: string, messageId: string) => void;
   onRetryMessage?: (messageId: string) => void;
+  onViewAppointment?: (messageId: string) => void;
   className?: string;
 }
 
@@ -31,6 +32,7 @@ export default function MessageList({
   onLoadMore,
   onMessageAction,
   onRetryMessage,
+  onViewAppointment,
   className = '',
 }: MessageListProps) {
   const t = chatTranslations[language];
@@ -262,6 +264,7 @@ export default function MessageList({
                   onForward={() => handleForward(message.id)}
                   onReport={() => handleReport(message.id)}
                   onRetry={() => onRetryMessage?.(message.id || message.tempId!)}
+                  onViewAppointment={onViewAppointment}
                 />
               ))}
             </div>
