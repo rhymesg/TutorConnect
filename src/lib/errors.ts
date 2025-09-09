@@ -277,7 +277,7 @@ export function createErrorResponse(
   // Generic error
   return {
     success: false,
-    message: error.message || getLocalizedErrorMessage('INTERNAL_ERROR', language),
+    message: getLocalizedErrorMessage('INTERNAL_ERROR', language),
     code: 'INTERNAL_ERROR',
     statusCode: 500,
     meta: {
