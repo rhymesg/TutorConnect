@@ -5,12 +5,14 @@ import { X, MessageCircle } from 'lucide-react';
 import { useLanguage, chat as chatTranslations } from '@/lib/translations';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
+import { Message } from '@/types/chat';
 import ChatRoomList from './ChatRoomList';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
+import AppointmentResponseModal from './AppointmentResponseModal';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
@@ -33,6 +35,10 @@ export default function ChatInterface({
   const [showSidebar, setShowSidebar] = useState(true);
   const [isChangingChat, setIsChangingChat] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
+  const [appointmentError, setAppointmentError] = useState<string | null>(null);
+  const [showAppointmentResponseModal, setShowAppointmentResponseModal] = useState(false);
+  const [selectedAppointmentMessage, setSelectedAppointmentMessage] = useState<Message | null>(null);
+  const [appointmentResponseError, setAppointmentResponseError] = useState<string | null>(null);
   
   // Use centralized chat hook
   const {
@@ -176,31 +182,57 @@ export default function ChatInterface({
     // console.log('Retry message:', messageId);
   };
 
-  const handleAcceptAppointment = async (messageId: string) => {
-    console.log('Accepting appointment:', messageId);
-    try {
-      // Send appointment response message
-      const responseData = {
-        originalMessageId: messageId,
-        accepted: true
-      };
-      console.log('Sending appointment response:', responseData);
-      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_RESPONSE');
-      console.log('Appointment accepted successfully');
-    } catch (error) {
-      console.error('Failed to accept appointment:', error);
+  const handleViewAppointment = (messageId: string) => {
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      setSelectedAppointmentMessage(message);
+      setShowAppointmentResponseModal(true);
+      setAppointmentResponseError(null);
     }
   };
 
-  const handleRejectAppointment = async (messageId: string) => {
+  const handleAcceptAppointment = async () => {
+    if (!selectedAppointmentMessage) return;
+    
+    setAppointmentResponseError(null);
+    
     try {
-      // Send appointment response message
+      const responseData = {
+        originalMessageId: selectedAppointmentMessage.id,
+        accepted: true
+      };
+      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_RESPONSE');
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to accept appointment:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke godta avtalen');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
+  const handleRejectAppointment = async () => {
+    if (!selectedAppointmentMessage) return;
+    
+    setAppointmentResponseError(null);
+    
+    try {
       await sendMessage(JSON.stringify({
-        originalMessageId: messageId,
+        originalMessageId: selectedAppointmentMessage.id,
         accepted: false
       }), 'APPOINTMENT_RESPONSE');
-    } catch (error) {
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
       console.error('Failed to reject appointment:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke avslå avtalen');
+      throw error; // Re-throw for modal handling
     }
   };
 
@@ -210,6 +242,28 @@ export default function ChatInterface({
 
   const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
     console.log('Sending appointment request:', appointmentData);
+    setAppointmentError(null);
+    
+    // Double-check if appointment exists before sending
+    if (selectedChatId) {
+      try {
+        const checkResponse = await fetch(`/api/chat/${selectedChatId}/appointments/check?date=${appointmentData.date}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        
+        if (checkResponse.ok) {
+          const checkData = await checkResponse.json();
+          if (checkData.data.hasAppointment) {
+            setAppointmentError('Det finnes allerede en avtale for denne datoen.');
+            return; // Don't send appointment
+          }
+        }
+      } catch (error) {
+        console.error('Failed to check appointment before sending:', error);
+      }
+    }
     
     // Combine date and time
     const dateTime = `${appointmentData.date}T${appointmentData.startTime}`;
@@ -231,8 +285,10 @@ export default function ChatInterface({
       await sendMessage(appointmentMessage, 'APPOINTMENT_REQUEST');
       console.log('Appointment request sent successfully');
       setShowAppointmentModal(false);
-    } catch (error) {
+      setAppointmentError(null);
+    } catch (error: any) {
       console.error('Failed to send appointment request:', error);
+      setAppointmentError('Kunne ikke sende avtaleforespørsel. Vennligst prøv igjen.');
     }
   };
 
@@ -271,12 +327,13 @@ export default function ChatInterface({
         {selectedChatId && chat ? (
           <div className="flex flex-col h-full">
             {/* Error display */}
-            {(chatError || messageError) && (
+            {(chatError || messageError || appointmentResponseError) && (
               <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
-                <span>{chatError || messageError}</span>
+                <span>{chatError || messageError || appointmentResponseError}</span>
                 <button 
                   onClick={() => {
                     clearErrors();
+                    setAppointmentResponseError(null);
                     if (selectedChatId) {
                       handleRetry();
                     }
@@ -314,8 +371,7 @@ export default function ChatInterface({
                 onLoadMore={handleLoadMoreMessages}
                 onMessageAction={handleMessageAction}
                 onRetryMessage={handleRetryMessage}
-                onAcceptAppointment={handleAcceptAppointment}
-                onRejectAppointment={handleRejectAppointment}
+                onViewAppointment={handleViewAppointment}
               />
             </div>
             
@@ -376,10 +432,32 @@ export default function ChatInterface({
       {/* Appointment Modal */}
       <AppointmentModal
         isOpen={showAppointmentModal}
-        onClose={() => setShowAppointmentModal(false)}
+        onClose={() => {
+          setShowAppointmentModal(false);
+          setAppointmentError(null);
+        }}
         onSubmit={handleAppointmentSubmit}
         language={language}
+        chatId={selectedChatId || ''}
+        error={appointmentError}
       />
+
+      {/* Appointment Response Modal */}
+      {selectedAppointmentMessage && (
+        <AppointmentResponseModal
+          isOpen={showAppointmentResponseModal}
+          onClose={() => {
+            setShowAppointmentResponseModal(false);
+            setSelectedAppointmentMessage(null);
+            setAppointmentResponseError(null);
+          }}
+          message={selectedAppointmentMessage}
+          language={language}
+          onAccept={handleAcceptAppointment}
+          onReject={handleRejectAppointment}
+          error={appointmentResponseError}
+        />
+      )}
     </div>
   );
 }

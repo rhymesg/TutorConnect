@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Calendar, Clock } from 'lucide-react';
 import { Language } from '@/lib/translations';
 
@@ -9,6 +9,8 @@ interface AppointmentModalProps {
   onClose: () => void;
   onSubmit: (appointment: AppointmentData) => void;
   language: Language;
+  chatId: string;
+  error?: string | null;
 }
 
 export interface AppointmentData {
@@ -21,7 +23,9 @@ export default function AppointmentModal({
   isOpen,
   onClose,
   onSubmit,
-  language
+  language,
+  chatId,
+  error
 }: AppointmentModalProps) {
   const t = language === 'no' ? {
     title: 'Avtale time',
@@ -45,6 +49,73 @@ export default function AppointmentModal({
     endTime: ''
   });
 
+  const [hasExistingAppointment, setHasExistingAppointment] = useState(false);
+  const [isCheckingDate, setIsCheckingDate] = useState(false);
+  const [timeError, setTimeError] = useState<string | null>(null);
+
+  // Check for existing appointments when date changes
+  useEffect(() => {
+    const checkAppointment = async () => {
+      if (!formData.date || !chatId) return;
+      
+      setIsCheckingDate(true);
+      try {
+        const response = await fetch(`/api/chat/${chatId}/appointments/check?date=${formData.date}`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          },
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setHasExistingAppointment(data.data.hasAppointment);
+        }
+      } catch (error) {
+        console.error('Failed to check appointment:', error);
+      } finally {
+        setIsCheckingDate(false);
+      }
+    };
+
+    checkAppointment();
+  }, [formData.date, chatId]);
+
+  // Reset form when modal opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setFormData({
+        date: '',
+        startTime: '',
+        endTime: ''
+      });
+      setHasExistingAppointment(false);
+      setIsCheckingDate(false);
+      setTimeError(null);
+    }
+  }, [isOpen]);
+
+  // Validate times when they change
+  useEffect(() => {
+    let error = null;
+    
+    if (formData.startTime || formData.endTime) {
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+      const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
+      
+      // Check if start time is in the past (only for today)
+      if (formData.date === today && formData.startTime && formData.startTime <= currentTime) {
+        error = language === 'no' ? 'Starttid må være etter nåværende tid' : 'Start time must be after current time';
+      }
+      // Check if end time is after start time
+      else if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
+        error = language === 'no' ? 'Sluttid må være etter starttid' : 'End time must be after start time';
+      }
+    }
+    
+    setTimeError(error);
+  }, [formData.startTime, formData.endTime, formData.date, language]);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -52,8 +123,13 @@ export default function AppointmentModal({
       return;
     }
     
+    // Check validation errors
+    if (timeError || hasExistingAppointment) {
+      return;
+    }
+    
     onSubmit(formData);
-    onClose();
+    // Don't close here - let the parent handle closing on success
   };
 
   if (!isOpen) {
@@ -81,6 +157,7 @@ export default function AppointmentModal({
               <X className="h-5 w-5" />
             </button>
           </div>
+          
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -91,11 +168,31 @@ export default function AppointmentModal({
               <input
                 type="date"
                 value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                onChange={(e) => {
+                  setFormData({ ...formData, date: e.target.value });
+                  setHasExistingAppointment(false); // Reset check
+                }}
                 min={new Date().toISOString().split('T')[0]}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
+              
+              {/* Show appointment check result */}
+              {formData.date && (
+                <div className="mt-2">
+                  {isCheckingDate ? (
+                    <div className="text-sm text-gray-500">Sjekker dato...</div>
+                  ) : hasExistingAppointment ? (
+                    <div className="text-sm text-red-600">
+                      Det finnes allerede en avtale for denne datoen.
+                    </div>
+                  ) : formData.date ? (
+                    <div className="text-sm text-green-600">
+                      Datoen er tilgjengelig.
+                    </div>
+                  ) : null}
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -128,6 +225,19 @@ export default function AppointmentModal({
               </div>
             </div>
 
+            {/* Show time validation error */}
+            {timeError && (
+              <div className="text-sm text-red-600 mt-1">
+                {timeError}
+              </div>
+            )}
+
+            {error && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {error}
+              </div>
+            )}
+
             <div className="flex gap-3 pt-4">
               <button
                 type="button"
@@ -138,9 +248,14 @@ export default function AppointmentModal({
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                disabled={hasExistingAppointment || isCheckingDate || !!timeError}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
+                  hasExistingAppointment || isCheckingDate || timeError
+                    ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
               >
-                {t.submit}
+                {isCheckingDate ? 'Sjekker...' : t.submit}
               </button>
             </div>
           </form>

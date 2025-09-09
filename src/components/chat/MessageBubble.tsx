@@ -67,8 +67,7 @@ interface MessageBubbleProps {
   onForward?: () => void;
   onReport?: () => void;
   onRetry?: () => void;
-  onAcceptAppointment?: (messageId: string) => void;
-  onRejectAppointment?: (messageId: string) => void;
+  onViewAppointment?: (messageId: string) => void;
 }
 
 export default function MessageBubble({
@@ -89,8 +88,7 @@ export default function MessageBubble({
   onForward,
   onReport,
   onRetry,
-  onAcceptAppointment,
-  onRejectAppointment,
+  onViewAppointment,
 }: MessageBubbleProps) {
   const t = chatTranslations[language];
   const [showMenu, setShowMenu] = useState(false);
@@ -187,7 +185,13 @@ export default function MessageBubble({
     </div>
   );
 
-  const renderAppointmentMessage = () => {
+
+
+  if (message.type === 'SYSTEM_MESSAGE') {
+    return renderSystemMessage();
+  }
+  
+  if (message.type === 'APPOINTMENT_REQUEST' || message.type === 'APPOINTMENT_RESPONSE') {
     return (
       <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2`}>
         <div className={`max-w-sm ${isOwn ? 'ml-12' : 'mr-12'}`}>
@@ -214,29 +218,11 @@ export default function MessageBubble({
             message={message}
             isOwn={isOwn}
             language={language}
-            onAccept={() => onAcceptAppointment?.(message.id)}
-            onReject={() => onRejectAppointment?.(message.id)}
+            onViewAppointment={() => onViewAppointment?.(message.id)}
           />
         </div>
       </div>
     );
-  };
-
-  // Debug all messages to see what's happening
-  console.log('MessageBubble - ALL MESSAGES DEBUG:');
-  console.log('- message.type:', message.type);
-  console.log('- message.id:', message.id);
-  console.log('- message.content:', message.content?.substring(0, 50) + '...');
-  console.log('- message.appointment:', message.appointment);
-  console.log('- full message keys:', Object.keys(message));
-
-  if (message.type === 'SYSTEM_MESSAGE') {
-    return renderSystemMessage();
-  }
-  
-  if (message.type === 'APPOINTMENT_REQUEST' || message.type === 'APPOINTMENT_RESPONSE') {
-    console.log('Rendering appointment message');
-    return renderAppointmentMessage();
   }
 
   // Regular text message

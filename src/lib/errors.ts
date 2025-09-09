@@ -252,9 +252,18 @@ export function createErrorResponse(
   requestId?: string
 ) {
   if (error instanceof APIError) {
+    // Use the actual error message if it's not a generic code
+    let message = error.message;
+    
+    // Only try to localize if we have a translation for this code
+    const localizedMessage = getLocalizedErrorMessage(error.code, language);
+    if (localizedMessage !== error.code) {
+      message = localizedMessage;
+    }
+    
     return {
       success: false,
-      message: getLocalizedErrorMessage(error.code, language),
+      message: message,
       code: error.code,
       statusCode: error.statusCode,
       errors: error.errors,
@@ -268,7 +277,7 @@ export function createErrorResponse(
   // Generic error
   return {
     success: false,
-    message: getLocalizedErrorMessage('INTERNAL_ERROR', language),
+    message: error.message || getLocalizedErrorMessage('INTERNAL_ERROR', language),
     code: 'INTERNAL_ERROR',
     statusCode: 500,
     meta: {

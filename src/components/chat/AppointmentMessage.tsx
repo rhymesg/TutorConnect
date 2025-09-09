@@ -8,38 +8,30 @@ interface AppointmentMessageProps {
   message: Message;
   isOwn: boolean;
   language: Language;
-  onAccept?: () => void;
-  onReject?: () => void;
-  disabled?: boolean;
+  onViewAppointment?: () => void;
 }
 
 export default function AppointmentMessage({
   message,
   isOwn,
   language,
-  onAccept,
-  onReject,
-  disabled = false
+  onViewAppointment
 }: AppointmentMessageProps) {
   const t = language === 'no' ? {
     proposedTime: 'Foreslått tid',
-    accept: 'Godta',
-    reject: 'Avslå',
+    viewAppointment: 'Se avtale',
     pending: 'Venter på svar',
     confirmed: 'Bekreftet',
     rejected: 'Avslått',
     cancelled: 'Avbrutt',
-    waitingForResponse: 'Venter på svar fra',
     youProposed: 'Du foreslo denne timen'
   } : {
     proposedTime: 'Proposed time',
-    accept: 'Accept',
-    reject: 'Reject',
+    viewAppointment: 'View appointment',
     pending: 'Pending',
     confirmed: 'Confirmed',
     rejected: 'Rejected',
     cancelled: 'Cancelled',
-    waitingForResponse: 'Waiting for response from',
     youProposed: 'You proposed this time'
   };
 
@@ -64,16 +56,7 @@ export default function AppointmentMessage({
     }
   }
   
-  console.log('AppointmentMessage - message type:', message.type);
-  console.log('AppointmentMessage - message.appointment:', message.appointment);
-  console.log('AppointmentMessage - appointmentData:', appointmentData);
   
-  if (message.appointment) {
-    console.log('Raw appointment dateTime:', message.appointment.dateTime);
-    console.log('Duration:', message.appointment.duration);
-    console.log('Parsed date:', new Date(message.appointment.dateTime));
-    console.log('Local time string:', new Date(message.appointment.dateTime).toLocaleString());
-  }
 
   const formatDate = (dateStr: string) => {
     if (!dateStr) return 'Invalid Date';
@@ -136,6 +119,7 @@ export default function AppointmentMessage({
 
   const status = message.appointment?.status || 'PENDING';
   const isResponse = message.type === 'APPOINTMENT_RESPONSE';
+  
 
   return (
     <div className={`p-4 rounded-lg border-2 ${
@@ -175,39 +159,31 @@ export default function AppointmentMessage({
             </div>
           </div>
           
-          {/* Status or Actions */}
-          <div className="mt-3">
-            {isOwn && !isResponse ? (
+          {/* Status and Actions */}
+          <div className="mt-3 flex items-center justify-between">
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
+              status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
+              status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
+              'bg-gray-100 text-gray-800'
+            }`}>
+              {status === 'CONFIRMED' && <Check className="h-4 w-4" />}
+              {status === 'CANCELLED' && <X className="h-4 w-4" />}
+              {t[status.toLowerCase() as keyof typeof t] || status}
+            </div>
+
+            {/* View appointment button - only show for non-own requests */}
+            {!isOwn && !isResponse && onViewAppointment && (
+              <button
+                onClick={onViewAppointment}
+                className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
+              >
+                {t.viewAppointment}
+              </button>
+            )}
+
+            {/* Show message for own requests */}
+            {isOwn && !isResponse && (
               <p className="text-sm text-gray-500 italic">{t.youProposed}</p>
-            ) : status === 'PENDING' && !isOwn && !isResponse && onAccept && onReject ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={onAccept}
-                  disabled={disabled}
-                  className="flex-1 px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <Check className="h-4 w-4" />
-                  {t.accept}
-                </button>
-                <button
-                  onClick={onReject}
-                  disabled={disabled}
-                  className="flex-1 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  <X className="h-4 w-4" />
-                  {t.reject}
-                </button>
-              </div>
-            ) : (
-              <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                'bg-gray-100 text-gray-800'
-              }`}>
-                {status === 'CONFIRMED' && <Check className="h-4 w-4" />}
-                {status === 'CANCELLED' && <X className="h-4 w-4" />}
-                {t[status.toLowerCase() as keyof typeof t] || status}
-              </div>
             )}
           </div>
         </div>

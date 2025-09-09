@@ -337,6 +337,30 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     // Use the original dateTime from the request (which includes the correct local time)
     const appointmentDateTime = new Date(appointmentData.dateTime);
     
+    // Check if there's already an appointment for this chat on the same date
+    const startOfDay = new Date(appointmentDateTime);
+    startOfDay.setHours(0, 0, 0, 0);
+    
+    const endOfDay = new Date(appointmentDateTime);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        chatId,
+        dateTime: {
+          gte: startOfDay,
+          lte: endOfDay,
+        },
+        status: {
+          in: ['PENDING', 'CONFIRMED'],
+        },
+      },
+    });
+    
+    if (existingAppointment) {
+      throw new BadRequestError('Det finnes allerede en avtale for denne chatten på den valgte datoen.');
+    }
+    
     // Create appointment
     const appointment = await prisma.appointment.create({
       data: {
@@ -358,6 +382,11 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     });
     
     if (originalMessage?.appointment) {
+      // Check if appointment is still in PENDING status
+      if (originalMessage.appointment.status !== 'PENDING') {
+        throw new BadRequestError('Denne avtalen har allerede blitt besvart.');
+      }
+      
       // Update appointment status
       await prisma.appointment.update({
         where: { id: originalMessage.appointment.id },

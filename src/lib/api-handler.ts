@@ -262,6 +262,9 @@ function handleAPIError(
     error: error.message,
     stack: error.stack,
     requestId,
+    errorType: error.constructor.name,
+    statusCode: error.statusCode,
+    code: error.code,
   });
 
   // Handle specific error types
@@ -293,11 +296,15 @@ function handleAPIError(
     return response;
   }
 
-  // Generic error
-  const genericError = new APIError('Internal server error', 500, 'INTERNAL_ERROR');
+  // Generic error - but preserve original message if available
+  const errorMessage = error?.message || 'Internal server error';
+  const statusCode = error?.statusCode || 500;
+  const errorCode = error?.code || 'INTERNAL_ERROR';
+  
+  const genericError = new APIError(errorMessage, statusCode, errorCode);
   const response = NextResponse.json(
     createErrorResponse(genericError, language, requestId),
-    { status: 500 }
+    { status: statusCode }
   );
   response.headers.set('X-Request-ID', requestId);
   response.headers.set('X-Response-Time', `${duration}ms`);
