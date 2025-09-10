@@ -8,7 +8,7 @@ import { z } from 'zod';
 // Send message schema
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
-  type: z.enum(['TEXT', 'APPOINTMENT_REQUEST', 'APPOINTMENT_RESPONSE', 'SYSTEM_MESSAGE']).optional().default('TEXT'),
+  type: z.enum(['TEXT', 'APPOINTMENT_REQUEST', 'APPOINTMENT_RESPONSE', 'APPOINTMENT_COMPLETION_RESPONSE', 'SYSTEM_MESSAGE']).optional().default('TEXT'),
   appointmentId: z.string().optional(),
   replyToMessageId: z.string().optional(),
 });
@@ -377,6 +377,59 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       });
       
       createdAppointmentId = originalMessage.appointment.id;
+    }
+  } else if (type === 'APPOINTMENT_COMPLETION_RESPONSE') {
+    // Parse completion response data
+    const responseData = JSON.parse(content);
+    
+    if (appointmentId) {
+      // Get the appointment
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          chat: {
+            include: {
+              participants: {
+                where: { isActive: true }
+              }
+            }
+          }
+        }
+      });
+      
+      if (!appointment) {
+        throw new BadRequestError('Appointment not found');
+      }
+      
+      if (appointment.status !== 'WAITING_TO_COMPLETE') {
+        throw new BadRequestError('이 약속은 완료 확인 대기 상태가 아닙니다.');
+      }
+      
+      // Determine which user is responding
+      const isTeacher = appointment.chat.participants.some(p => 
+        p.userId === user.id && appointment.chat.teacherId === user.id
+      );
+      
+      const updateData: any = {};
+      if (isTeacher) {
+        updateData.teacherReady = responseData.completed;
+      } else {
+        updateData.studentReady = responseData.completed;
+      }
+      
+      // If both parties have responded positively, mark as completed
+      const otherPartyReady = isTeacher ? appointment.studentReady : appointment.teacherReady;
+      if (responseData.completed && otherPartyReady) {
+        updateData.status = 'COMPLETED';
+        updateData.bothCompleted = true;
+      }
+      
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: updateData
+      });
+      
+      createdAppointmentId = appointmentId;
     }
   }
 

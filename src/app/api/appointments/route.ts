@@ -6,10 +6,44 @@ import { z } from 'zod';
 
 // Query schema
 const appointmentQuerySchema = z.object({
-  status: z.enum(['PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED']).nullable().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED']).nullable().optional(),
   limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
   page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
 });
+
+/**
+ * Helper function to update expired appointments to WAITING_TO_COMPLETE status
+ */
+async function updateExpiredAppointments() {
+  // Find appointments that should be moved to WAITING_TO_COMPLETE
+  const expiredAppointments = await prisma.appointment.findMany({
+    where: {
+      status: 'CONFIRMED',
+      dateTime: {
+        lt: new Date() // Past the appointment time
+      }
+    }
+  });
+
+  if (expiredAppointments.length === 0) {
+    return 0;
+  }
+
+  // Update expired appointments to WAITING_TO_COMPLETE status
+  await prisma.appointment.updateMany({
+    where: {
+      status: 'CONFIRMED',
+      dateTime: {
+        lt: new Date()
+      }
+    },
+    data: {
+      status: 'WAITING_TO_COMPLETE'
+    }
+  });
+
+  return expiredAppointments.length;
+}
 
 /**
  * GET /api/appointments - Get user's appointments
@@ -17,6 +51,9 @@ const appointmentQuerySchema = z.object({
 async function handleGET(request: NextRequest) {
   const user = getAuthenticatedUser(request);
   const { searchParams } = new URL(request.url);
+
+  // Update expired appointments first
+  await updateExpiredAppointments();
 
   // Validate query parameters
   const { status, limit, page } = appointmentQuerySchema.parse({

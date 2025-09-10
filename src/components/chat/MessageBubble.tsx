@@ -225,6 +225,7 @@ export default function MessageBubble({
     );
   }
 
+
   // Regular text message
   return (
     <div className={`flex ${isOwn ? 'justify-end' : 'justify-start'} mb-2 group`}>

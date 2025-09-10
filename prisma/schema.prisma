@@ -316,10 +316,11 @@ enum AgeGroup {
 }
 
 enum AppointmentStatus {
-  PENDING
-  CONFIRMED
-  COMPLETED
-  CANCELLED
+  PENDING              // Venter - waiting for response
+  CONFIRMED            // Bekreftet - confirmed, future appointments
+  WAITING_TO_COMPLETE  // Venter på fullføring - confirmed appointments that are past due
+  COMPLETED            // Fullført - marked as completed by both parties
+  CANCELLED            // Avbrutt - cancelled
 }
 
 enum DocumentType {
@@ -340,6 +341,7 @@ enum MessageType {
   TEXT
   APPOINTMENT_REQUEST
   APPOINTMENT_RESPONSE
+  APPOINTMENT_COMPLETION_RESPONSE
   SYSTEM_MESSAGE
 }
 

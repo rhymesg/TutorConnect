@@ -13,7 +13,7 @@ interface Appointment {
   dateTime: string;
   duration: number;
   location: string;
-  status: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED';
+  status: 'PENDING' | 'CONFIRMED' | 'WAITING_TO_COMPLETE' | 'COMPLETED' | 'CANCELLED';
   chatId: string;
   otherUser: {
     id: string;
@@ -36,7 +36,7 @@ export default function AppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED'>('ALL');
+  const [filter, setFilter] = useState<'ALL' | 'PENDING' | 'CONFIRMED' | 'WAITING_TO_COMPLETE' | 'COMPLETED' | 'CANCELLED'>('ALL');
 
   const t = {
     no: {
@@ -45,6 +45,7 @@ export default function AppointmentsPage() {
       noAppointmentsDesc: 'Du har ingen planlagte avtaler',
       pending: 'Venter',
       confirmed: 'Bekreftet',
+      waiting_to_complete: 'Venter på fullføring',
       completed: 'Fullført',
       cancelled: 'Avbrutt',
       all: 'Alle',
@@ -61,6 +62,7 @@ export default function AppointmentsPage() {
       noAppointmentsDesc: 'You have no scheduled appointments',
       pending: 'Pending',
       confirmed: 'Confirmed',
+      waiting_to_complete: 'Waiting to Complete',
       completed: 'Completed',
       cancelled: 'Cancelled',
       all: 'All',
@@ -78,6 +80,7 @@ export default function AppointmentsPage() {
   const statusColors = {
     PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     CONFIRMED: 'bg-green-100 text-green-800 border-green-200',
+    WAITING_TO_COMPLETE: 'bg-orange-100 text-orange-800 border-orange-200',
     COMPLETED: 'bg-blue-100 text-blue-800 border-blue-200',
     CANCELLED: 'bg-red-100 text-red-800 border-red-200',
   };
@@ -178,7 +181,7 @@ export default function AppointmentsPage() {
           
           {/* Filter tabs */}
           <div className="flex flex-wrap gap-2">
-            {(['ALL', 'PENDING', 'CONFIRMED', 'COMPLETED', 'CANCELLED'] as const).map(status => (
+            {(['ALL', 'PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED'] as const).map(status => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}

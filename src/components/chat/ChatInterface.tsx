@@ -192,16 +192,24 @@ export default function ChatInterface({
   };
 
   const handleAcceptAppointment = async () => {
-    if (!selectedAppointmentMessage) return;
+    if (!selectedAppointmentMessage?.appointment?.id) return;
     
     setAppointmentResponseError(null);
     
     try {
-      const responseData = {
-        originalMessageId: selectedAppointmentMessage.id,
-        accepted: true
-      };
-      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_RESPONSE');
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/respond`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accepted: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke godta avtalen');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
@@ -215,15 +223,24 @@ export default function ChatInterface({
   };
 
   const handleRejectAppointment = async () => {
-    if (!selectedAppointmentMessage) return;
+    if (!selectedAppointmentMessage?.appointment?.id) return;
     
     setAppointmentResponseError(null);
     
     try {
-      await sendMessage(JSON.stringify({
-        originalMessageId: selectedAppointmentMessage.id,
-        accepted: false
-      }), 'APPOINTMENT_RESPONSE');
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/respond`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accepted: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke avslå avtalen');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
@@ -232,6 +249,47 @@ export default function ChatInterface({
     } catch (error: any) {
       console.error('Failed to reject appointment:', error);
       setAppointmentResponseError(error?.message || 'Kunne ikke avslå avtalen');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
+
+  const handleCompletedAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    try {
+      const responseData = {
+        completed: true
+      };
+      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_COMPLETION_RESPONSE', selectedAppointmentMessage.appointment.id);
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to confirm appointment completion:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
+  const handleNotCompletedAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    try {
+      const responseData = {
+        completed: false
+      };
+      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_COMPLETION_RESPONSE', selectedAppointmentMessage.appointment.id);
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to mark appointment as not completed:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke markere avtalen som ikke gjennomført');
       throw error; // Re-throw for modal handling
     }
   };
@@ -457,6 +515,8 @@ export default function ChatInterface({
           language={language}
           onAccept={handleAcceptAppointment}
           onReject={handleRejectAppointment}
+          onCompleted={handleCompletedAppointment}
+          onNotCompleted={handleNotCompletedAppointment}
           error={appointmentResponseError}
         />
       )}
