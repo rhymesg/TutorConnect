@@ -113,7 +113,6 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 
   const skip = before || after ? 0 : (page - 1) * limit;
 
-  console.log('🔍 [DEBUG] Loading messages for chatId:', chatId);
   
   // Get messages with sender details
   const [messages, totalCount] = await Promise.all([
@@ -209,24 +208,6 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
   );
 
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : 0;
-
-  // Debug appointment messages
-  const appointmentMessages = messagesWithReadStatus.filter(msg => 
-    msg.type === 'APPOINTMENT_REQUEST' || msg.type === 'APPOINTMENT_RESPONSE'
-  );
-  
-  console.log('📅 [DEBUG] Appointment messages found:', appointmentMessages.length);
-  appointmentMessages.forEach(msg => {
-    console.log(`📅 [DEBUG] Message ${msg.id}:`);
-    console.log(`  - Type: ${msg.type}`);
-    console.log(`  - Has appointment:`, !!msg.appointment);
-    if (msg.appointment) {
-      console.log(`  - DateTime: ${msg.appointment.dateTime}`);
-      console.log(`  - Duration: ${msg.appointment.duration} minutes`);
-      console.log(`  - Status: ${msg.appointment.status}`);
-    }
-    console.log(`  - Content preview: ${msg.content.substring(0, 100)}...`);
-  });
 
   return NextResponse.json({
     success: true,
@@ -366,7 +347,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       data: {
         chatId,
         dateTime: appointmentDateTime,
-        location: 'online', // Default to online
+        location: appointmentData.location ? appointmentData.location : '', // Use provided location or default to empty string
         duration: duration, // Calculated duration in minutes
         status: 'PENDING',
       }

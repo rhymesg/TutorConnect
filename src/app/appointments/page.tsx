@@ -83,7 +83,6 @@ export default function AppointmentsPage() {
   };
 
   useEffect(() => {
-    console.log('Auth state:', { user: !!user, accessToken: !!accessToken });
     if (user && accessToken) {
       fetchAppointments();
     }
@@ -255,7 +254,7 @@ export default function AppointmentsPage() {
                     )}
 
                     {/* Location */}
-                    {appointment.location !== 'online' && (
+                    {appointment.location && (
                       <div className="flex items-center gap-2">
                         <MapPin className="h-4 w-4 text-gray-400" />
                         <span className="text-sm text-gray-600">

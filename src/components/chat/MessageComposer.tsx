@@ -11,6 +11,7 @@ interface MessageComposerProps {
   language: Language;
   disabled?: boolean;
   placeholder?: string;
+  chatId?: string;
 }
 
 interface FileAttachment {
@@ -27,6 +28,7 @@ export default function MessageComposer({
   language,
   disabled = false,
   placeholder,
+  chatId,
 }: MessageComposerProps) {
   const t = chatTranslations[language];
   
@@ -152,7 +154,8 @@ export default function MessageComposer({
       endDateTime,
       date: appointmentData.date,
       startTime: appointmentData.startTime,
-      endTime: appointmentData.endTime
+      endTime: appointmentData.endTime,
+      location: appointmentData.location
     });
     
     try {
@@ -402,6 +405,7 @@ export default function MessageComposer({
         onClose={() => setShowAppointmentModal(false)}
         onSubmit={handleAppointmentSubmit}
         language={language}
+        chatId={chatId || ''}
       />
     </div>
   );

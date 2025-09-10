@@ -275,7 +275,8 @@ export default function ChatInterface({
       endDateTime,
       date: appointmentData.date,
       startTime: appointmentData.startTime,
-      endTime: appointmentData.endTime
+      endTime: appointmentData.endTime,
+      location: appointmentData.location
     });
     
     console.log('Appointment message content:', appointmentMessage);
@@ -381,6 +382,7 @@ export default function ChatInterface({
                 onSendMessage={handleSendMessage}
                 language={language}
                 disabled={false}
+                chatId={selectedChatId}
               />
             </div>
           </div>

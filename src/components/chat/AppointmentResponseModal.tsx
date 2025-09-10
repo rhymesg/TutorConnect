@@ -33,6 +33,7 @@ export default function AppointmentResponseModal({
     reject: 'Avslå',
     cancel: 'Lukk',
     from: 'Fra',
+    location: 'Sted',
     alreadyResponded: 'Du har allerede svart på denne avtalen'
   } : {
     title: 'Appointment Request',
@@ -41,6 +42,7 @@ export default function AppointmentResponseModal({
     reject: 'Reject', 
     cancel: 'Close',
     from: 'From',
+    location: 'Location',
     alreadyResponded: 'You have already responded to this appointment'
   };
 
@@ -176,6 +178,12 @@ export default function AppointmentResponseModal({
                       {formatTime(appointmentData.endTime || appointmentData.endDateTime)}
                     </span>
                   </div>
+                  {appointmentData.location && (
+                    <div className="flex items-start gap-2">
+                      <span className="mt-0.5">📍</span>
+                      <span>{appointmentData.location}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -45,7 +45,8 @@ export default function AppointmentMessage({
       endDateTime: new Date(new Date(message.appointment.dateTime).getTime() + ((message.appointment.duration || 60) * 60 * 1000)),
       date: new Date(message.appointment.dateTime).toISOString().split('T')[0],
       startTime: new Date(message.appointment.dateTime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' }),
-      endTime: new Date(new Date(message.appointment.dateTime).getTime() + ((message.appointment.duration || 60) * 60 * 1000)).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' })
+      endTime: new Date(new Date(message.appointment.dateTime).getTime() + ((message.appointment.duration || 60) * 60 * 1000)).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Oslo' }),
+      location: message.appointment.location || ''
     } : {};
   } else {
     // For request messages, parse from content
@@ -157,6 +158,12 @@ export default function AppointmentMessage({
                 {formatTime(appointmentData.endTime || appointmentData.endDateTime)}
               </span>
             </div>
+            {appointmentData.location && (
+              <div className="flex items-start gap-2">
+                <span className="mt-0.5">📍</span>
+                <span>{appointmentData.location}</span>
+              </div>
+            )}
           </div>
           
           {/* Status and Actions */}

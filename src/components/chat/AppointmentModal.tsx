@@ -17,6 +17,7 @@ export interface AppointmentData {
   date: string;
   startTime: string;
   endTime: string;
+  location: string;
 }
 
 export default function AppointmentModal({
@@ -32,6 +33,7 @@ export default function AppointmentModal({
     date: 'Dato',
     startTime: 'Fra',
     endTime: 'Til',
+    location: 'Sted',
     submit: 'Send forespørsel',
     cancel: 'Avbryt'
   } : {
@@ -39,6 +41,7 @@ export default function AppointmentModal({
     date: 'Date',
     startTime: 'From',
     endTime: 'To',
+    location: 'Location',
     submit: 'Send Request',
     cancel: 'Cancel'
   };
@@ -46,7 +49,8 @@ export default function AppointmentModal({
   const [formData, setFormData] = useState<AppointmentData>({
     date: '',
     startTime: '',
-    endTime: ''
+    endTime: '',
+    location: ''
   });
 
   const [hasExistingAppointment, setHasExistingAppointment] = useState(false);
@@ -86,7 +90,8 @@ export default function AppointmentModal({
       setFormData({
         date: '',
         startTime: '',
-        endTime: ''
+        endTime: '',
+        location: ''
       });
       setHasExistingAppointment(false);
       setIsCheckingDate(false);
@@ -119,7 +124,7 @@ export default function AppointmentModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.date || !formData.startTime || !formData.endTime) {
+    if (!formData.date || !formData.startTime || !formData.endTime || !formData.location) {
       return;
     }
     
@@ -231,6 +236,20 @@ export default function AppointmentModal({
                 {timeError}
               </div>
             )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                {t.location}
+              </label>
+              <input
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                placeholder={language === 'no' ? 'F.eks. Deichman bibliotek, Adresse' : 'E.g. Deichman library, Address'}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
 
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
