@@ -56,7 +56,13 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 export const GET = apiHandler(async (request: NextRequest, context: any) => {
   await authMiddleware(request);
   const url = new URL(request.url);
-  const pathSegments = url.pathname.split('/');
-  const chatId = pathSegments[pathSegments.indexOf('chat') + 1];
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const chatIndex = pathSegments.indexOf('chat');
+  const chatId = chatIndex >= 0 && chatIndex < pathSegments.length - 1 ? pathSegments[chatIndex + 1] : '';
+  
+  if (!chatId) {
+    return NextResponse.json({ success: false, error: 'Chat ID not found in URL' }, { status: 400 });
+  }
+  
   return handleGET(request, { params: Promise.resolve({ chatId }) });
 });
