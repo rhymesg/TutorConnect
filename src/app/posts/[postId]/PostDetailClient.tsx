@@ -32,10 +32,46 @@ interface PostDetailClientProps {
 
 export default function PostDetailClient({ post }: PostDetailClientProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const { user } = useAuth();
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const { user, accessToken } = useAuth();
   
   const isTutorPost = post.type === 'TEACHER';
   const subjectName = getSubjectLabel(post.subject);
+
+  const handleStartChat = async () => {
+    if (isOwner || !user || post.status === 'PAUSET' || isCreatingChat) {
+      return;
+    }
+
+    setIsCreatingChat(true);
+
+    try {
+      // Create chat via post-specific API
+      const response = await fetch(`/api/posts/${post.id}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': accessToken ? `Bearer ${accessToken}` : '',
+        },
+        body: JSON.stringify({}), // No initial message, just create chat
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create chat');
+      }
+
+      const { data } = await response.json();
+      
+      // Navigate to the chat page with the chat ID as query parameter
+      window.location.href = `/chat?id=${data.chatId || data.chat.id}`;
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      alert('Kunne ikke opprette samtale. Prøv igjen.');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
   const ageGroupText = getAgeGroupLabels(post.ageGroups);
   const isOwner = user?.id === post.userId;
   const postStatus = post.status || 'AKTIV'; // Fallback for existing posts
@@ -314,22 +350,16 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             {/* Contact Button */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <button
-                onClick={() => {
-                  if (isOwner || !user || post.status === 'PAUSET') {
-                    return; // Do nothing for own post, not logged in, or paused post
-                  }
-                  // Navigate to chat or create chat functionality
-                  window.location.href = `/chat/new?postId=${post.id}&userId=${post.userId}`;
-                }}
-                disabled={isOwner || !user || post.status === 'PAUSET'}
+                onClick={handleStartChat}
+                disabled={isOwner || !user || post.status === 'PAUSET' || isCreatingChat}
                 className={`w-full inline-flex items-center justify-center px-6 py-3 rounded-lg font-medium transition-colors ${
-                  isOwner || !user || post.status === 'PAUSET'
+                  isOwner || !user || post.status === 'PAUSET' || isCreatingChat
                     ? 'bg-neutral-300 text-neutral-500 cursor-not-allowed'
                     : 'bg-brand-600 text-white hover:bg-brand-700'
                 }`}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
-                Start samtale
+                {isCreatingChat ? 'Oppretter samtale...' : 'Start samtale'}
               </button>
               <p className="text-xs text-neutral-500 text-center mt-3">
                 {isOwner 

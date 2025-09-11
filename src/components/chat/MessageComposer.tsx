@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { Send, Paperclip, Smile, Mic, X, Image, FileText, Calendar, MessageSquare } from 'lucide-react';
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { Send, Paperclip, Mic, X, Image, FileText } from 'lucide-react';
 import { Message } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
@@ -36,12 +36,12 @@ export default function MessageComposer({
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [showAttachMenu, setShowAttachMenu] = useState(false);
-  const [showTemplates, setShowTemplates] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const attachMenuRef = useRef<HTMLDivElement>(null);
 
   const adjustTextareaHeight = useCallback(() => {
     const textarea = textareaRef.current;
@@ -51,6 +51,22 @@ export default function MessageComposer({
       textarea.style.height = scrollHeight + 'px';
     }
   }, []);
+
+  // Close attach menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (attachMenuRef.current && !attachMenuRef.current.contains(event.target as Node)) {
+        setShowAttachMenu(false);
+      }
+    };
+
+    if (showAttachMenu) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showAttachMenu]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -169,30 +185,7 @@ export default function MessageComposer({
     setAttachments(prev => prev.filter(att => att.id !== id));
   };
 
-  const quickTemplates = language === 'no' ? [
-    'Når passer det best for deg?',
-    'Jeg er tilgjengelig i dag etter klokka 15:00',
-    'Kan vi møtes på biblioteket?',
-    'Takk for undervisningen!',
-    'Kan du forklare dette nærmere?',
-    'Jeg trenger hjelp med hjemmeleksa'
-  ] : [
-    'When works best for you?',
-    "I'm available today after 3 PM",
-    'Can we meet at the library?',
-    'Thanks for the tutoring!',
-    'Can you explain this further?',
-    'I need help with homework'
-  ];
 
-  const handleTemplateSelect = (template: string) => {
-    setMessage(template);
-    setShowTemplates(false);
-    if (textareaRef.current) {
-      textareaRef.current.focus();
-      adjustTextareaHeight();
-    }
-  };
 
   const canSend = (message.trim() || attachments.length > 0) && !isSending && !disabled;
 
@@ -242,39 +235,9 @@ export default function MessageComposer({
       )}
       
       <div className="flex items-end gap-2">
-        {/* Quick Templates */}
-        <div className="relative">
-          <button
-            onClick={() => setShowTemplates(!showTemplates)}
-            disabled={disabled}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            title={language === 'no' ? 'Hurtigmeldinger' : 'Quick messages'}
-          >
-            <MessageSquare className="h-5 w-5" />
-          </button>
-          
-          {showTemplates && (
-            <div className="absolute bottom-full left-0 mb-2 w-64 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
-              <div className="p-2 border-b border-gray-100">
-                <span className="text-xs font-medium text-gray-700 uppercase tracking-wider">
-                  {language === 'no' ? 'Hurtigmeldinger' : 'Quick Messages'}
-                </span>
-              </div>
-              {quickTemplates.map((template, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleTemplateSelect(template)}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 last:rounded-b-lg"
-                >
-                  {template}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Attachment Menu */}
-        <div className="relative">
+        <div className="relative" ref={attachMenuRef}>
           <button
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             disabled={disabled}
@@ -287,44 +250,31 @@ export default function MessageComposer({
             <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
               <button
                 type="button"
-                onClick={() => handleFileSelect('image/*')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 rounded-t-lg"
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed rounded-t-lg opacity-50"
               >
-                <Image className="h-4 w-4 text-blue-500" />
+                <Image className="h-4 w-4 text-gray-400" />
                 {t.composer.attachments.image}
               </button>
               
               <button
                 type="button"
-                onClick={() => handleFileSelect('.pdf,.doc,.docx,.txt')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50"
               >
-                <FileText className="h-4 w-4 text-green-500" />
+                <FileText className="h-4 w-4 text-gray-400" />
                 {t.composer.attachments.document}
               </button>
               
               <button
                 type="button"
-                onClick={() => handleFileSelect('audio/*')}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50"
+                disabled
+                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50 rounded-b-lg"
               >
-                <Mic className="h-4 w-4 text-purple-500" />
+                <Mic className="h-4 w-4 text-gray-400" />
                 {t.composer.attachments.audio}
               </button>
               
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setShowAttachMenu(false);
-                  setShowAppointmentModal(true);
-                }}
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-blue-700 hover:bg-blue-50 rounded-b-lg font-medium"
-              >
-                <Calendar className="h-4 w-4 text-blue-500" />
-                {language === 'no' ? 'Avtale time' : 'Schedule time'}
-              </button>
             </div>
           )}
         </div>
@@ -342,17 +292,6 @@ export default function MessageComposer({
             style={{ minHeight: '40px', maxHeight: '120px' }}
           />
           
-          {/* Emoji button - positioned inside textarea */}
-          <button
-            className="absolute right-2 top-2 text-gray-400 hover:text-gray-600 p-1"
-            disabled={disabled}
-            onClick={() => {
-              // TODO: Open emoji picker
-              console.log('Open emoji picker');
-            }}
-          >
-            <Smile className="h-4 w-4" />
-          </button>
         </div>
 
         {/* Send Button */}

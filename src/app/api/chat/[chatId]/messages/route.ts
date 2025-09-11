@@ -4,6 +4,7 @@ import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 import { updateExpiredAppointments } from '@/lib/appointment-utils';
+import { sendNewChatEmail } from '@/lib/email';
 import { z } from 'zod';
 
 // Send message schema
@@ -250,6 +251,7 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 async function handlePOST(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
   const { chatId } = await params;
+  // console.log('📝 POST /api/chat/[chatId]/messages called for chatId:', chatId, 'by user:', user.name);
   const body = await request.json();
 
   // Validate access
@@ -544,6 +546,98 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     return message;
   });
 
+  // Check if this is the first message in the chat and send email notification
+  try {
+    const messageCount = await prisma.message.count({
+      where: { chatId },
+    });
+
+    // console.log(`🔔 [EMAIL DEBUG] Chat ${chatId} - Message count: ${messageCount}`);
+
+    // Send email only for the first message in the chat
+    if (messageCount === 1) {
+      console.log(`[DEBUG] Processing email notification for chat ${chatId} (first message)`);
+      
+      // Get other participants
+      const otherParticipants = await prisma.chatParticipant.findMany({
+        where: {
+          chatId,
+          userId: { not: user.id },
+          isActive: true,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              emailNewChat: true,
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      console.log(`[DEBUG] Found ${otherParticipants.length} other participants`);
+
+      // Get chat info including related post if exists
+      const chatInfo = await prisma.chat.findUnique({
+        where: { id: chatId },
+        select: {
+          id: true,
+          relatedPost: {
+            select: {
+              id: true,
+              title: true,
+            },
+          },
+        },
+      });
+
+      console.log(`[DEBUG] Chat info:`, { 
+        chatId: chatInfo?.id, 
+        hasRelatedPost: !!chatInfo?.relatedPost,
+        postTitle: chatInfo?.relatedPost?.title 
+      });
+
+      // Send email to each participant who has email notifications enabled and is not active
+      for (const participant of otherParticipants) {
+        const receiver = participant.user;
+        
+        console.log(`[DEBUG] Checking participant ${receiver.name}:`, {
+          email: receiver.email,
+          isActive: receiver.isActive,
+          emailNewChat: receiver.emailNewChat,
+          willSendEmail: !receiver.isActive && receiver.emailNewChat
+        });
+        
+        // Check conditions: not active, email notifications enabled
+        if (!receiver.isActive && receiver.emailNewChat) {
+          console.log(`🔔 [EMAIL DEBUG] Sending new chat email to ${receiver.email}`);
+          try {
+            await sendNewChatEmail(
+              receiver.email,
+              receiver.name,
+              user.name || 'En TutorConnect bruker',
+              chatInfo?.relatedPost?.title
+            );
+            console.log(`✅ [EMAIL DEBUG] Successfully sent new chat email to ${receiver.email}`);
+          } catch (emailError) {
+            // Log email error but don't fail message sending (same as registration)
+            console.error('Failed to send new chat email:', emailError);
+          }
+        } else {
+          console.log(`[DEBUG] Skipping email for ${receiver.email} - conditions not met (isActive: ${receiver.isActive}, emailNewChat: ${receiver.emailNewChat})`);
+        }
+      }
+    } else {
+      console.log(`[DEBUG] Skipping email notification - message count is ${messageCount}`);
+    }
+  } catch (error) {
+    console.error('Error checking/sending new chat email:', error);
+    // Don't throw error - email failure shouldn't prevent message sending
+  }
+
   // Trigger real-time notification (handled by Supabase realtime)
   // This would be where you'd emit to the real-time channel
 
@@ -564,15 +658,27 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
 export const GET = apiHandler(async (request: NextRequest, context: any) => {
   await authMiddleware(request);
   const url = new URL(request.url);
-  const pathSegments = url.pathname.split('/');
-  const chatId = pathSegments[pathSegments.indexOf('chat') + 1];
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const chatIndex = pathSegments.indexOf('chat');
+  const chatId = chatIndex >= 0 && chatIndex < pathSegments.length - 1 ? pathSegments[chatIndex + 1] : '';
+  
+  if (!chatId) {
+    return NextResponse.json({ success: false, error: 'Chat ID not found in URL' }, { status: 400 });
+  }
+  
   return handleGET(request, { params: Promise.resolve({ chatId }) });
 });
 
 export const POST = apiHandler(async (request: NextRequest, context: any) => {
   await authMiddleware(request);
   const url = new URL(request.url);
-  const pathSegments = url.pathname.split('/');
-  const chatId = pathSegments[pathSegments.indexOf('chat') + 1];
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const chatIndex = pathSegments.indexOf('chat');
+  const chatId = chatIndex >= 0 && chatIndex < pathSegments.length - 1 ? pathSegments[chatIndex + 1] : '';
+  
+  if (!chatId) {
+    return NextResponse.json({ success: false, error: 'Chat ID not found in URL' }, { status: 400 });
+  }
+  
   return handlePOST(request, { params: Promise.resolve({ chatId }) });
 });

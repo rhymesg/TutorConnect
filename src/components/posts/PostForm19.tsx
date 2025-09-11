@@ -9,7 +9,8 @@ import {
   Clock as ClockIcon,
   Wifi,
   WifiOff,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 import { LoadingSpinner, ErrorMessage } from '@/components/ui';
@@ -39,6 +40,8 @@ export default function PostForm19({
   const { accessToken } = useAuth();
   const [showPreview, setShowPreview] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // React 19 useActionState for form handling
   const [state, submitAction, isPending] = useActionState<PostFormState, FormData>(
@@ -80,6 +83,35 @@ export default function PostForm19({
     
     // Submit the action
     submitAction(formData);
+  };
+
+  // Handle post deletion
+  const handleDeletePost = async () => {
+    if (!post?.id) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/posts/${post.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+        }
+      });
+
+      if (response.ok) {
+        // Redirect to user's posts page after successful deletion
+        window.location.href = '/profile/posts';
+      } else {
+        const error = await response.json();
+        alert(`Error: ${error.error || 'Failed to delete post'}`);
+      }
+    } catch (error) {
+      console.error('Failed to delete post:', error);
+      alert('Network error occurred.');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
   };
 
   // Preview component with optimistic data
@@ -209,8 +241,9 @@ export default function PostForm19({
             <div className="flex items-center justify-between pt-6">
               <div className="flex items-center space-x-4">
                 {mode === 'edit' ? (
-                  <div className="flex items-center">
-                    {post?.status === 'AKTIV' || !post?.status ? (
+                  <>
+                    <div className="flex items-center space-x-3">
+                      {post?.status === 'AKTIV' || !post?.status ? (
                       <button
                         type="button"
                         onClick={async () => {
@@ -243,6 +276,7 @@ export default function PostForm19({
                             alert('네트워크 오류가 발생했습니다.');
                           }
                         }}
+                        title="Når annonsen er pauset, blir den skjult fra postlisten og du mottar ingen nye meldinger"
                         className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-red-600 border border-red-300 hover:bg-red-50"
                       >
                         Set Pauset
@@ -280,12 +314,27 @@ export default function PostForm19({
                             alert('네트워크 오류가 발생했습니다.');
                           }
                         }}
+                        title="Når annonsen blir aktiv, vises den i postlisten og du kan motta nye meldinger"
                         className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-blue-600 border border-blue-300 hover:bg-blue-50"
                       >
                         Set Aktiv
                       </button>
                     )}
+                    
+                    {/* Delete button - hidden but kept for future use */}
+                    {false && (
+                      <button
+                        type="button"
+                        onClick={() => setShowDeleteConfirm(true)}
+                        disabled={isDeleting}
+                        title="Slett annonse"
+                        className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
+                </>
                 ) : (
                   <button
                     type="button"
@@ -368,6 +417,48 @@ export default function PostForm19({
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Slett annonse?
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Er du sikker på at du vil slette denne annonsen? Denne handlingen kan ikke angres.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                <p className="text-sm text-blue-700">
+                  <strong>Tip:</strong> Hvis du bare vil skjule annonsen midlertidig, bruk "Set Pauset" i stedet.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  Avbryt
+                </button>
+                <button
+                  onClick={handleDeletePost}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  Slett
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
