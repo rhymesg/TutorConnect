@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { sendAppointmentCompletionEmail } from '@/lib/email';
 
 /**
  * Update expired appointments to WAITING_TO_COMPLETE status
@@ -18,9 +19,31 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
     whereClause.chatId = chatId;
   }
 
-  // Find appointments that should be moved to WAITING_TO_COMPLETE
+  // Find appointments that should be moved to WAITING_TO_COMPLETE with chat and user details
   const expiredAppointments = await prisma.appointment.findMany({
-    where: whereClause
+    where: whereClause,
+    include: {
+      chat: {
+        include: {
+          teacher: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              emailAppointmentComplete: true
+            }
+          },
+          student: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              emailAppointmentComplete: true
+            }
+          }
+        }
+      }
+    }
   });
 
   if (expiredAppointments.length === 0) {
@@ -37,6 +60,39 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
       bothCompleted: false
     }
   });
+
+  // Send appointment completion reminder emails
+  for (const appointment of expiredAppointments) {
+    const { teacher, student } = appointment.chat;
+    
+    try {
+      // Send email to teacher if they have appointment completion notifications enabled
+      if (teacher?.emailAppointmentComplete && teacher.email) {
+        await sendAppointmentCompletionEmail(
+          teacher.email,
+          teacher.name,
+          student?.name || 'Student',
+          appointment.dateTime,
+          appointment.chatId
+        );
+        console.log(`✅ Sent appointment completion email to teacher: ${teacher.email}`);
+      }
+
+      // Send email to student if they have appointment completion notifications enabled
+      if (student?.emailAppointmentComplete && student.email) {
+        await sendAppointmentCompletionEmail(
+          student.email,
+          student.name,
+          teacher?.name || 'Teacher',
+          appointment.dateTime,
+          appointment.chatId
+        );
+        console.log(`✅ Sent appointment completion email to student: ${student.email}`);
+      }
+    } catch (error) {
+      console.error(`❌ Failed to send appointment completion emails for appointment ${appointment.id}:`, error);
+    }
+  }
 
   return expiredAppointments.length;
 }
