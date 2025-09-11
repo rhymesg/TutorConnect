@@ -196,7 +196,7 @@ export default function SettingsPage() {
                             Nye meldinger
                           </h4>
                           <p className="text-sm text-gray-500">
-                            Få sammendrag av nye meldinger hver time
+                            Få sammendrag av nye meldinger hver dag
                           </p>
                         </div>
                       </div>

@@ -5,6 +5,7 @@ import { sendMessageDigestEmail, type UnreadChatInfo } from '@/lib/email';
 /**
  * GET /api/cron/email-digest
  * Send daily email digest to users with unread messages
+ * Runs daily at 7 PM Oslo time via Vercel Cron
  */
 export async function GET(request: NextRequest) {
   try {

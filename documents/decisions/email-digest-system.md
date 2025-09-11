@@ -33,8 +33,8 @@ Implemented automated email digest system to notify users about unread messages 
 - Responsive HTML email design
 
 #### 4. Cron Job Configuration (`vercel.json`)
-- Currently: Every 10 minutes for testing (`*/10 * * * *`)
-- Production: Will be daily (`0 9 * * *` for 9 AM daily)
+- Schedule: Daily at 7 PM (`0 19 * * *`)
+- Note: Vercel Hobby plan executes within 1-hour window (7:00-7:59 PM)
 
 ## Logic Flow
 
