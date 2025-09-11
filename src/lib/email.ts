@@ -1,5 +1,19 @@
 /**
  * Email service for TutorConnect using SMTP
+ * 
+ * IMPORTANT: Chat URL Format
+ * ========================
+ * TutorConnect uses query parameters for chat navigation, NOT dynamic routes.
+ * 
+ * ✅ Correct: /chat?id={chatId}
+ * ❌ Wrong: /chat/{chatId}
+ * 
+ * This is because the chat page (/app/chat/page.tsx) reads the chat ID from 
+ * searchParams and then displays the appropriate chat in the sidebar/main view.
+ * 
+ * Example URLs:
+ * - View specific chat: /chat?id=cmfffizt000012454x0gq1ecz
+ * - Chat list page: /chat
  */
 import nodemailer from 'nodemailer';
 
@@ -393,16 +407,22 @@ function createMessageDigestEmailTemplate(name: string, unreadChats: UnreadChatI
     
     return `
       <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #f9fafb;">
-        <div style="display: flex; justify-content: between; align-items: center;">
-          <h4 style="margin: 0; color: #1f2937; font-size: 16px;">💬 ${chat.otherUserName}</h4>
-          <span style="background-color: #dc2626; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
-            ${chat.unreadCount} ${chat.unreadCount === 1 ? 'ny melding' : 'nye meldinger'}
-          </span>
-        </div>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr>
+            <td style="vertical-align: middle;">
+              <h4 style="margin: 0; color: #1f2937; font-size: 16px;">💬 ${chat.otherUserName}</h4>
+            </td>
+            <td style="text-align: right; vertical-align: middle;">
+              <span style="background-color: #dc2626; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap;">
+                ${chat.unreadCount} ${chat.unreadCount === 1 ? 'ny melding' : 'nye meldinger'}
+              </span>
+            </td>
+          </tr>
+        </table>
         ${lastMessageInfo}
         ${postInfo}
         <div style="margin-top: 12px;">
-          <a href="${EMAIL_CONFIG.baseUrl}/chat/${chat.chatId}" 
+          <a href="${EMAIL_CONFIG.baseUrl}/chat?id=${chat.chatId}" 
              style="color: #2563eb; text-decoration: none; font-size: 14px; font-weight: 500;">
             → Se meldinger
           </a>

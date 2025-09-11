@@ -18,7 +18,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log('[CRON] Starting email digest job...');
+    console.log('[CRON] Starting email digest job at:', new Date().toISOString());
+    console.log('[CRON] Environment check:', {
+      hasSmtpHost: !!process.env.SMTP_HOST,
+      hasSmtpUser: !!process.env.SMTP_USER,
+      hasSmtpPass: !!process.env.SMTP_PASS,
+      nodeEnv: process.env.NODE_ENV
+    });
 
     // Get users who have email notifications enabled
     const usersWithEmailNotifications = await prisma.user.findMany({
@@ -89,6 +95,12 @@ export async function GET(request: NextRequest) {
     });
 
     console.log(`[CRON] Found ${usersWithEmailNotifications.length} users with email notifications enabled`);
+    
+    // Log details for debugging
+    usersWithEmailNotifications.forEach(user => {
+      const unreadCounts = user.chatParticipants.map(p => p.unreadCount);
+      console.log(`[CRON] User ${user.email}: ${user.chatParticipants.length} active chats, unread counts:`, unreadCounts);
+    });
 
     let emailsSent = 0;
     let errors = 0;
@@ -138,7 +150,9 @@ export async function GET(request: NextRequest) {
         const totalUnreadCount = user.chatParticipants.reduce((sum, p) => sum + p.unreadCount, 0);
 
         // Send email using the actual email service
+        console.log(`[CRON] Attempting to send email to ${user.email} with ${totalUnreadCount} unread messages from ${unreadChats.length} chats`);
         await sendMessageDigestEmail(user.email, user.name, unreadChats, totalUnreadCount);
+        console.log(`[CRON] ✅ Successfully sent email to ${user.email}`);
 
         // Update last notification time
         await prisma.user.update({
@@ -150,7 +164,11 @@ export async function GET(request: NextRequest) {
         console.log(`[CRON] Sent digest email to ${user.email} (${totalUnreadCount} unread messages)`);
 
       } catch (error) {
-        console.error(`[CRON] Failed to process user ${user.email}:`, error);
+        console.error(`[CRON] ❌ Failed to process user ${user.email}:`, error);
+        console.error(`[CRON] Error details:`, {
+          message: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : undefined
+        });
         errors++;
       }
     }
