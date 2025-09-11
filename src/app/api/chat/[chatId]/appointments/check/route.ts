@@ -37,8 +37,10 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
         gte: startOfDay,
         lte: endOfDay,
       },
+      // Check for any appointment on this date regardless of status
+      // Only exclude CANCELLED appointments as they shouldn't block new appointments
       status: {
-        in: ['PENDING', 'CONFIRMED'],
+        not: 'CANCELLED',
       },
     },
   });

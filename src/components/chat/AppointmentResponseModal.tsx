@@ -225,7 +225,7 @@ export default function AppointmentResponseModal({
               }
             </h2>
             <div className="flex items-center gap-2">
-              {onDelete && (status === 'PENDING' || status === 'CONFIRMED') && (
+              {onDelete && (status === 'PENDING' || status === 'CONFIRMED' || status === 'CANCELLED') && (
                 <button
                   onClick={() => setShowDeleteConfirmation(true)}
                   disabled={isProcessing}
