@@ -288,7 +288,16 @@ export default function ChatHeader({
           */}
         </div>
       </div>
-
+      
+      {/* Instruction banner */}
+      <div className="bg-gray-50 border-b border-gray-200 px-4 py-1">
+        <p className="text-center text-xs text-gray-600">
+          {language === 'no' 
+            ? `Chat med ${chat.displayName} og klikk "Avtale time" for å booke undervisning`
+            : `Chat with ${chat.displayName} and click "Schedule time" to book tutoring`
+          }
+        </p>
+      </div>
 
       {/* TODO: Re-enable when menu functionality is implemented
       {showMenu && (
