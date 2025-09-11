@@ -18,10 +18,21 @@ export default function AppointmentMessage({
   onViewAppointment
 }: AppointmentMessageProps) {
   const t = language === 'no' ? {
-    viewAppointment: 'Se avtale'
+    viewAppointment: 'Se avtale',
+    appointmentDeleted: 'Avtalen ble avslått og slettet'
   } : {
-    viewAppointment: 'View appointment'
+    viewAppointment: 'View appointment',
+    appointmentDeleted: 'Appointment was rejected and deleted'
   };
+
+  // If appointment was deleted (appointmentId is null but message still exists)
+  if ((message.appointmentId === null || !message.appointment) && message.type === 'APPOINTMENT_REQUEST') {
+    return (
+      <div className="p-3 bg-gray-100 border-l-4 border-gray-400 rounded-lg text-gray-600 text-sm italic">
+        {t.appointmentDeleted}
+      </div>
+    );
+  }
 
   // Parse appointment data
   let appointmentData;
@@ -44,14 +55,12 @@ export default function AppointmentMessage({
       appointmentData = message.appointment || {};
     }
   }
-  
-  
 
   const status = message.appointment?.status || 'PENDING';
   const isResponse = message.type === 'APPOINTMENT_RESPONSE';
 
   // Se avtale button for extra content
-  const extraContent = !isResponse && onViewAppointment ? (
+  const extraContent = !isResponse && onViewAppointment && message.appointment ? (
     <button
       onClick={onViewAppointment}
       className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"

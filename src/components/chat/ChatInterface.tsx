@@ -16,12 +16,14 @@ import AppointmentResponseModal from './AppointmentResponseModal';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
+  appointmentId?: string;
   onClose?: () => void;
   className?: string;
 }
 
 export default function ChatInterface({ 
   initialChatId, 
+  appointmentId,
   onClose,
   className = '' 
 }: ChatInterfaceProps) {
@@ -81,6 +83,19 @@ export default function ChatInterface({
       setSelectedChatId(initialChatId);
     }
   }, [initialChatId, selectedChatId]);
+
+  // Auto-open appointment modal if appointmentId is provided
+  useEffect(() => {
+    if (appointmentId && messages && messages.length > 0) {
+      // Find the message with the matching appointmentId
+      const appointmentMessage = messages.find(msg => msg.appointmentId === appointmentId);
+      if (appointmentMessage) {
+        setSelectedAppointmentMessage(appointmentMessage);
+        setShowAppointmentResponseModal(true);
+        setAppointmentResponseError(null);
+      }
+    }
+  }, [appointmentId, messages]);
 
   // Reset isChangingChat when chat changes and loads
   useEffect(() => {

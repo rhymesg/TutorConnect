@@ -71,7 +71,34 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   // Determine if user is teacher (post owner)
   const isTeacher = appointment.chat.relatedPost?.userId === user.id;
   
-  // Prepare update data
+  // If user says "No" (not completed), mark appointment as CANCELLED
+  if (!completed) {
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: 'CANCELLED',
+        teacherReady: false,
+        studentReady: false,
+        bothCompleted: false,
+      },
+      include: {
+        chat: {
+          select: {
+            id: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        appointment: updatedAppointment,
+      },
+    });
+  }
+
+  // If user says "Yes" (completed), update their ready status
   const updateData: any = {};
   if (isTeacher) {
     updateData.teacherReady = completed;

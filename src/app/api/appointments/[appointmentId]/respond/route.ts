@@ -62,27 +62,51 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     throw new BadRequestError('Denne avtalen har allerede blitt besvart.');
   }
 
-  // Update appointment status
-  const updatedAppointment = await prisma.appointment.update({
-    where: { id: appointmentId },
-    data: {
-      status: accepted ? 'CONFIRMED' : 'CANCELLED',
-    },
-    include: {
-      chat: {
-        select: {
-          id: true,
+  if (accepted) {
+    // Accept appointment - update status to CONFIRMED
+    const updatedAppointment = await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        status: 'CONFIRMED',
+      },
+      include: {
+        chat: {
+          select: {
+            id: true,
+          },
         },
       },
-    },
-  });
+    });
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      appointment: updatedAppointment,
-    },
-  });
+    return NextResponse.json({
+      success: true,
+      data: {
+        appointment: updatedAppointment,
+      },
+    });
+  } else {
+    // Reject appointment - delete from database and clear related messages
+    await prisma.$transaction(async (tx) => {
+      // Clear appointmentId from messages that reference this appointment
+      await tx.message.updateMany({
+        where: { appointmentId: appointmentId },
+        data: { appointmentId: null },
+      });
+
+      // Delete the appointment
+      await tx.appointment.delete({
+        where: { id: appointmentId },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        message: 'Appointment rejected and deleted',
+        chatId: appointment.chat.id,
+      },
+    });
+  }
 }
 
 export const POST = apiHandler(async (request: NextRequest, context: any) => {
