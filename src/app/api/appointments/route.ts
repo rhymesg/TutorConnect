@@ -9,6 +9,7 @@ const appointmentQuerySchema = z.object({
   status: z.enum(['PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED']).nullable().optional(),
   limit: z.string().nullable().optional().transform(val => val ? Math.min(parseInt(val), 100) : 50),
   page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
+  chatId: z.string().nullable().optional(),
 });
 
 import { updateExpiredAppointments } from '@/lib/appointment-utils';
@@ -24,10 +25,11 @@ async function handleGET(request: NextRequest) {
   await updateExpiredAppointments();
 
   // Validate query parameters
-  const { status, limit, page } = appointmentQuerySchema.parse({
+  const { status, limit, page, chatId } = appointmentQuerySchema.parse({
     status: searchParams.get('status') as any,
     limit: searchParams.get('limit'),
     page: searchParams.get('page'),
+    chatId: searchParams.get('chatId'),
   });
 
   const skip = (page - 1) * limit;
@@ -46,6 +48,10 @@ async function handleGET(request: NextRequest) {
 
   if (status) {
     appointmentWhere.status = status;
+  }
+
+  if (chatId) {
+    appointmentWhere.chatId = chatId;
   }
 
   // Get appointments with related data

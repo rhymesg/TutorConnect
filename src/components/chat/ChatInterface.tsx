@@ -320,6 +320,12 @@ export default function ChatInterface({
     setShowAppointmentModal(true);
   };
 
+  const handleViewAppointments = () => {
+    if (selectedChatId) {
+      window.open(`/chat/${selectedChatId}/appointments`, '_blank');
+    }
+  };
+
   const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
     console.log('Sending appointment request:', appointmentData);
     setAppointmentError(null);
@@ -438,6 +444,7 @@ export default function ChatInterface({
               onReportUser={() => {/* console.log('Report user') */}}
               onSettings={() => {/* console.log('Settings') */}}
               onScheduleAppointment={handleScheduleAppointment}
+              onViewAppointments={handleViewAppointments}
             />
             
             {/* Messages - scrollable area */}

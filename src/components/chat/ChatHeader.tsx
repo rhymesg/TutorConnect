@@ -31,6 +31,7 @@ interface ChatHeaderProps {
   onReportUser?: () => void;
   onSettings?: () => void;
   onScheduleAppointment?: () => void;
+  onViewAppointments?: () => void;
 }
 
 export default function ChatHeader({
@@ -46,6 +47,7 @@ export default function ChatHeader({
   onReportUser,
   onSettings,
   onScheduleAppointment,
+  onViewAppointments,
 }: ChatHeaderProps) {
   const t = chatTranslations[language];
   // const [showMenu, setShowMenu] = useState(false); // TODO: Re-enable when menu functionality is implemented
@@ -183,8 +185,18 @@ export default function ChatHeader({
                 )}
                 
                 <button
+                  onClick={onViewAppointments}
+                  className="flex-shrink-0 inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
+                >
+                  Se timer
+                  <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </button>
+                
+                <button
                   onClick={onScheduleAppointment}
-                  className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-purple-100 text-purple-800 text-sm font-medium rounded-md hover:bg-purple-200 border border-purple-100 hover:border-purple-200 transition-colors"
+                  className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors"
                   title="Avtale undervisningstime"
                 >
                   Avtale time
