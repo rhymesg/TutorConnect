@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
+import { updateExpiredAppointments } from '@/lib/appointment-utils';
 import { z } from 'zod';
 
 // Send message schema
@@ -59,6 +60,7 @@ async function validateChatMessageAccess(chatId: string, userId: string) {
   return participant;
 }
 
+
 /**
  * GET /api/chat/[chatId]/messages - Get chat messages with pagination
  */
@@ -66,6 +68,9 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
   const user = getAuthenticatedUser(request);
   const { chatId } = await params;
   const { searchParams } = new URL(request.url);
+  
+  // Update expired appointments for this chat
+  await updateExpiredAppointments(chatId);
 
   // Validate access
   await validateChatMessageAccess(chatId, user.id);
@@ -143,6 +148,19 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
             location: true,
             status: true,
             duration: true,
+            teacherReady: true,
+            studentReady: true,
+            bothCompleted: true,
+            chat: {
+              select: {
+                id: true,
+                relatedPost: {
+                  select: {
+                    userId: true,
+                  },
+                },
+              },
+            },
           },
         },
         replyTo: {
@@ -460,6 +478,19 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
             location: true,
             status: true,
             duration: true,
+            teacherReady: true,
+            studentReady: true,
+            bothCompleted: true,
+            chat: {
+              select: {
+                id: true,
+                relatedPost: {
+                  select: {
+                    userId: true,
+                  },
+                },
+              },
+            },
           },
         },
         replyTo: {

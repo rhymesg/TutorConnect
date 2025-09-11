@@ -60,6 +60,9 @@ export default function AppointmentResponseModal({
     appointmentDetails: 'Avtaledetaljer',
     waitingForOther: 'Venter på svar fra den andre parten',
     bothConfirmed: 'Begge parter har bekreftet at avtalen ble gjennomført',
+    yourResponse: 'Du har svart:',
+    responseCompleted: 'Gjennomført',
+    responseNotCompleted: 'Ikke gjennomført',
     
     // Status labels
     pending: 'Venter på svar',
@@ -90,6 +93,9 @@ export default function AppointmentResponseModal({
     appointmentDetails: 'Appointment Details',
     waitingForOther: 'Waiting for response from the other party',
     bothConfirmed: 'Both parties confirmed the appointment was completed',
+    yourResponse: 'Your response:',
+    responseCompleted: 'Completed',
+    responseNotCompleted: 'Not completed',
     
     // Status labels
     pending: 'Pending',
@@ -108,6 +114,19 @@ export default function AppointmentResponseModal({
   } catch {
     appointmentData = message.appointment || {};
   }
+
+  // Check if current user is the teacher (post owner)
+  const isTeacher = message.appointment?.chat?.relatedPost?.userId === user?.id;
+  
+  // Check if current user has already responded
+  const userHasResponded = isTeacher 
+    ? message.appointment?.teacherReady 
+    : message.appointment?.studentReady;
+    
+  // Check if other party has responded
+  const otherPartyResponded = isTeacher
+    ? message.appointment?.studentReady
+    : message.appointment?.teacherReady;
 
 
   const handleAccept = async () => {
@@ -199,9 +218,17 @@ export default function AppointmentResponseModal({
           {/* Status Messages - All in consistent position */}
           <div className="mb-4">
             {/* Completion question for waiting to complete status */}
-            {isWaitingToComplete && (
+            {isWaitingToComplete && !userHasResponded && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm mb-3">
                 {t.completionQuestion}
+              </div>
+            )}
+            
+            {/* User's response if they already answered */}
+            {isWaitingToComplete && userHasResponded && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-3">
+                <strong>{t.yourResponse}</strong> {userHasResponded === true ? t.responseCompleted : t.responseNotCompleted}
+                {otherPartyResponded ? null : ` (${t.waitingForOther})`}
               </div>
             )}
 
@@ -241,7 +268,7 @@ export default function AppointmentResponseModal({
               <>
                 <button
                   onClick={handleCompleted}
-                  disabled={isProcessing}
+                  disabled={isProcessing || userHasResponded}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <Check className="h-4 w-4" />
@@ -249,7 +276,7 @@ export default function AppointmentResponseModal({
                 </button>
                 <button
                   onClick={handleNotCompleted}
-                  disabled={isProcessing}
+                  disabled={isProcessing || userHasResponded}
                   className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <X className="h-4 w-4" />

@@ -11,39 +11,7 @@ const appointmentQuerySchema = z.object({
   page: z.string().nullable().optional().transform(val => val ? parseInt(val) : 1),
 });
 
-/**
- * Helper function to update expired appointments to WAITING_TO_COMPLETE status
- */
-async function updateExpiredAppointments() {
-  // Find appointments that should be moved to WAITING_TO_COMPLETE
-  const expiredAppointments = await prisma.appointment.findMany({
-    where: {
-      status: 'CONFIRMED',
-      dateTime: {
-        lt: new Date() // Past the appointment time
-      }
-    }
-  });
-
-  if (expiredAppointments.length === 0) {
-    return 0;
-  }
-
-  // Update expired appointments to WAITING_TO_COMPLETE status
-  await prisma.appointment.updateMany({
-    where: {
-      status: 'CONFIRMED',
-      dateTime: {
-        lt: new Date()
-      }
-    },
-    data: {
-      status: 'WAITING_TO_COMPLETE'
-    }
-  });
-
-  return expiredAppointments.length;
-}
+import { updateExpiredAppointments } from '@/lib/appointment-utils';
 
 /**
  * GET /api/appointments - Get user's appointments

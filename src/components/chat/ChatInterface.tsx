@@ -257,11 +257,22 @@ export default function ChatInterface({
   const handleCompletedAppointment = async () => {
     if (!selectedAppointmentMessage?.appointment?.id) return;
     
+    setAppointmentResponseError(null);
+    
     try {
-      const responseData = {
-        completed: true
-      };
-      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_COMPLETION_RESPONSE', selectedAppointmentMessage.appointment.id);
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
@@ -277,11 +288,22 @@ export default function ChatInterface({
   const handleNotCompletedAppointment = async () => {
     if (!selectedAppointmentMessage?.appointment?.id) return;
     
+    setAppointmentResponseError(null);
+    
     try {
-      const responseData = {
-        completed: false
-      };
-      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_COMPLETION_RESPONSE', selectedAppointmentMessage.appointment.id);
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke markere avtalen som ikke gjennomført');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
