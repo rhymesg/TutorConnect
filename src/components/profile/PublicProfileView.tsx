@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { User } from '@prisma/client';
 import { 
   UserIcon, 
@@ -12,6 +13,7 @@ import {
   LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { formatters } from '@/lib/translations';
+import { useAuth } from '@/contexts/AuthContext';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
 
@@ -38,6 +40,9 @@ export function PublicProfileView({
   onInfoRequest, 
   isRequestingInfo 
 }: Props) {
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const { accessToken } = useAuth();
+  
   const formatAge = (birthYear: number | null) => {
     if (!birthYear) return null;
     const currentYear = new Date().getFullYear();
@@ -55,6 +60,43 @@ export function PublicProfileView({
   };
 
   const canRequestInfo = currentUser && currentUser.id !== profile.id;
+
+  const handleStartChat = async () => {
+    if (!currentUser || currentUser.id === profile.id || isCreatingChat) {
+      return;
+    }
+
+    setIsCreatingChat(true);
+
+    try {
+      // For direct chat (not related to a specific post), use the general chat API
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': accessToken ? `Bearer ${accessToken}` : '',
+        },
+        body: JSON.stringify({
+          participantIds: [profile.id],
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create chat');
+      }
+
+      const { chat } = await response.json();
+      
+      // Navigate to the chat page with the chat ID as query parameter
+      window.location.href = `/chat?id=${chat.id}`;
+    } catch (error) {
+      console.error('Error creating chat:', error);
+      alert('Kunne ikke opprette samtale. Prøv igjen.');
+    } finally {
+      setIsCreatingChat(false);
+    }
+  };
   const hiddenFields: string[] = [];
 
   // Check for hidden fields based on privacy settings
@@ -101,11 +143,25 @@ export function PublicProfileView({
         
         {canRequestInfo && (
           <button
-            onClick={() => {/* TODO: Open chat */}}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            onClick={handleStartChat}
+            disabled={isCreatingChat}
+            className={`inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+              isCreatingChat 
+                ? 'bg-blue-400 text-white cursor-wait'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
           >
-            <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
-            Start samtale
+            {isCreatingChat ? (
+              <>
+                <div className="w-4 h-4 mr-2 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Starter samtale...
+              </>
+            ) : (
+              <>
+                <ChatBubbleLeftRightIcon className="h-4 w-4 mr-2" />
+                Start samtale
+              </>
+            )}
           </button>
         )}
       </div>
