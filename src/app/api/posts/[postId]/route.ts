@@ -220,3 +220,79 @@ export async function PATCH(
     );
   }
 }
+
+/**
+ * DELETE /api/posts/[postId] - Delete a post
+ */
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ postId: string }> }
+) {
+  try {
+    // Await params (Next.js 15 requirement)
+    const { postId } = await params;
+    
+    // Verify authentication
+    const user = await getCurrentUser(request);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Ikke autorisert' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user owns the post
+    const existingPost = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { userId: true }
+    });
+
+    if (!existingPost) {
+      return NextResponse.json(
+        { error: 'Annonsen ble ikke funnet' },
+        { status: 404 }
+      );
+    }
+
+    if (existingPost.userId !== (user.sub || user.userId || user.id)) {
+      return NextResponse.json(
+        { error: 'Du har ikke tilgang til å slette denne annonsen' },
+        { status: 403 }
+      );
+    }
+
+    // Delete the post using a transaction to handle related data
+    await prisma.$transaction(async (tx) => {
+      // Delete related chats and their messages first
+      const chats = await tx.chat.findMany({
+        where: { relatedPostId: postId },
+        select: { id: true }
+      });
+
+      for (const chat of chats) {
+        // Delete messages in this chat
+        await tx.message.deleteMany({
+          where: { chatId: chat.id }
+        });
+        
+        // Delete the chat
+        await tx.chat.delete({
+          where: { id: chat.id }
+        });
+      }
+      
+      // Finally delete the post
+      await tx.post.delete({
+        where: { id: postId }
+      });
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    return NextResponse.json(
+      { error: 'Noe gikk galt ved sletting av annonsen' },
+      { status: 500 }
+    );
+  }
+}
