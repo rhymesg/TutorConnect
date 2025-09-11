@@ -16,6 +16,7 @@
  * - Chat list page: /chat
  */
 import nodemailer from 'nodemailer';
+import { getSubjectLabel } from '@/constants/subjects';
 
 interface EmailTemplate {
   subject: string;
@@ -549,16 +550,25 @@ function createAppointmentCompletionEmailTemplate(
   userName: string, 
   otherUserName: string, 
   appointmentDateTime: Date,
+  duration: number,
+  subject: string,
   chatId: string
 ): EmailTemplate {
-  const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat?id=${chatId}&tab=appointments`;
+  const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat/${chatId}/appointments`;
   const formattedDate = appointmentDateTime.toLocaleDateString('no-NO', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
-  const formattedTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+  const startTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  // Calculate end time
+  const endDateTime = new Date(appointmentDateTime.getTime() + (duration * 60 * 1000));
+  const endTime = endDateTime.toLocaleTimeString('no-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });
@@ -579,7 +589,7 @@ function createAppointmentCompletionEmailTemplate(
     <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
       <p style="margin: 0; color: #374151; font-weight: 500;">
         📅 ${formattedDate}<br>
-        🕐 ${formattedTime}
+        🕐 ${startTime} - ${endTime} (Fag: ${getSubjectLabel(subject)})
       </p>
     </div>
     
@@ -623,9 +633,11 @@ export async function sendAppointmentCompletionEmail(
   userName: string,
   otherUserName: string,
   appointmentDateTime: Date,
+  duration: number,
+  subject: string,
   chatId: string
 ): Promise<void> {
-  const template = createAppointmentCompletionEmailTemplate(userName, otherUserName, appointmentDateTime, chatId);
+  const template = createAppointmentCompletionEmailTemplate(userName, otherUserName, appointmentDateTime, duration, subject, chatId);
   await sendEmail(userEmail, template);
 }
 
@@ -636,11 +648,14 @@ function createAppointmentConfirmationEmailTemplate(
   userName: string,
   otherUserName: string,
   appointmentDateTime: Date,
+  duration: number,
+  subject: string,
+  location: string,
   chatId: string,
   postTitle?: string,
   postId?: string
 ): EmailTemplate {
-  const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat?id=${chatId}&tab=appointments`;
+  const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat/${chatId}/appointments`;
   const postUrl = postId ? `${EMAIL_CONFIG.baseUrl}/posts/${postId}` : null;
   
   const formattedDate = appointmentDateTime.toLocaleDateString('no-NO', { 
@@ -649,7 +664,14 @@ function createAppointmentConfirmationEmailTemplate(
     month: 'long', 
     day: 'numeric' 
   });
-  const formattedTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+  const startTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  // Calculate end time
+  const endDateTime = new Date(appointmentDateTime.getTime() + (duration * 60 * 1000));
+  const endTime = endDateTime.toLocaleTimeString('no-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });
@@ -670,24 +692,10 @@ function createAppointmentConfirmationEmailTemplate(
     <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
       <p style="margin: 0; color: #374151; font-weight: 500;">
         📅 ${formattedDate}<br>
-        🕐 ${formattedTime}
+        🕐 ${startTime} - ${endTime} (Fag: ${getSubjectLabel(subject)})<br>
+        📍 ${location}
       </p>
     </div>
-    
-    ${postTitle ? `
-    <div style="background-color: #fef3c7; padding: 12px; border-radius: 6px; margin: 16px 0;">
-      <p style="margin: 0; color: #92400e; font-size: 14px;">
-        📝 <strong>Relatert til innlegg:</strong> ${postTitle}
-      </p>
-      ${postUrl ? `
-      <p style="margin: 8px 0 0 0;">
-        <a href="${postUrl}" style="color: #2563eb; text-decoration: none; font-size: 14px;">
-          → Se innlegget
-        </a>
-      </p>
-      ` : ''}
-    </div>
-    ` : ''}
     
     <p style="color: #374151; line-height: 1.6;">
       Du kan se alle detaljer om avtalen og eventuelle meldinger ved å gå til avtaler-siden.
@@ -695,9 +703,13 @@ function createAppointmentConfirmationEmailTemplate(
     
     <div style="text-align: center; margin: 32px 0;">
       <a href="${appointmentUrl}" 
-         style="background-color: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
+         style="background-color: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500; margin-right: 12px;">
         Se avtaledetaljer
       </a>
+      ${postUrl ? `<a href="${postUrl}" 
+         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
+        📝 Se annonsen
+      </a>` : ''}
     </div>
     
     <div style="background-color: #dbeafe; padding: 12px; border-radius: 6px; margin: 20px 0;">
@@ -729,11 +741,14 @@ export async function sendAppointmentConfirmationEmail(
   userName: string,
   otherUserName: string,
   appointmentDateTime: Date,
+  duration: number,
+  subject: string,
+  location: string,
   chatId: string,
   postTitle?: string,
   postId?: string
 ): Promise<void> {
-  const template = createAppointmentConfirmationEmailTemplate(userName, otherUserName, appointmentDateTime, chatId, postTitle, postId);
+  const template = createAppointmentConfirmationEmailTemplate(userName, otherUserName, appointmentDateTime, duration, subject, location, chatId, postTitle, postId);
   await sendEmail(userEmail, template);
 }
 

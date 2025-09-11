@@ -10,7 +10,7 @@ export default function ChatAppointmentsPage() {
   const chatId = params?.chatId as string;
 
   const title = language === 'no' ? 'Avtaler for denne chatten' : 'Appointments for this chat';
-  const backButtonText = language === 'no' ? 'Tilbake til chat' : 'Back to chat';
+  const backButtonText = language === 'no' ? 'Tilbake' : 'Back';
 
   return (
     <AppointmentsList 

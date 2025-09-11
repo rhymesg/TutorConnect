@@ -6,22 +6,21 @@ import { sendAppointmentCompletionEmail } from '@/lib/email';
  * This function should be called periodically to check for appointments that have passed their scheduled time
  */
 export async function updateExpiredAppointments(chatId?: string): Promise<number> {
-  // Build where clause
-  const whereClause: any = {
-    status: 'CONFIRMED',
-    dateTime: {
-      lt: new Date()
-    }
+  const now = new Date();
+
+  // Build base where clause
+  const baseWhere: any = {
+    status: 'CONFIRMED'
   };
 
   // If chatId is provided, only update appointments for that chat
   if (chatId) {
-    whereClause.chatId = chatId;
+    baseWhere.chatId = chatId;
   }
 
   // Find appointments that should be moved to WAITING_TO_COMPLETE with chat and user details
-  const expiredAppointments = await prisma.appointment.findMany({
-    where: whereClause,
+  const confirmedAppointments = await prisma.appointment.findMany({
+    where: baseWhere,
     include: {
       chat: {
         include: {
@@ -40,19 +39,36 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
               email: true,
               emailAppointmentComplete: true
             }
+          },
+          relatedPost: {
+            select: {
+              subject: true
+            }
           }
         }
       }
     }
   });
 
+  // Filter appointments where end time has passed (using duration)
+  const expiredAppointments = confirmedAppointments.filter(appointment => {
+    const appointmentStart = new Date(appointment.dateTime);
+    const appointmentEnd = new Date(appointmentStart.getTime() + (appointment.duration * 60 * 1000));
+    return appointmentEnd <= now;
+  });
+
   if (expiredAppointments.length === 0) {
     return 0;
   }
 
+  // Get appointment IDs to update
+  const expiredAppointmentIds = expiredAppointments.map(apt => apt.id);
+
   // Update expired appointments to WAITING_TO_COMPLETE status and reset completion flags
   await prisma.appointment.updateMany({
-    where: whereClause,
+    where: {
+      id: { in: expiredAppointmentIds }
+    },
     data: {
       status: 'WAITING_TO_COMPLETE',
       teacherReady: false,
@@ -61,11 +77,21 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
     }
   });
 
-  // Send appointment completion reminder emails
+  // Send appointment completion reminder emails (only for newly expired appointments)
   for (const appointment of expiredAppointments) {
     const { teacher, student } = appointment.chat;
     
+    // Check if completion emails were already sent (simple check using notes field)
+    const emailAlreadySent = appointment.notes?.includes('COMPLETION_EMAIL_SENT');
+    
+    if (emailAlreadySent) {
+      console.log(`⏭️ Completion emails already sent for appointment ${appointment.id}, skipping`);
+      continue;
+    }
+    
     try {
+      let emailsSent = false;
+      
       // Send email to teacher if they have appointment completion notifications enabled
       if (teacher?.emailAppointmentComplete && teacher.email) {
         await sendAppointmentCompletionEmail(
@@ -73,9 +99,12 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
           teacher.name,
           student?.name || 'Student',
           appointment.dateTime,
+          appointment.duration,
+          appointment.chat.relatedPost?.subject || 'Ukjent fag',
           appointment.chatId
         );
         console.log(`✅ Sent appointment completion email to teacher: ${teacher.email}`);
+        emailsSent = true;
       }
 
       // Send email to student if they have appointment completion notifications enabled
@@ -85,9 +114,22 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
           student.name,
           teacher?.name || 'Teacher',
           appointment.dateTime,
+          appointment.duration,
+          appointment.chat.relatedPost?.subject || 'Ukjent fag',
           appointment.chatId
         );
         console.log(`✅ Sent appointment completion email to student: ${student.email}`);
+        emailsSent = true;
+      }
+      
+      // Mark that completion emails have been sent
+      if (emailsSent) {
+        await prisma.appointment.update({
+          where: { id: appointment.id },
+          data: {
+            notes: `${appointment.notes || ''}\n\n[SYSTEM] COMPLETION_EMAIL_SENT at ${new Date().toISOString()}`.trim()
+          }
+        });
       }
     } catch (error) {
       console.error(`❌ Failed to send appointment completion emails for appointment ${appointment.id}:`, error);
