@@ -2,6 +2,7 @@
 
 import { useLanguage } from '@/lib/translations';
 import AppointmentsList from '@/components/appointments/AppointmentsList';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 export default function AppointmentsPage() {
   const language = useLanguage();
@@ -9,8 +10,10 @@ export default function AppointmentsPage() {
   const title = language === 'no' ? 'Mine timer' : 'My Appointments';
 
   return (
-    <AppointmentsList 
-      title={title}
-    />
+    <AuthGuard>
+      <AppointmentsList 
+        title={title}
+      />
+    </AuthGuard>
   );
 }

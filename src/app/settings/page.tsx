@@ -10,6 +10,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { LoadingSpinner } from '@/components/ui';
 import { useAuth } from '@/contexts/AuthContext';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 interface EmailNotificationSettings {
   emailNewChat: boolean;
@@ -125,134 +126,136 @@ export default function SettingsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Innstillinger</h1>
-        </div>
+    <AuthGuard>
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Innstillinger</h1>
+          </div>
 
-        {/* Email Notifications Section */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-start">
-            <div className="flex-shrink-0">
-              <EnvelopeIcon className="h-8 w-8 text-gray-400" />
-            </div>
-            <div className="ml-4 flex-1">
-              <h3 className="text-lg font-medium text-gray-900">
-                E-postvarsler
-              </h3>
-              <p className="mt-1 text-sm text-gray-600">
-                Administrer e-postvarsler for meldinger og aktiviteter
-              </p>
-              
-              {/* Save message */}
-              {saveMessage && (
-                <div className={`mt-4 p-3 rounded-lg ${
-                  saveMessage.includes('Feil') 
-                    ? 'bg-red-50 border border-red-200 text-red-700'
-                    : 'bg-green-50 border border-green-200 text-green-700'
-                }`}>
-                  <div className="flex items-center">
-                    <CheckCircleIcon className="h-5 w-5 mr-2" />
-                    {saveMessage}
-                  </div>
-                </div>
-              )}
-
-              <div className="mt-6">
-                {isLoading ? (
-                  <div className="flex justify-center py-8">
-                    <LoadingSpinner size="lg" />
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    {/* New Chat Notification */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div className="flex items-start">
-                        <ChatBubbleLeftIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
-                            Nye chatforespørsler
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Få varsling når noen starter en ny chat med deg
-                          </p>
-                        </div>
-                      </div>
-                      <ToggleSwitch
-                        enabled={settings.emailNewChat}
-                        onChange={() => handleToggle('emailNewChat')}
-                        disabled={isSaving}
-                      />
-                    </div>
-
-                    {/* New Message Notification */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div className="flex items-start">
-                        <BellIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
-                            Nye meldinger
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Få sammendrag av nye meldinger hver dag
-                          </p>
-                        </div>
-                      </div>
-                      <ToggleSwitch
-                        enabled={settings.emailNewMessage}
-                        onChange={() => handleToggle('emailNewMessage')}
-                        disabled={isSaving}
-                      />
-                    </div>
-
-                    {/* Appointment Confirmation */}
-                    <div className="flex items-center justify-between py-4 border-b border-gray-200">
-                      <div className="flex items-start">
-                        <CalendarIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
-                            Avtalebekreftelser
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Få varsling når en avtale blir bekreftet
-                          </p>
-                        </div>
-                      </div>
-                      <ToggleSwitch
-                        enabled={settings.emailAppointmentConfirm}
-                        onChange={() => handleToggle('emailAppointmentConfirm')}
-                        disabled={isSaving}
-                      />
-                    </div>
-
-                    {/* Appointment Completion Reminder */}
-                    <div className="flex items-center justify-between py-4">
-                      <div className="flex items-start">
-                        <CheckCircleIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
-                        <div>
-                          <h4 className="text-sm font-medium text-gray-900">
-                            Avtale fullført påminnelse
-                          </h4>
-                          <p className="text-sm text-gray-500">
-                            Få påminnelse om å bekrefte fullføring etter avtaleslutt
-                          </p>
-                        </div>
-                      </div>
-                      <ToggleSwitch
-                        enabled={settings.emailAppointmentComplete}
-                        onChange={() => handleToggle('emailAppointmentComplete')}
-                        disabled={isSaving}
-                      />
+          {/* Email Notifications Section */}
+          <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <EnvelopeIcon className="h-8 w-8 text-gray-400" />
+              </div>
+              <div className="ml-4 flex-1">
+                <h3 className="text-lg font-medium text-gray-900">
+                  E-postvarsler
+                </h3>
+                <p className="mt-1 text-sm text-gray-600">
+                  Administrer e-postvarsler for meldinger og aktiviteter
+                </p>
+                
+                {/* Save message */}
+                {saveMessage && (
+                  <div className={`mt-4 p-3 rounded-lg ${
+                    saveMessage.includes('Feil') 
+                      ? 'bg-red-50 border border-red-200 text-red-700'
+                      : 'bg-green-50 border border-green-200 text-green-700'
+                  }`}>
+                    <div className="flex items-center">
+                      <CheckCircleIcon className="h-5 w-5 mr-2" />
+                      {saveMessage}
                     </div>
                   </div>
                 )}
+
+                <div className="mt-6">
+                  {isLoading ? (
+                    <div className="flex justify-center py-8">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : (
+                    <div className="space-y-6">
+                      {/* New Chat Notification */}
+                      <div className="flex items-center justify-between py-4 border-b border-gray-200">
+                        <div className="flex items-start">
+                          <ChatBubbleLeftIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Nye chatforespørsler
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Få varsling når noen starter en ny chat med deg
+                            </p>
+                          </div>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.emailNewChat}
+                          onChange={() => handleToggle('emailNewChat')}
+                          disabled={isSaving}
+                        />
+                      </div>
+
+                      {/* New Message Notification */}
+                      <div className="flex items-center justify-between py-4 border-b border-gray-200">
+                        <div className="flex items-start">
+                          <BellIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Nye meldinger
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Få sammendrag av nye meldinger hver dag
+                            </p>
+                          </div>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.emailNewMessage}
+                          onChange={() => handleToggle('emailNewMessage')}
+                          disabled={isSaving}
+                        />
+                      </div>
+
+                      {/* Appointment Confirmation */}
+                      <div className="flex items-center justify-between py-4 border-b border-gray-200">
+                        <div className="flex items-start">
+                          <CalendarIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Avtalebekreftelser
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Få varsling når en avtale blir bekreftet
+                            </p>
+                          </div>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.emailAppointmentConfirm}
+                          onChange={() => handleToggle('emailAppointmentConfirm')}
+                          disabled={isSaving}
+                        />
+                      </div>
+
+                      {/* Appointment Completion Reminder */}
+                      <div className="flex items-center justify-between py-4">
+                        <div className="flex items-start">
+                          <CheckCircleIcon className="h-5 w-5 text-gray-400 mt-1 mr-3" />
+                          <div>
+                            <h4 className="text-sm font-medium text-gray-900">
+                              Avtale fullført påminnelse
+                            </h4>
+                            <p className="text-sm text-gray-500">
+                              Få påminnelse om å bekrefte fullføring etter avtaleslutt
+                            </p>
+                          </div>
+                        </div>
+                        <ToggleSwitch
+                          enabled={settings.emailAppointmentComplete}
+                          onChange={() => handleToggle('emailAppointmentComplete')}
+                          disabled={isSaving}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AuthGuard>
   );
 }
