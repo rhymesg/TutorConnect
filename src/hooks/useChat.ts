@@ -32,7 +32,7 @@ interface UseChatReturn {
   // Actions
   loadChat: (chatId: string) => Promise<void>;
   loadChats: () => Promise<void>;
-  sendMessage: (content: string, type?: Message['type']) => Promise<void>;
+  sendMessage: (content: string, type?: Message['type'], appointmentId?: string) => Promise<void>;
   retryLastAction: () => Promise<void>;
   
   // Utilities
@@ -304,7 +304,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   }, [getAuthHeaders, refreshAuth]);
 
   // Send message
-  const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT') => {
+  const sendMessage = useCallback(async (content: string, type: Message['type'] = 'TEXT', appointmentId?: string) => {
     if (!chatId || !content.trim()) {
       return;
     }
@@ -316,7 +316,11 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       const response = await fetch(`/api/chat/${chatId}/messages`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ content: content.trim(), type }),
+        body: JSON.stringify({ 
+          content: content.trim(), 
+          type, 
+          appointmentId: appointmentId 
+        }),
       });
 
       if (!response.ok) {

@@ -16,12 +16,14 @@ import AppointmentResponseModal from './AppointmentResponseModal';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
+  appointmentId?: string;
   onClose?: () => void;
   className?: string;
 }
 
 export default function ChatInterface({ 
   initialChatId, 
+  appointmentId,
   onClose,
   className = '' 
 }: ChatInterfaceProps) {
@@ -81,6 +83,19 @@ export default function ChatInterface({
       setSelectedChatId(initialChatId);
     }
   }, [initialChatId, selectedChatId]);
+
+  // Auto-open appointment modal if appointmentId is provided
+  useEffect(() => {
+    if (appointmentId && messages && messages.length > 0) {
+      // Find the message with the matching appointmentId
+      const appointmentMessage = messages.find(msg => msg.appointmentId === appointmentId);
+      if (appointmentMessage) {
+        setSelectedAppointmentMessage(appointmentMessage);
+        setShowAppointmentResponseModal(true);
+        setAppointmentResponseError(null);
+      }
+    }
+  }, [appointmentId, messages]);
 
   // Reset isChangingChat when chat changes and loads
   useEffect(() => {
@@ -192,16 +207,24 @@ export default function ChatInterface({
   };
 
   const handleAcceptAppointment = async () => {
-    if (!selectedAppointmentMessage) return;
+    if (!selectedAppointmentMessage?.appointment?.id) return;
     
     setAppointmentResponseError(null);
     
     try {
-      const responseData = {
-        originalMessageId: selectedAppointmentMessage.id,
-        accepted: true
-      };
-      await sendMessage(JSON.stringify(responseData), 'APPOINTMENT_RESPONSE');
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/respond`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accepted: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke godta avtalen');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
@@ -215,15 +238,24 @@ export default function ChatInterface({
   };
 
   const handleRejectAppointment = async () => {
-    if (!selectedAppointmentMessage) return;
+    if (!selectedAppointmentMessage?.appointment?.id) return;
     
     setAppointmentResponseError(null);
     
     try {
-      await sendMessage(JSON.stringify({
-        originalMessageId: selectedAppointmentMessage.id,
-        accepted: false
-      }), 'APPOINTMENT_RESPONSE');
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/respond`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ accepted: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke avslå avtalen');
+      }
       
       // Refresh chat to get updated appointment status
       if (selectedChatId) {
@@ -236,8 +268,107 @@ export default function ChatInterface({
     }
   };
 
+
+  const handleCompletedAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    setAppointmentResponseError(null);
+    
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: true }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+      }
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to confirm appointment completion:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
+  const handleNotCompletedAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    setAppointmentResponseError(null);
+    
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/complete`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ completed: false }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke markere avtalen som ikke gjennomført');
+      }
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to mark appointment as not completed:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke markere avtalen som ikke gjennomført');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
+  const handleDeleteAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    setAppointmentResponseError(null);
+    
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke slette avtalen');
+      }
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete appointment:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke slette avtalen');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
   const handleScheduleAppointment = () => {
     setShowAppointmentModal(true);
+  };
+
+  const handleViewAppointments = () => {
+    if (selectedChatId) {
+      window.open(`/chat/${selectedChatId}/appointments`, '_blank');
+    }
   };
 
   const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
@@ -275,7 +406,8 @@ export default function ChatInterface({
       endDateTime,
       date: appointmentData.date,
       startTime: appointmentData.startTime,
-      endTime: appointmentData.endTime
+      endTime: appointmentData.endTime,
+      location: appointmentData.location
     });
     
     console.log('Appointment message content:', appointmentMessage);
@@ -357,6 +489,7 @@ export default function ChatInterface({
               onReportUser={() => {/* console.log('Report user') */}}
               onSettings={() => {/* console.log('Settings') */}}
               onScheduleAppointment={handleScheduleAppointment}
+              onViewAppointments={handleViewAppointments}
             />
             
             {/* Messages - scrollable area */}
@@ -381,6 +514,7 @@ export default function ChatInterface({
                 onSendMessage={handleSendMessage}
                 language={language}
                 disabled={false}
+                chatId={selectedChatId}
               />
             </div>
           </div>
@@ -455,6 +589,9 @@ export default function ChatInterface({
           language={language}
           onAccept={handleAcceptAppointment}
           onReject={handleRejectAppointment}
+          onCompleted={handleCompletedAppointment}
+          onNotCompleted={handleNotCompletedAppointment}
+          onDelete={handleDeleteAppointment}
           error={appointmentResponseError}
         />
       )}

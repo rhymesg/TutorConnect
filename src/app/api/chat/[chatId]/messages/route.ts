@@ -3,12 +3,13 @@ import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
+import { updateExpiredAppointments } from '@/lib/appointment-utils';
 import { z } from 'zod';
 
 // Send message schema
 const sendMessageSchema = z.object({
   content: z.string().min(1).max(2000),
-  type: z.enum(['TEXT', 'APPOINTMENT_REQUEST', 'APPOINTMENT_RESPONSE', 'SYSTEM_MESSAGE']).optional().default('TEXT'),
+  type: z.enum(['TEXT', 'APPOINTMENT_REQUEST', 'APPOINTMENT_RESPONSE', 'APPOINTMENT_COMPLETION_RESPONSE', 'SYSTEM_MESSAGE']).optional().default('TEXT'),
   appointmentId: z.string().optional(),
   replyToMessageId: z.string().optional(),
 });
@@ -59,6 +60,7 @@ async function validateChatMessageAccess(chatId: string, userId: string) {
   return participant;
 }
 
+
 /**
  * GET /api/chat/[chatId]/messages - Get chat messages with pagination
  */
@@ -66,6 +68,9 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
   const user = getAuthenticatedUser(request);
   const { chatId } = await params;
   const { searchParams } = new URL(request.url);
+  
+  // Update expired appointments for this chat
+  await updateExpiredAppointments(chatId);
 
   // Validate access
   await validateChatMessageAccess(chatId, user.id);
@@ -113,7 +118,6 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
 
   const skip = before || after ? 0 : (page - 1) * limit;
 
-  console.log('🔍 [DEBUG] Loading messages for chatId:', chatId);
   
   // Get messages with sender details
   const [messages, totalCount] = await Promise.all([
@@ -144,6 +148,19 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
             location: true,
             status: true,
             duration: true,
+            teacherReady: true,
+            studentReady: true,
+            bothCompleted: true,
+            chat: {
+              select: {
+                id: true,
+                relatedPost: {
+                  select: {
+                    userId: true,
+                  },
+                },
+              },
+            },
           },
         },
         replyTo: {
@@ -209,24 +226,6 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
   );
 
   const totalPages = totalCount ? Math.ceil(totalCount / limit) : 0;
-
-  // Debug appointment messages
-  const appointmentMessages = messagesWithReadStatus.filter(msg => 
-    msg.type === 'APPOINTMENT_REQUEST' || msg.type === 'APPOINTMENT_RESPONSE'
-  );
-  
-  console.log('📅 [DEBUG] Appointment messages found:', appointmentMessages.length);
-  appointmentMessages.forEach(msg => {
-    console.log(`📅 [DEBUG] Message ${msg.id}:`);
-    console.log(`  - Type: ${msg.type}`);
-    console.log(`  - Has appointment:`, !!msg.appointment);
-    if (msg.appointment) {
-      console.log(`  - DateTime: ${msg.appointment.dateTime}`);
-      console.log(`  - Duration: ${msg.appointment.duration} minutes`);
-      console.log(`  - Status: ${msg.appointment.status}`);
-    }
-    console.log(`  - Content preview: ${msg.content.substring(0, 100)}...`);
-  });
 
   return NextResponse.json({
     success: true,
@@ -366,7 +365,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       data: {
         chatId,
         dateTime: appointmentDateTime,
-        location: 'online', // Default to online
+        location: appointmentData.location ? appointmentData.location : '', // Use provided location or default to empty string
         duration: duration, // Calculated duration in minutes
         status: 'PENDING',
       }
@@ -397,6 +396,59 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       
       createdAppointmentId = originalMessage.appointment.id;
     }
+  } else if (type === 'APPOINTMENT_COMPLETION_RESPONSE') {
+    // Parse completion response data
+    const responseData = JSON.parse(content);
+    
+    if (appointmentId) {
+      // Get the appointment
+      const appointment = await prisma.appointment.findUnique({
+        where: { id: appointmentId },
+        include: {
+          chat: {
+            include: {
+              participants: {
+                where: { isActive: true }
+              }
+            }
+          }
+        }
+      });
+      
+      if (!appointment) {
+        throw new BadRequestError('Appointment not found');
+      }
+      
+      if (appointment.status !== 'WAITING_TO_COMPLETE') {
+        throw new BadRequestError('이 약속은 완료 확인 대기 상태가 아닙니다.');
+      }
+      
+      // Determine which user is responding
+      const isTeacher = appointment.chat.participants.some(p => 
+        p.userId === user.id && appointment.chat.teacherId === user.id
+      );
+      
+      const updateData: any = {};
+      if (isTeacher) {
+        updateData.teacherReady = responseData.completed;
+      } else {
+        updateData.studentReady = responseData.completed;
+      }
+      
+      // If both parties have responded positively, mark as completed
+      const otherPartyReady = isTeacher ? appointment.studentReady : appointment.teacherReady;
+      if (responseData.completed && otherPartyReady) {
+        updateData.status = 'COMPLETED';
+        updateData.bothCompleted = true;
+      }
+      
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: updateData
+      });
+      
+      createdAppointmentId = appointmentId;
+    }
   }
 
   // Create message in transaction
@@ -426,6 +478,19 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
             location: true,
             status: true,
             duration: true,
+            teacherReady: true,
+            studentReady: true,
+            bothCompleted: true,
+            chat: {
+              select: {
+                id: true,
+                relatedPost: {
+                  select: {
+                    userId: true,
+                  },
+                },
+              },
+            },
           },
         },
         replyTo: {

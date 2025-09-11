@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser, requireResourceOwnership } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
+import { updateExpiredAppointments } from '@/lib/appointment-utils';
 import { MessageType } from "@prisma/client";
 import { z } from 'zod';
 
@@ -55,10 +56,14 @@ async function validateChatAccess(chatId: string, userId: string) {
 /**
  * GET /api/chat/[chatId] - Get chat details with messages
  */
+
 async function handleGET(request: NextRequest, { params }: { params: Promise<RouteParams> }) {
   const user = getAuthenticatedUser(request);
   const { chatId } = await params;
   const { searchParams } = new URL(request.url);
+  
+  // Update expired appointments for this chat
+  await updateExpiredAppointments(chatId);
 
   // Validate access
   await validateChatAccess(chatId, user.id);
@@ -184,6 +189,19 @@ async function handleGET(request: NextRequest, { params }: { params: Promise<Rou
           location: true,
           status: true,
           duration: true,
+          teacherReady: true,
+          studentReady: true,
+          bothCompleted: true,
+          chat: {
+            select: {
+              id: true,
+              relatedPost: {
+                select: {
+                  userId: true,
+                },
+              },
+            },
+          },
         },
       },
     },

@@ -8,11 +8,16 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 function ChatPageContent() {
   const searchParams = useSearchParams();
   const initialChatId = searchParams.get('id') || undefined;
+  const appointmentId = searchParams.get('appointment') || undefined;
 
   return (
     <div className="h-full flex flex-col bg-white">
       {/* Chat Interface filling available height */}
-      <ChatInterface initialChatId={initialChatId} className="h-full" />
+      <ChatInterface 
+        initialChatId={initialChatId} 
+        appointmentId={appointmentId}
+        className="h-full" 
+      />
     </div>
   );
 }
