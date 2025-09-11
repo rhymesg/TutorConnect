@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, X } from 'lucide-react';
+import { Check, X, Trash2 } from 'lucide-react';
 import { Language } from '@/lib/translations';
 import { Message } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,6 +16,7 @@ interface AppointmentResponseModalProps {
   onReject: () => Promise<void>;
   onCompleted?: () => Promise<void>;
   onNotCompleted?: () => Promise<void>;
+  onDelete?: () => Promise<void>;
   error?: string | null;
 }
 
@@ -28,9 +29,11 @@ export default function AppointmentResponseModal({
   onReject,
   onCompleted,
   onNotCompleted,
+  onDelete,
   error
 }: AppointmentResponseModalProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const { user } = useAuth();
 
   const status = message.appointment?.status || 'PENDING';
@@ -69,7 +72,12 @@ export default function AppointmentResponseModal({
     confirmed: 'Bekreftet',
     cancelled: 'Avbrutt',
     waiting_to_complete: 'Venter på fullføring',
-    completed_status: 'Fullført'
+    completed_status: 'Fullført',
+    delete: 'Slett',
+    deleteConfirm: 'Er du sikker på at du vil slette denne avtalen?',
+    deleteWarning: 'Denne handlingen kan ikke angres.',
+    confirmDelete: 'Ja, slett',
+    cancelDelete: 'Avbryt'
   } : {
     // Original appointment request texts
     title: 'Appointment Request',
@@ -102,7 +110,12 @@ export default function AppointmentResponseModal({
     confirmed: 'Confirmed',
     cancelled: 'Cancelled',
     waiting_to_complete: 'Waiting to complete',
-    completed_status: 'Completed'
+    completed_status: 'Completed',
+    delete: 'Delete',
+    deleteConfirm: 'Are you sure you want to delete this appointment?',
+    deleteWarning: 'This action cannot be undone.',
+    confirmDelete: 'Yes, delete',
+    cancelDelete: 'Cancel'
   };
 
   if (!isOpen) return null;
@@ -181,6 +194,20 @@ export default function AppointmentResponseModal({
     }
   };
 
+  const handleDelete = async () => {
+    if (isProcessing || !onDelete) return;
+    setIsProcessing(true);
+    try {
+      await onDelete();
+      onClose();
+    } catch (error) {
+      // Error handled by parent
+    } finally {
+      setIsProcessing(false);
+      setShowDeleteConfirmation(false);
+    }
+  };
+
   const isAlreadyResponded = status !== 'PENDING' && status !== 'WAITING_TO_COMPLETE';
   const isCompleted = status === 'COMPLETED';
 
@@ -197,12 +224,24 @@ export default function AppointmentResponseModal({
                   : t.title
               }
             </h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            <div className="flex items-center gap-2">
+              {onDelete && (status === 'PENDING' || status === 'CONFIRMED') && (
+                <button
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  disabled={isProcessing}
+                  className="text-red-400 hover:text-red-600 disabled:opacity-50"
+                  title={t.delete}
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
+              )}
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
           </div>
 
           {/* Appointment Details */}
@@ -313,6 +352,43 @@ export default function AppointmentResponseModal({
           </div>
         </div>
       </div>
+      
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                {t.deleteConfirm}
+              </h3>
+              <p className="text-sm text-gray-600 mb-4">
+                {t.deleteWarning}
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  disabled={isProcessing}
+                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
+                >
+                  {t.cancelDelete}
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={isProcessing}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isProcessing ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  {t.confirmDelete}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

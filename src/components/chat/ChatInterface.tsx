@@ -331,6 +331,36 @@ export default function ChatInterface({
     }
   };
 
+  const handleDeleteAppointment = async () => {
+    if (!selectedAppointmentMessage?.appointment?.id) return;
+    
+    setAppointmentResponseError(null);
+    
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointmentMessage.appointment.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke slette avtalen');
+      }
+      
+      // Refresh chat to get updated appointment status
+      if (selectedChatId) {
+        await loadChat(selectedChatId);
+      }
+    } catch (error: any) {
+      console.error('Failed to delete appointment:', error);
+      setAppointmentResponseError(error?.message || 'Kunne ikke slette avtalen');
+      throw error; // Re-throw for modal handling
+    }
+  };
+
   const handleScheduleAppointment = () => {
     setShowAppointmentModal(true);
   };
@@ -561,6 +591,7 @@ export default function ChatInterface({
           onReject={handleRejectAppointment}
           onCompleted={handleCompletedAppointment}
           onNotCompleted={handleNotCompletedAppointment}
+          onDelete={handleDeleteAppointment}
           error={appointmentResponseError}
         />
       )}

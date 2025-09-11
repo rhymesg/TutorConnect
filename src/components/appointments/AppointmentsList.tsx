@@ -56,11 +56,11 @@ export default function AppointmentsList({
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
   
-  // Available filter options - always include CANCELLED tab
-  const availableFilters = ['ALL', 'PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED'] as const;
+  // Available filter options - split ALL into CURRENT and PAST
+  const availableFilters = ['CURRENT', 'PAST', 'PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED'] as const;
     
   type FilterType = typeof availableFilters[number];
-  const [filter, setFilter] = useState<FilterType>('ALL');
+  const [filter, setFilter] = useState<FilterType>('CURRENT');
 
   const t = {
     no: {
@@ -73,7 +73,8 @@ export default function AppointmentsList({
       waiting_to_complete: 'Venter på fullføring',
       completed: 'Fullført',
       cancelled: 'Avbrutt',
-      all: 'Alle',
+      current: 'Kommende',
+      past: 'Tidligere',
       with: 'med',
       subject: 'Fag',
       duration: 'minutter',
@@ -91,7 +92,8 @@ export default function AppointmentsList({
       waiting_to_complete: 'Waiting to Complete',
       completed: 'Completed',
       cancelled: 'Cancelled',
-      all: 'All',
+      current: 'Upcoming',
+      past: 'Past',
       with: 'with',
       subject: 'Subject',
       duration: 'minutes',
@@ -359,9 +361,52 @@ export default function AppointmentsList({
     }
   };
 
-  const filteredAppointments = appointments.filter(appointment => 
-    filter === 'ALL' || appointment.status === filter
-  );
+  const handleDeleteAppointment = async () => {
+    if (!selectedAppointment) return;
+    
+    try {
+      const response = await fetch(`/api/appointments/${selectedAppointment.id}/delete`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(errorData.error || 'Kunne ikke slette avtalen');
+      }
+      
+      await fetchAppointments();
+      setShowAppointmentModal(false);
+    } catch (error: any) {
+      setAppointmentError(error?.message || 'Kunne ikke slette avtalen');
+      throw error;
+    }
+  };
+
+  const filteredAndSortedAppointments = (() => {
+    const now = new Date();
+    let filtered: Appointment[];
+
+    if (filter === 'CURRENT') {
+      // Show current and future appointments
+      filtered = appointments.filter(appointment => new Date(appointment.dateTime) >= now);
+      // Sort by dateTime ascending (earliest first)
+      return filtered.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
+    } else if (filter === 'PAST') {
+      // Show past appointments  
+      filtered = appointments.filter(appointment => new Date(appointment.dateTime) < now);
+      // Sort by dateTime descending (most recent first)
+      return filtered.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+    } else {
+      // Show appointments by status
+      filtered = appointments.filter(appointment => appointment.status === filter);
+      // Sort by dateTime descending for status-based filtering
+      return filtered.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+    }
+  })();
 
   if (isLoading) {
     return (
@@ -420,7 +465,7 @@ export default function AppointmentsList({
               {language === 'no' ? 'Prøv igjen' : 'Retry'}
             </button>
           </div>
-        ) : filteredAppointments.length === 0 ? (
+        ) : filteredAndSortedAppointments.length === 0 ? (
           <div className="text-center py-12">
             <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
@@ -432,7 +477,7 @@ export default function AppointmentsList({
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredAppointments.map(appointment => (
+            {filteredAndSortedAppointments.map(appointment => (
               <div
                 key={appointment.id}
                 onClick={() => handleAppointmentClick(appointment)}
@@ -516,6 +561,7 @@ export default function AppointmentsList({
             onReject={handleRejectAppointment}
             onCompleted={handleCompletedAppointment}
             onNotCompleted={handleNotCompletedAppointment}
+            onDelete={handleDeleteAppointment}
             error={appointmentError}
           />
         )}
