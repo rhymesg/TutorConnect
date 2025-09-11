@@ -126,6 +126,29 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     },
   });
 
+  // Send a message to the chat indicating completion confirmation
+  try {
+    const completionMessage = `${user.name} har bekreftet at undervisningstimen ble gjennomført ✅`;
+    
+    await prisma.message.create({
+      data: {
+        content: completionMessage,
+        type: 'SYSTEM_MESSAGE',
+        chatId: appointment.chat.id,
+        senderId: user.id,
+      },
+    });
+    
+    // Update chat's lastMessageAt
+    await prisma.chat.update({
+      where: { id: appointment.chat.id },
+      data: { lastMessageAt: new Date() },
+    });
+  } catch (error) {
+    console.error('Failed to send completion message:', error);
+    // Continue with the response even if message sending fails
+  }
+
   // Update user statistics if appointment is now completed
   if (updatedAppointment.status === 'COMPLETED') {
     try {
