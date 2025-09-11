@@ -630,6 +630,114 @@ export async function sendAppointmentCompletionEmail(
 }
 
 /**
+ * Appointment confirmation email template
+ */
+function createAppointmentConfirmationEmailTemplate(
+  userName: string,
+  otherUserName: string,
+  appointmentDateTime: Date,
+  chatId: string,
+  postTitle?: string,
+  postId?: string
+): EmailTemplate {
+  const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat?id=${chatId}&tab=appointments`;
+  const postUrl = postId ? `${EMAIL_CONFIG.baseUrl}/posts/${postId}` : null;
+  
+  const formattedDate = appointmentDateTime.toLocaleDateString('no-NO', { 
+    weekday: 'long', 
+    year: 'numeric', 
+    month: 'long', 
+    day: 'numeric' 
+  });
+  const formattedTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+    hour: '2-digit', 
+    minute: '2-digit' 
+  });
+  
+  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${userName}! 🎉</h2>`;
+  
+  const mainContent = `
+    <div style="background-color: #dcfce7; border-left: 4px solid #16a34a; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+      <p style="margin: 0; color: #15803d; font-weight: 500;">
+        ✅ <strong>Avtalen din har blitt bekreftet!</strong>
+      </p>
+    </div>
+    
+    <p style="color: #374151; line-height: 1.6;">
+      Din avtale med <strong>${otherUserName}</strong> er nå bekreftet og planlagt til:
+    </p>
+    
+    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
+      <p style="margin: 0; color: #374151; font-weight: 500;">
+        📅 ${formattedDate}<br>
+        🕐 ${formattedTime}
+      </p>
+    </div>
+    
+    ${postTitle ? `
+    <div style="background-color: #fef3c7; padding: 12px; border-radius: 6px; margin: 16px 0;">
+      <p style="margin: 0; color: #92400e; font-size: 14px;">
+        📝 <strong>Relatert til innlegg:</strong> ${postTitle}
+      </p>
+      ${postUrl ? `
+      <p style="margin: 8px 0 0 0;">
+        <a href="${postUrl}" style="color: #2563eb; text-decoration: none; font-size: 14px;">
+          → Se innlegget
+        </a>
+      </p>
+      ` : ''}
+    </div>
+    ` : ''}
+    
+    <p style="color: #374151; line-height: 1.6;">
+      Du kan se alle detaljer om avtalen og eventuelle meldinger ved å gå til avtaler-siden.
+    </p>
+    
+    <div style="text-align: center; margin: 32px 0;">
+      <a href="${appointmentUrl}" 
+         style="background-color: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
+        Se avtaledetaljer
+      </a>
+    </div>
+    
+    <div style="background-color: #dbeafe; padding: 12px; border-radius: 6px; margin: 20px 0;">
+      <p style="margin: 0; color: #1e40af; font-size: 14px;">
+        💡 <strong>Tips:</strong> Husk å forberede deg til timen og ta kontakt med ${otherUserName} hvis du har spørsmål.
+      </p>
+    </div>
+  `;
+  
+  const baseTemplate = createBaseEmailTemplate({
+    greeting,
+    mainContent,
+    settingsUrl: `${EMAIL_CONFIG.baseUrl}/settings`,
+    footerText: undefined
+  });
+  
+  return {
+    subject: `Avtalen din med ${otherUserName} er bekreftet - TutorConnect`,
+    html: baseTemplate.html,
+    text: baseTemplate.text,
+  };
+}
+
+/**
+ * Send appointment confirmation email
+ */
+export async function sendAppointmentConfirmationEmail(
+  userEmail: string,
+  userName: string,
+  otherUserName: string,
+  appointmentDateTime: Date,
+  chatId: string,
+  postTitle?: string,
+  postId?: string
+): Promise<void> {
+  const template = createAppointmentConfirmationEmailTemplate(userName, otherUserName, appointmentDateTime, chatId, postTitle, postId);
+  await sendEmail(userEmail, template);
+}
+
+/**
  * Email service health check
  */
 export async function testEmailService(): Promise<boolean> {

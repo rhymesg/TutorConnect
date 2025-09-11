@@ -18,6 +18,7 @@ import {
 } from '@/lib/appointments';
 import { BadRequestError, NotFoundError, ForbiddenError } from '@/lib/errors';
 import { formatNorwegianDateTime } from '@/lib/norwegian-calendar';
+import { sendAppointmentConfirmationEmail } from '@/lib/email';
 import { z } from 'zod';
 
 const prisma = new PrismaClient();
@@ -297,12 +298,18 @@ async function handlePOST(
                   select: {
                     id: true,
                     name: true,
-                    region: true,
+                    email: true,
+                    emailAppointmentConfirm: true,
                   },
                 },
               },
             },
-            relatedPost: true,
+            relatedPost: {
+              select: {
+                id: true,
+                title: true,
+              },
+            },
           },
         },
       },
@@ -317,6 +324,29 @@ async function handlePOST(
       updatedAppointment,
       confirmationData.notes
     );
+
+    // Send confirmation emails if appointment is fully confirmed
+    if (bothWillBeReady) {
+      for (const participant of updatedAppointment.chat.participants) {
+        if (participant.user.emailAppointmentConfirm && participant.user.email) {
+          try {
+            const otherParticipant = updatedAppointment.chat.participants.find(p => p.user.id !== participant.user.id);
+            await sendAppointmentConfirmationEmail(
+              participant.user.email,
+              participant.user.name,
+              otherParticipant?.user?.name || 'Other User',
+              updatedAppointment.dateTime,
+              updatedAppointment.chatId,
+              updatedAppointment.chat.relatedPost?.title,
+              updatedAppointment.chat.relatedPost?.id
+            );
+            console.log(`✅ Sent appointment confirmation email to: ${participant.user.email}`);
+          } catch (error) {
+            console.error(`❌ Failed to send appointment confirmation email to ${participant.user.email}:`, error);
+          }
+        }
+      }
+    }
 
     const result = {
       appointmentId: updatedAppointment.id,
