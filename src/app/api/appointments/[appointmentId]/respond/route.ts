@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
+import { sendAppointmentConfirmationEmail } from '@/lib/email';
 import { z } from 'zod';
 
 // Response schema
@@ -22,10 +23,13 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   const { appointmentId } = await params;
   const body = await request.json();
 
+  console.log(`🔍 [RESPOND] Appointment ID: ${appointmentId}, User: ${user.name} (${user.id})`);
+  console.log(`🔍 [RESPOND] Request body:`, body);
+
   // Validate input
   const { accepted } = respondSchema.parse(body);
 
-  // Get appointment with chat participants
+  // Get appointment with chat participants (including email info for confirmation emails)
   const appointment = await prisma.appointment.findUnique({
     where: { id: appointmentId },
     include: {
@@ -38,8 +42,17 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
                 select: {
                   id: true,
                   name: true,
+                  email: true,
+                  emailAppointmentConfirm: true,
                 },
               },
+            },
+          },
+          relatedPost: {
+            select: {
+              id: true,
+              title: true,
+              subject: true,
             },
           },
         },
@@ -48,17 +61,23 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
   });
 
   if (!appointment) {
+    console.log(`❌ [RESPOND] Appointment not found: ${appointmentId}`);
     throw new NotFoundError('Appointment not found');
   }
+
+  console.log(`🔍 [RESPOND] Found appointment: status=${appointment.status}, dateTime=${appointment.dateTime}`);
+  console.log(`🔍 [RESPOND] Chat participants:`, appointment.chat.participants.map(p => `${p.user.name} (${p.userId})`));
 
   // Check if user is a participant in the chat
   const isParticipant = appointment.chat.participants.some(p => p.userId === user.id);
   if (!isParticipant) {
+    console.log(`❌ [RESPOND] User ${user.id} is not a participant`);
     throw new ForbiddenError('You do not have access to this appointment');
   }
 
   // Check if appointment is still pending
   if (appointment.status !== 'PENDING') {
+    console.log(`❌ [RESPOND] Appointment status is ${appointment.status}, not PENDING`);
     throw new BadRequestError('Denne avtalen har allerede blitt besvart.');
   }
 
@@ -69,19 +88,47 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       data: {
         status: 'CONFIRMED',
       },
-      include: {
-        chat: {
-          select: {
-            id: true,
-          },
-        },
-      },
     });
+
+    console.log('📧 Appointment is now confirmed, preparing to send confirmation emails...');
+    
+    // Send confirmation emails to both participants
+    for (const participant of appointment.chat.participants) {
+      console.log(`🔍 Checking participant: ${participant.user.name} (${participant.user.email})`);
+      console.log(`   - emailAppointmentConfirm: ${participant.user.emailAppointmentConfirm}`);
+      console.log(`   - has email: ${!!participant.user.email}`);
+      
+      if (participant.user.emailAppointmentConfirm && participant.user.email) {
+        try {
+          const otherParticipant = appointment.chat.participants.find(p => p.user.id !== participant.user.id);
+          console.log(`📤 Sending confirmation email to: ${participant.user.email}`);
+          
+          await sendAppointmentConfirmationEmail(
+            participant.user.email,
+            participant.user.name,
+            otherParticipant?.user?.name || 'Other User',
+            appointment.dateTime,
+            appointment.duration,
+            appointment.chat.relatedPost?.subject || 'Ukjent fag',
+            appointment.location,
+            appointment.chat.id,
+            appointment.chat.relatedPost?.title,
+            appointment.chat.relatedPost?.id
+          );
+          console.log(`✅ Sent appointment confirmation email to: ${participant.user.email}`);
+        } catch (error) {
+          console.error(`❌ Failed to send appointment confirmation email to ${participant.user.email}:`, error);
+        }
+      } else {
+        console.log(`⏭️ Skipping email for ${participant.user.name}: emailAppointmentConfirm=${participant.user.emailAppointmentConfirm}, hasEmail=${!!participant.user.email}`);
+      }
+    }
 
     return NextResponse.json({
       success: true,
       data: {
         appointment: updatedAppointment,
+        message: 'Appointment confirmed successfully',
       },
     });
   } else {

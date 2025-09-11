@@ -391,13 +391,21 @@ export default function AppointmentsList({
     let filtered: Appointment[];
 
     if (filter === 'CURRENT') {
-      // Show current and future appointments
-      filtered = appointments.filter(appointment => new Date(appointment.dateTime) >= now);
+      // Show current and future appointments (based on end time = startTime + duration)
+      filtered = appointments.filter(appointment => {
+        const startTime = new Date(appointment.dateTime);
+        const endTime = new Date(startTime.getTime() + (appointment.duration * 60 * 1000));
+        return endTime >= now;
+      });
       // Sort by dateTime ascending (earliest first)
       return filtered.sort((a, b) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime());
     } else if (filter === 'PAST') {
-      // Show past appointments  
-      filtered = appointments.filter(appointment => new Date(appointment.dateTime) < now);
+      // Show past appointments (based on end time = startTime + duration)  
+      filtered = appointments.filter(appointment => {
+        const startTime = new Date(appointment.dateTime);
+        const endTime = new Date(startTime.getTime() + (appointment.duration * 60 * 1000));
+        return endTime < now;
+      });
       // Sort by dateTime descending (most recent first)
       return filtered.sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
     } else {

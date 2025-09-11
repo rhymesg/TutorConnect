@@ -175,6 +175,10 @@ lib-cov
 .local/
 local-data/
 
+# Test files (keep local but don't track)
+test-*.js
+test-*.ts
+
 # Backup files
 *.backup
 *.bak

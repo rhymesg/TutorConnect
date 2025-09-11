@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import MyPostsPageClient from './MyPostsPageClient';
 import { PostListLoading } from '@/components/posts/LoadingStates';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 export const metadata: Metadata = {
   title: 'Mine annonser | TutorConnect',
@@ -20,25 +21,27 @@ export const metadata: Metadata = {
 
 export default async function MyPostsPage() {
   return (
-    <div className="bg-neutral-50">
-      {/* Page Header */}
-      <div className="bg-white border-b border-neutral-200">
-        <div className="container mx-auto px-4 py-8 sm:py-12">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-              Mine annonser
-            </h1>
-            <p className="mx-auto mt-4 max-w-3xl text-lg text-neutral-600">
-              Administrer og rediger dine aktive annonser. Klikk på en annonse for å se detaljer eller redigere.
-            </p>
+    <AuthGuard>
+      <div className="bg-neutral-50">
+        {/* Page Header */}
+        <div className="bg-white border-b border-neutral-200">
+          <div className="container mx-auto px-4 py-8 sm:py-12">
+            <div className="text-center">
+              <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
+                Mine annonser
+              </h1>
+              <p className="mx-auto mt-4 max-w-3xl text-lg text-neutral-600">
+                Administrer og rediger dine aktive annonser. Klikk på en annonse for å se detaljer eller redigere.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Posts Content */}
-      <Suspense fallback={<PostListLoading />}>
-        <MyPostsPageClient />
-      </Suspense>
-    </div>
+        {/* Posts Content */}
+        <Suspense fallback={<PostListLoading />}>
+          <MyPostsPageClient />
+        </Suspense>
+      </div>
+    </AuthGuard>
   );
 }

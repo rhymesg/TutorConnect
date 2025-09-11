@@ -81,16 +81,21 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   // Get headers with auth token
   const getAuthHeaders = useCallback(async () => {
     try {
+      // Check if user is authenticated first
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
       if (!accessToken) {
         console.log('No access token, trying to refresh...');
         const refreshed = await refreshAuth();
         if (!refreshed) {
-          throw new Error('Authentication required');
+          throw new Error('Authentication session expired');
         }
         // After refresh, we need to get the new token
         const newToken = localStorage.getItem('accessToken');
         if (!newToken) {
-          throw new Error('Authentication required');
+          throw new Error('Authentication session expired');
         }
         return {
           'Authorization': `Bearer ${newToken}`,
@@ -102,10 +107,10 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         'Content-Type': 'application/json',
       };
     } catch (error) {
-      console.error('Auth error in getAuthHeaders:', error);
-      throw new Error('Authentication required');
+      // Don't log authentication errors as they're expected
+      throw error;
     }
-  }, [accessToken, refreshAuth]);
+  }, [accessToken, refreshAuth, user]);
 
   // Load specific chat with messages
   const loadChat = useCallback(async (targetChatId: string) => {

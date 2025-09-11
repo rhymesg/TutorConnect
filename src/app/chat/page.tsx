@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ChatInterface } from '@/components/chat';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import AuthGuard from '@/components/auth/AuthGuard';
 
 function ChatPageContent() {
   const searchParams = useSearchParams();
@@ -24,12 +25,14 @@ function ChatPageContent() {
 
 export default function ChatPage() {
   return (
-    <Suspense fallback={
-      <div className="h-screen flex items-center justify-center bg-white">
-        <LoadingSpinner />
-      </div>
-    }>
-      <ChatPageContent />
-    </Suspense>
+    <AuthGuard>
+      <Suspense fallback={
+        <div className="h-screen flex items-center justify-center bg-white">
+          <LoadingSpinner />
+        </div>
+      }>
+        <ChatPageContent />
+      </Suspense>
+    </AuthGuard>
   );
 }

@@ -24,8 +24,15 @@ export default function SimpleLoginForm() {
       const result = await login(email, password);
       
       if (result.success) {
-        // Redirect to profile
-        router.push('/profile');
+        // Check if there's a redirect URL stored
+        const redirectUrl = sessionStorage.getItem('redirectAfterLogin');
+        if (redirectUrl) {
+          sessionStorage.removeItem('redirectAfterLogin');
+          router.push(redirectUrl);
+        } else {
+          // Default redirect to profile
+          router.push('/profile');
+        }
       } else {
         setError(result.error || 'Login failed');
       }
