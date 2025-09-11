@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { apiHandler } from '@/lib/api-handler';
 import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
+import { updateUserStatsOnCompletion } from '@/lib/appointment-utils';
 import { z } from 'zod';
 
 // Completion schema
@@ -97,6 +98,16 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       },
     },
   });
+
+  // Update user statistics if appointment is now completed
+  if (updatedAppointment.status === 'COMPLETED') {
+    try {
+      await updateUserStatsOnCompletion(appointmentId);
+    } catch (error) {
+      console.error('Failed to update user stats:', error);
+      // Continue with the response even if stats update fails
+    }
+  }
 
   return NextResponse.json({
     success: true,
