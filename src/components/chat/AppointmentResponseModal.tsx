@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, Clock, Check, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { Language } from '@/lib/translations';
 import { Message } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
+import AppointmentCard from './AppointmentCard';
 
 interface AppointmentResponseModalProps {
   isOpen: boolean;
@@ -108,52 +109,6 @@ export default function AppointmentResponseModal({
     appointmentData = message.appointment || {};
   }
 
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return 'Invalid Date';
-    
-    let date;
-    if (dateStr.includes('T')) {
-      date = new Date(dateStr);
-    } else if (dateStr.includes('-') && dateStr.length === 10) {
-      date = new Date(dateStr + 'T00:00:00');
-    } else {
-      date = new Date(dateStr);
-    }
-    
-    if (isNaN(date.getTime())) return 'Invalid Date';
-    
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
-    };
-    return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', options);
-  };
-
-  const formatTime = (timeStr: string) => {
-    if (!timeStr) return '';
-    
-    if (timeStr.length === 5 && timeStr.includes(':') && !timeStr.includes('T')) {
-      return timeStr;
-    }
-    
-    let date;
-    if (timeStr.includes('T')) {
-      date = new Date(timeStr);
-    } else {
-      const today = new Date().toISOString().split('T')[0];
-      date = new Date(`${today}T${timeStr}`);
-    }
-    
-    if (isNaN(date.getTime())) return '';
-    
-    return date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: false
-    });
-  };
 
   const handleAccept = async () => {
     if (isProcessing) return;
@@ -232,56 +187,14 @@ export default function AppointmentResponseModal({
           </div>
 
           {/* Appointment Details */}
-          <div className="p-4 rounded-lg border-2 border-blue-200 bg-blue-50 mb-4">
-            <div className="flex items-start gap-3">
-              <div className="p-2 rounded-full bg-blue-100">
-                <Calendar className="h-5 w-5 text-blue-600" />
-              </div>
-              
-              <div className="flex-1">
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-gray-900">
-                    {isWaitingToComplete ? t.appointmentDetails : t.proposedTime}
-                  </h3>
-                  
-                  {/* Status badge */}
-                  <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm font-medium ${
-                    status === 'CONFIRMED' ? 'bg-green-100 text-green-800' :
-                    status === 'CANCELLED' ? 'bg-red-100 text-red-800' :
-                    status === 'WAITING_TO_COMPLETE' ? 'bg-orange-100 text-orange-800' :
-                    status === 'COMPLETED' ? 'bg-blue-100 text-blue-800' :
-                    'bg-gray-100 text-gray-800'
-                  }`}>
-                    {status === 'CONFIRMED' && <Check className="h-4 w-4" />}
-                    {status === 'CANCELLED' && <X className="h-4 w-4" />}
-                    {status === 'WAITING_TO_COMPLETE' && <Clock className="h-4 w-4" />}
-                    {status === 'COMPLETED' && <Check className="h-4 w-4" />}
-                    {status === 'COMPLETED' ? t.completed_status : t[status.toLowerCase() as keyof typeof t] || status}
-                  </div>
-                </div>
-                
-                <div className="space-y-1 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>{formatDate(appointmentData.date || appointmentData.dateTime)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    <span>
-                      {formatTime(appointmentData.startTime || appointmentData.dateTime)} - 
-                      {formatTime(appointmentData.endTime || appointmentData.endDateTime)}
-                    </span>
-                  </div>
-                  {appointmentData.location && (
-                    <div className="flex items-start gap-2">
-                      <span className="mt-0.5">📍</span>
-                      <span>{appointmentData.location}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
+          <AppointmentCard
+            appointmentData={appointmentData}
+            status={status}
+            language={language}
+            title={isWaitingToComplete ? t.appointmentDetails : t.proposedTime}
+            statusPosition="top"
+            className="mb-4"
+          />
 
           {/* Status Messages - All in consistent position */}
           <div className="mb-4">
