@@ -1,117 +1,71 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PostStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { cookies } from 'next/headers';
-import { verifyAccessToken } from '@/lib/jwt';
+import { apiHandler } from '@/lib/api-handler';
+import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
+import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 
-/**
- * Get current user from JWT token (either from Authorization header or cookie)
- */
-async function getCurrentUser(request: NextRequest) {
-  let accessToken: string | undefined;
-  
-  // First try Authorization header
-  const authHeader = request.headers.get('authorization');
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    accessToken = authHeader.substring(7);
-    console.log('Using token from Authorization header');
-  }
-  
-  // Fallback to cookie
-  if (!accessToken) {
-    const cookieStore = await cookies();
-    accessToken = cookieStore.get('accessToken')?.value;
-    if (accessToken) {
-      console.log('Using token from cookie');
-    }
-  }
-  
-  if (!accessToken) {
-    console.log('No token found in header or cookie');
-    return null;
-  }
-
-  try {
-    const payload = await verifyAccessToken(accessToken);
-    return payload;
-  } catch (error) {
-    console.error('JWT verification error:', error);
-    return null;
-  }
-}
-
-export async function PATCH(
+async function handlePATCH(
   request: NextRequest,
   { params }: { params: Promise<{ postId: string }> }
 ) {
-  try {
-    const { postId } = await params;
-    
-    // Verify authentication
-    const user = await getCurrentUser(request);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
+  const user = getAuthenticatedUser(request);
+  const { postId } = await params;
+  
+  // Get request body
+  const body = await request.json();
+  const { status } = body;
 
-    // Get request body
-    const body = await request.json();
-    const { status } = body;
-
-    // Validate status
-    if (!status || !['AKTIV', 'PAUSET'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Ugyldig status. Må være AKTIV eller PAUSET' },
-        { status: 400 }
-      );
-    }
-
-    // Find the post
-    const post = await prisma.post.findUnique({
-      where: { id: postId },
-      select: { id: true, userId: true }
-    });
-
-    if (!post) {
-      return NextResponse.json(
-        { error: 'Annonsen ble ikke funnet' },
-        { status: 404 }
-      );
-    }
-
-    // Check if user owns the post
-    if (post.userId !== (user.sub || user.userId || user.id)) {
-      return NextResponse.json(
-        { error: 'Du har ikke tilgang til å endre denne annonsen' },
-        { status: 403 }
-      );
-    }
-
-    // Update post status
-    const updatedPost = await prisma.post.update({
-      where: { id: postId },
-      data: { status: status as PostStatus },
-      select: {
-        id: true,
-        status: true,
-        title: true
-      }
-    });
-
-    return NextResponse.json({
-      message: `Annonsestatus endret til ${status === 'AKTIV' ? 'aktiv' : 'pauset'}`,
-      post: updatedPost
-    });
-
-  } catch (error) {
-    console.error('Error updating post status:', error);
-    return NextResponse.json(
-      { error: 'Kunne ikke endre annonsestatus. Prøv igjen senere.' },
-      { status: 500 }
-    );
-  } finally {
-    await prisma.$disconnect();
+  // Validate status
+  if (!status || !['AKTIV', 'PAUSET'].includes(status)) {
+    throw new BadRequestError('Ugyldig status. Må være AKTIV eller PAUSET');
   }
+
+  // Find the post
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { id: true, userId: true }
+  });
+
+  if (!post) {
+    throw new NotFoundError('Annonsen ble ikke funnet');
+  }
+
+  // Check if user owns the post
+  if (post.userId !== user.id) {
+    throw new ForbiddenError('Du har ikke tilgang til å endre denne annonsen');
+  }
+
+  // Update post status
+  const updatedPost = await prisma.post.update({
+    where: { id: postId },
+    data: { status: status as PostStatus },
+    select: {
+      id: true,
+      status: true,
+      title: true
+    }
+  });
+
+  return NextResponse.json({
+    success: true,
+    message: `Annonsestatus endret til ${status === 'AKTIV' ? 'aktiv' : 'pauset'}`,
+    data: {
+      post: updatedPost
+    }
+  });
 }
+
+export const PATCH = apiHandler(async (request: NextRequest, context: any) => {
+  await authMiddleware(request);
+  const url = new URL(request.url);
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  const postsIndex = pathSegments.indexOf('posts');
+  const postId = postsIndex >= 0 && postsIndex < pathSegments.length - 1 ? pathSegments[postsIndex + 1] : '';
+  
+  if (!postId) {
+    return NextResponse.json({ success: false, error: 'Post ID not found in URL' }, { status: 400 });
+  }
+  
+  return handlePATCH(request, { params: Promise.resolve({ postId }) });
+});
