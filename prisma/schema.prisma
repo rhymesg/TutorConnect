@@ -46,6 +46,12 @@ model User {
   teacherSessions       Int               @default(0)
   teacherStudents       Int               @default(0)
   privacyStats          PrivacySetting    @default(PUBLIC)
+  // Email notification preferences
+  emailNewChat          Boolean           @default(true)
+  emailNewMessage       Boolean           @default(true)
+  emailAppointmentConfirm Boolean         @default(true)
+  emailAppointmentReminder Boolean       @default(true)
+  emailAppointmentComplete Boolean       @default(true)
   chatParticipants      ChatParticipant[]
   teacherChats          Chat[]            @relation("TeacherChats")
   studentChats          Chat[]            @relation("StudentChats")
