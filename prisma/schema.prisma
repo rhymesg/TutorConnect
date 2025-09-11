@@ -52,6 +52,7 @@ model User {
   emailAppointmentConfirm Boolean         @default(true)
   emailAppointmentReminder Boolean       @default(true)
   emailAppointmentComplete Boolean       @default(true)
+  lastEmailNotificationAt DateTime?
   chatParticipants      ChatParticipant[]
   teacherChats          Chat[]            @relation("TeacherChats")
   studentChats          Chat[]            @relation("StudentChats")
