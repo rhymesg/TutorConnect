@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
-import { useEffect, ReactNode } from 'react';
+import { useEffect, ReactNode, Suspense } from 'react';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface AuthGuardProps {
@@ -12,7 +12,7 @@ interface AuthGuardProps {
   showMessage?: boolean;
 }
 
-export default function AuthGuard({ 
+function AuthGuardContent({ 
   children, 
   fallback,
   redirectTo = '/auth/login',
@@ -71,4 +71,16 @@ export default function AuthGuard({
   }
 
   return <>{children}</>;
+}
+
+export default function AuthGuard(props: AuthGuardProps) {
+  return (
+    <Suspense fallback={props.fallback || (
+      <div className="min-h-screen flex items-center justify-center bg-white">
+        <LoadingSpinner />
+      </div>
+    )}>
+      <AuthGuardContent {...props} />
+    </Suspense>
+  );
 }
