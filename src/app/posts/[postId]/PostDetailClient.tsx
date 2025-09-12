@@ -93,14 +93,25 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
     return days.map(day => dayNames[day as keyof typeof dayNames] || day).join(', ');
   };
 
-  // Format rate display
+  // Format rate display - different logic for TEACHER vs STUDENT
   const formatRate = () => {
-    if (post.hourlyRate) {
-      return `${post.hourlyRate} kr/time`;
-    } else if (post.hourlyRateMin && post.hourlyRateMax) {
-      return `${post.hourlyRateMin} - ${post.hourlyRateMax} kr/time`;
+    if (post.type === 'TEACHER') {
+      // Teachers use hourlyRate (fixed rate they charge)
+      if (post.hourlyRate) {
+        return `${post.hourlyRate} kr/time`;
+      }
+      return 'Pris etter avtale';
+    } else {
+      // Students use hourlyRateMin/Max (budget range they can pay)
+      if (post.hourlyRateMin && post.hourlyRateMax) {
+        return `${post.hourlyRateMin} - ${post.hourlyRateMax} kr/time`;
+      } else if (post.hourlyRateMin) {
+        return `Fra ${post.hourlyRateMin} kr/time`;
+      } else if (post.hourlyRateMax) {
+        return `Opptil ${post.hourlyRateMax} kr/time`;
+      }
+      return 'Pris etter avtale';
     }
-    return 'Pris etter avtale';
   };
 
   const handleProfileClick = (e: React.MouseEvent) => {
