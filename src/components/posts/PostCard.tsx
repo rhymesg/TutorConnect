@@ -156,9 +156,9 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               {!imageLoaded && post.user.profileImage && (
                 <div className="absolute inset-0 w-full h-full rounded-full bg-neutral-200 animate-pulse" />
               )}
-              {isUserOnline(post.user.lastActive) && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
-              )}
+              <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
+                isUserOnline(post.user.lastActive) ? 'bg-green-400' : 'bg-gray-400'
+              }`} />
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">

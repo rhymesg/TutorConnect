@@ -97,6 +97,7 @@ export async function GET(request: NextRequest) {
               name: true,
               profileImage: true,
               isActive: true,
+              lastActive: true,
               region: true,
               teacherSessions: true,
               teacherStudents: true,

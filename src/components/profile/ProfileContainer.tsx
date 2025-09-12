@@ -12,6 +12,7 @@ import AuthError from '@/components/auth/AuthError';
 import { User } from '@prisma/client';
 
 interface ProfileData extends User {
+  lastActive: Date | null;
   privacyGender: string;
   privacyAge: string;
   privacyDocuments: string;
