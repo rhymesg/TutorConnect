@@ -80,16 +80,96 @@ export const metadata: Metadata = {
 };
 
 export default async function StudentsPage() {
+  // JSON-LD structured data for students/job opportunities
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'Undervisningsjobb og deltidsarbeid | TutorConnect Norge',
+    description: 'Finn studenter som trenger læringsstøtte. Fleksible undervisningsjobber for studenter, lærere og fageksperter.',
+    url: 'https://tutorconnect.no/posts/students',
+    mainEntity: {
+      '@type': 'ItemList',
+      name: 'Teaching Job Opportunities for Students',
+      description: 'Part-time teaching and tutoring job opportunities for university students and qualified individuals',
+      itemListElement: [
+        {
+          '@type': 'JobPosting',
+          title: 'Fleksible undervisningsjobber',
+          description: 'Deltidsjobber innen undervisning og læringsstøtte for studenter',
+          employmentType: 'PART_TIME',
+          industry: 'Education',
+          jobBenefits: [
+            'Fleksible timer',
+            'Godt betalt',
+            'Meningsfullt arbeid',
+            'Egne timer'
+          ],
+          workHours: 'Flexible schedule',
+          skills: 'Teaching, Communication, Subject expertise',
+          hiringOrganization: {
+            '@type': 'Organization',
+            name: 'TutorConnect Norge'
+          }
+        },
+        {
+          '@type': 'JobPosting',
+          title: 'Universitets student undervisning',
+          description: 'Undervisningsjobber spesielt tilpasset universitetsstudenter',
+          employmentType: 'PART_TIME',
+          industry: 'Education',
+          audience: {
+            '@type': 'EducationalAudience',
+            educationalRole: 'university student'
+          },
+          workHours: 'Efter skole, kveld, helg',
+          hiringOrganization: {
+            '@type': 'Organization', 
+            name: 'TutorConnect Norge'
+          }
+        }
+      ]
+    },
+    breadcrumb: {
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          position: 1,
+          name: 'TutorConnect',
+          item: 'https://tutorconnect.no'
+        },
+        {
+          '@type': 'ListItem',
+          position: 2,
+          name: 'Posts',
+          item: 'https://tutorconnect.no/posts'
+        },
+        {
+          '@type': 'ListItem',
+          position: 3,
+          name: 'Students',
+          item: 'https://tutorconnect.no/posts/students'
+        }
+      ]
+    }
+  };
+
   return (
-    <PostsPageLayout
-      type="STUDENT"
-      title={
-        <>
-          Finn din{' '}
-          <span className="text-blue-600">student</span>
-        </>
-      }
-      subtitle="Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov."
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <PostsPageLayout
+        type="STUDENT"
+        title={
+          <>
+            Finn din{' '}
+            <span className="text-blue-600">student</span>
+          </>
+        }
+        subtitle="Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov."
+      />
+    </>
   );
 }

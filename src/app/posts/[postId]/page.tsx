@@ -103,5 +103,70 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
 
-  return <PostDetailClient post={post} />;
+  // Generate JSON-LD structured data based on post type
+  const jsonLd = post.type === 'TEACHER' ? {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: post.user.name,
+    description: post.description,
+    knowsAbout: post.subject,
+    workLocation: {
+      '@type': 'Place',
+      name: post.location || 'Norge'
+    },
+    offers: {
+      '@type': 'Service',
+      name: `${post.subject} undervisning`,
+      description: post.description,
+      serviceType: 'Læringsstøtte',
+      areaServed: {
+        '@type': 'Place',
+        name: post.location || 'Norge'
+      },
+      provider: {
+        '@type': 'Person',
+        name: post.user.name
+      },
+      audience: {
+        '@type': 'EducationalAudience',
+        educationalRole: post.subject?.includes('voksen') || post.subject?.includes('tennis') || post.subject?.includes('ski') ? 'adult learner' : 'student'
+      },
+      availableLanguage: ['Norwegian', 'English']
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'education services',
+      url: `https://tutorconnect.no/posts/${postId}`
+    }
+  } : {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: post.title,
+    description: post.description,
+    hiringOrganization: {
+      '@type': 'Person',
+      name: post.user.name
+    },
+    jobLocation: {
+      '@type': 'Place',
+      name: post.location || 'Norge'
+    },
+    employmentType: 'PART_TIME',
+    industry: 'Education',
+    skills: post.subject,
+    workHours: 'Fleksible timer',
+    benefits: 'Fleksibel jobb, godt betalt, meningsfullt arbeid',
+    url: `https://tutorconnect.no/posts/${postId}`,
+    datePosted: post.createdAt
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <PostDetailClient post={post} />
+    </>
+  );
 }
