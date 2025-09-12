@@ -26,12 +26,12 @@ const passwordSchema = z
     'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
   );
 
-// Name validation (Norwegian names can have special characters)
+// Name validation (Norwegian names can have special characters and numbers)
 const nameSchema = z
   .string()
   .min(2, 'Name must be at least 2 characters')
   .max(100, 'Name cannot exceed 100 characters')
-  .regex(/^[a-zA-ZæøåÆØÅ\s'-]+$/, 'Name can only contain letters, spaces, apostrophes, and hyphens')
+  .regex(/^[a-zA-ZæøåÆØÅ0-9\s'-]+$/, 'Name can only contain letters, numbers, spaces, apostrophes, and hyphens')
   .transform((name) => name.trim());
 
 // Norwegian region validation
