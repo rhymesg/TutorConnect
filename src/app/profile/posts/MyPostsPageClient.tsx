@@ -189,10 +189,24 @@ export default function MyPostsPageClient() {
                   
                   {(post.hourlyRate || post.hourlyRateMin) && (
                     <div className="flex items-center text-sm text-neutral-900 font-medium">
-                      {post.hourlyRate ? (
-                        <span>{Math.round(Number(post.hourlyRate))} kr/time</span>
+                      {post.type === 'TEACHER' ? (
+                        // Teachers use hourlyRate (fixed rate they charge)
+                        post.hourlyRate ? (
+                          <span>{Math.round(Number(post.hourlyRate))} kr/time</span>
+                        ) : (
+                          <span>Pris etter avtale</span>
+                        )
                       ) : (
-                        <span>{Math.round(Number(post.hourlyRateMin))} - {Math.round(Number(post.hourlyRateMax))} kr/time</span>
+                        // Students use hourlyRateMin/Max (budget range they can pay)
+                        post.hourlyRateMin && post.hourlyRateMax ? (
+                          <span>{Math.round(Number(post.hourlyRateMin))} - {Math.round(Number(post.hourlyRateMax))} kr/time</span>
+                        ) : post.hourlyRateMin ? (
+                          <span>Fra {Math.round(Number(post.hourlyRateMin))} kr/time</span>
+                        ) : post.hourlyRateMax ? (
+                          <span>Opptil {Math.round(Number(post.hourlyRateMax))} kr/time</span>
+                        ) : (
+                          <span>Pris etter avtale</span>
+                        )
                       )}
                     </div>
                   )}
