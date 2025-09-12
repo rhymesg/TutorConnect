@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { X, MessageCircle } from 'lucide-react';
 import { useLanguage, chat as chatTranslations } from '@/lib/translations';
 import { useChat } from '@/hooks/useChat';
@@ -27,6 +28,7 @@ export default function ChatInterface({
   onClose,
   className = '' 
 }: ChatInterfaceProps) {
+  const router = useRouter();
   const language = useLanguage();
   const t = chatTranslations[language];
   const { user } = useAuth();
@@ -77,10 +79,13 @@ export default function ChatInterface({
     return () => window.removeEventListener('resize', checkMobile);
   }, [selectedChatId]);
 
-  // Initialize with specific chat if provided
+  // Initialize with specific chat if provided, or reset if no chat ID
   useEffect(() => {
     if (initialChatId && initialChatId !== selectedChatId) {
       setSelectedChatId(initialChatId);
+    } else if (!initialChatId && selectedChatId) {
+      // Reset to "Velg en samtale" state when no chatId in URL
+      setSelectedChatId(null);
     }
   }, [initialChatId, selectedChatId]);
 
@@ -114,6 +119,9 @@ export default function ChatInterface({
       setIsChangingChat(true);
       setSelectedChatId(chatId);
       clearErrors(); // Clear any previous errors
+      
+      // Update URL without page refresh
+      router.replace(`/chat?id=${chatId}`);
       
       // Immediately start loading the chat
       try {
