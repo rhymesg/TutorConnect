@@ -11,6 +11,7 @@ interface AppointmentModalProps {
   language: Language;
   chatId: string;
   error?: string | null;
+  isSubmitting?: boolean;
 }
 
 export interface AppointmentData {
@@ -26,7 +27,8 @@ export default function AppointmentModal({
   onSubmit,
   language,
   chatId,
-  error
+  error,
+  isSubmitting = false
 }: AppointmentModalProps) {
   const t = language === 'no' ? {
     title: 'Avtale time',
@@ -267,14 +269,23 @@ export default function AppointmentModal({
               </button>
               <button
                 type="submit"
-                disabled={hasExistingAppointment || isCheckingDate || !!timeError}
-                className={`flex-1 px-4 py-2 rounded-lg transition-colors ${
-                  hasExistingAppointment || isCheckingDate || timeError
+                disabled={hasExistingAppointment || isCheckingDate || !!timeError || isSubmitting}
+                className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
+                  hasExistingAppointment || isCheckingDate || timeError || isSubmitting
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                     : 'bg-blue-500 text-white hover:bg-blue-600'
                 }`}
               >
-                {isCheckingDate ? 'Sjekker...' : t.submit}
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    {language === 'no' ? 'Sender...' : 'Sending...'}
+                  </>
+                ) : isCheckingDate ? (
+                  'Sjekker...'
+                ) : (
+                  t.submit
+                )}
               </button>
             </div>
           </form>

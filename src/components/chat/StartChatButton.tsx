@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { MessageCircle, Send, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { chat as chatTranslations, useLanguage, forms } from '@/lib/translations';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface StartChatButtonProps {
   postId: string;
@@ -181,7 +182,7 @@ export default function StartChatButton({
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
