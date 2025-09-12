@@ -321,7 +321,7 @@ jobs:
             
             // Go back to Mine annonser page
             await page.goto('/profile/posts');
-            await page.waitForLoadState('networkidle');
+            await page.waitForTimeout(3000);
             
             // Click first post card to go to detail page (exclude search pages like /posts/teachers)
             const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
