@@ -574,6 +574,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
               name: true,
               emailNewChat: true,
               isActive: true,
+              lastActive: true,
             },
           },
         },

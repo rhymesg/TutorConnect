@@ -13,11 +13,13 @@ import {
   LockClosedIcon
 } from '@heroicons/react/24/outline';
 import { formatters } from '@/lib/translations';
+import { isUserOnline } from '@/lib/user-utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
 
 interface PublicProfileData extends User {
+  lastActive: Date | null;
   documents?: Array<{
     id: string;
     documentType: string;
@@ -129,7 +131,10 @@ export function PublicProfileView({
             <div className="flex items-center mt-2">
               <div className="flex items-center text-sm text-green-600">
                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                {profile.isActive ? 'Aktiv' : 'Inaktiv'}
+                {(() => {
+                  console.log('PublicProfileView - lastActive:', profile.lastActive, 'isOnline:', isUserOnline(profile.lastActive));
+                  return isUserOnline(profile.lastActive) ? 'Online' : 'Offline';
+                })()}
               </div>
               {profile.emailVerified && (
                 <div className="flex items-center text-sm text-blue-600 ml-4">

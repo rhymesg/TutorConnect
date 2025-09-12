@@ -9,6 +9,7 @@ import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { User } from '@prisma/client';
 
 interface PublicProfileData extends User {
+  lastActive: Date | null;
   privacyGender: string;
   privacyAge: string;
   privacyDocuments: string;

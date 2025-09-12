@@ -17,6 +17,7 @@ import {
   DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
 import { formatters } from '@/lib/translations';
+import { isUserOnline } from '@/lib/user-utils';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -24,6 +25,7 @@ import { getRegionOptions, getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 
 interface ProfileData extends User {
+  lastActive: Date | null;
   privacyGender: string;
   privacyAge: string;
   privacyDocuments: string;
@@ -481,9 +483,12 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             <div className="flex items-center mt-2">
               <div className="flex items-center space-x-3">
                 {/* Show activity status with appropriate colors */}
-                <div className={`flex items-center text-sm ${profile.isActive ? 'text-green-600' : 'text-gray-500'}`}>
-                  <div className={`w-2 h-2 rounded-full mr-2 ${profile.isActive ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  {profile.isActive ? 'Aktiv' : 'Inaktiv'}
+                <div className={`flex items-center text-sm ${(() => {
+                  console.log('InlineProfileView - lastActive:', profile.lastActive, 'isOnline:', isUserOnline(profile.lastActive));
+                  return isUserOnline(profile.lastActive) ? 'text-green-600' : 'text-gray-500';
+                })()}`}>
+                  <div className={`w-2 h-2 rounded-full mr-2 ${isUserOnline(profile.lastActive) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                  {isUserOnline(profile.lastActive) ? 'Online' : 'Offline'}
                 </div>
                 
                 {/* Badges */}

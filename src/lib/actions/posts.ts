@@ -56,6 +56,7 @@ export async function getPostById(postId: string): Promise<PostWithDetails | nul
             name: true,
             profileImage: true,
             isActive: true,
+            lastActive: true,
             region: true,
             teacherSessions: true,
             teacherStudents: true,
