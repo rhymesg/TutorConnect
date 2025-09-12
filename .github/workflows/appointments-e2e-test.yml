@@ -121,7 +121,10 @@ jobs:
             
             // Verify we're on appointments page
             expect(page.url()).toContain('/appointments');
-            console.log('✅ Successfully navigated to appointments page');
+            
+            // Verify appointments page title
+            await expect(page.locator('h1, h2')).toContainText('Mine timer', { timeout: 10000 });
+            console.log('✅ Successfully navigated to appointments page with "Mine timer" title');
             
             // Step 3: Switch to "Tidligere" tab
             console.log('📋 Step 3: Switching to "Tidligere" tab...');
@@ -219,9 +222,9 @@ jobs:
             // Wait for page content to load
             await newPage.waitForTimeout(3000);
             
-            // Check for common elements that should be present on chat appointments page
-            const pageLoaded = await newPage.locator('h1, h2, [data-testid="appointments-header"], .appointments').first().isVisible({ timeout: 10000 });
-            expect(pageLoaded).toBe(true);
+            // Check for specific title that should be present on chat appointments page
+            await expect(newPage.locator('h1, h2')).toContainText('Avtaler for denne chatten', { timeout: 10000 });
+            console.log('✅ Found "Avtaler for denne chatten" title');
             
             console.log('✅ Chat appointments page loaded successfully');
             console.log('✅ Complete appointments navigation flow test passed');
