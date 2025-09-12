@@ -8,6 +8,7 @@ import { formatters, education, common } from '@/lib/translations';
 import { getSubjectLabel } from '@/constants/subjects';
 import { getAgeGroupLabels } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
+import { isUserOnline } from '@/lib/user-utils';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
 
@@ -155,7 +156,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               {!imageLoaded && post.user.profileImage && (
                 <div className="absolute inset-0 w-full h-full rounded-full bg-neutral-200 animate-pulse" />
               )}
-              {post.user.isActive && (
+              {isUserOnline(post.user.lastActive) && (
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
               )}
             </div>

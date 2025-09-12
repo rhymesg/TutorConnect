@@ -5,6 +5,7 @@ import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 import { updateExpiredAppointments } from '@/lib/appointment-utils';
 import { sendNewChatEmail } from '@/lib/email';
+import { isUserOnline } from '@/lib/user-utils';
 import { z } from 'zod';
 
 // Send message schema
@@ -604,15 +605,17 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
       for (const participant of otherParticipants) {
         const receiver = participant.user;
         
+        const userIsOnline = isUserOnline(receiver.lastActive);
+        
         console.log(`[DEBUG] Checking participant ${receiver.name}:`, {
           email: receiver.email,
-          isActive: receiver.isActive,
+          isOnline: userIsOnline,
           emailNewChat: receiver.emailNewChat,
-          willSendEmail: !receiver.isActive && receiver.emailNewChat
+          willSendEmail: !userIsOnline && receiver.emailNewChat
         });
         
-        // Check conditions: not active, email notifications enabled
-        if (!receiver.isActive && receiver.emailNewChat) {
+        // Check conditions: not online, email notifications enabled
+        if (!userIsOnline && receiver.emailNewChat) {
           console.log(`🔔 [EMAIL DEBUG] Sending new chat email to ${receiver.email}`);
           try {
             await sendNewChatEmail(
@@ -627,7 +630,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
             console.error('Failed to send new chat email:', emailError);
           }
         } else {
-          console.log(`[DEBUG] Skipping email for ${receiver.email} - conditions not met (isActive: ${receiver.isActive}, emailNewChat: ${receiver.emailNewChat})`);
+          console.log(`[DEBUG] Skipping email for ${receiver.email} - conditions not met (isOnline: ${userIsOnline}, emailNewChat: ${receiver.emailNewChat})`);
         }
       }
     } else {

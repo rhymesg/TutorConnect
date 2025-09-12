@@ -214,19 +214,17 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                   </p>
                 </div>
                 
-                {post.availableTimes && post.availableTimes.length > 0 && (
+                {(post.startTime || post.endTime) && (
                   <div>
                     <p className="text-sm font-medium text-neutral-600 mb-2">Tilgjengelige tider</p>
-                    <div className="flex flex-wrap gap-2">
-                      {post.availableTimes.map((time, index) => (
-                        <span 
-                          key={index}
-                          className="inline-flex items-center px-3 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm"
-                        >
-                          <Clock className="w-3.5 h-3.5 mr-1.5" />
-                          {time}
-                        </span>
-                      ))}
+                    <div className="inline-flex items-center px-3 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm">
+                      <Clock className="w-3.5 h-3.5 mr-1.5" />
+                      {post.startTime && post.endTime 
+                        ? `${post.startTime} - ${post.endTime}`
+                        : post.startTime 
+                          ? `Fra ${post.startTime}`
+                          : `Til ${post.endTime}`
+                      }
                     </div>
                   </div>
                 )}
@@ -275,6 +273,10 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               </h3>
               <p className="text-2xl font-bold text-neutral-900">
                 {formatRate()}
+              </p>
+              <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
+                Vi tar ingen gebyrer<br />
+                - Betaling skjer direkte mellom dere
               </p>
             </div>
 
