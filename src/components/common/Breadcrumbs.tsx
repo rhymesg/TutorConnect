@@ -11,6 +11,11 @@ interface BreadcrumbsProps {
 }
 
 export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps) {
+  // Add safety check for items
+  if (!items || items.length === 0) {
+    return null;
+  }
+
   return (
     <nav
       aria-label="Breadcrumb"
@@ -28,30 +33,37 @@ export default function Breadcrumbs({ items, className = '' }: BreadcrumbsProps)
           </Link>
         </li>
         
-        {items.map((item, index) => (
-          <li key={index} className="flex items-center">
-            <ChevronRightIcon className="h-4 w-4 text-neutral-300 mx-2" aria-hidden="true" />
-            {item.href && !item.current ? (
-              <Link
-                href={item.href}
-                className="text-neutral-500 hover:text-neutral-700 transition-colors duration-200"
-              >
-                {item.label}
-              </Link>
-            ) : (
-              <span
-                className={`${
-                  item.current
-                    ? 'text-neutral-900 font-medium'
-                    : 'text-neutral-500'
-                }`}
-                aria-current={item.current ? 'page' : undefined}
-              >
-                {item.label}
-              </span>
-            )}
-          </li>
-        ))}
+        {items.map((item, index) => {
+          // Safety check for item data
+          if (!item || !item.label) {
+            return null;
+          }
+          
+          return (
+            <li key={index} className="flex items-center">
+              <ChevronRightIcon className="h-4 w-4 text-neutral-300 mx-2" aria-hidden="true" />
+              {item.href && !item.current ? (
+                <Link
+                  href={item.href}
+                  className="text-neutral-500 hover:text-neutral-700 transition-colors duration-200"
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <span
+                  className={`${
+                    item.current
+                      ? 'text-neutral-900 font-medium'
+                      : 'text-neutral-500'
+                  }`}
+                  aria-current={item.current ? 'page' : undefined}
+                >
+                  {item.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </nav>
   );

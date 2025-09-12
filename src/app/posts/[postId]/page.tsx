@@ -113,8 +113,8 @@ export default async function PostPage({ params }: PostPageProps) {
       label: post.type === 'TEACHER' ? 'Find Teachers' : 'Find Students', 
       href: post.type === 'TEACHER' ? '/posts/teachers' : '/posts/students' 
     },
-    { label: post.title, current: true }
-  ];
+    { label: post.title || 'Post Details', current: true }
+  ].filter(item => item.label); // Filter out any invalid items
 
   // Generate JSON-LD structured data based on post type
   const jsonLd = post.type === 'TEACHER' ? {
@@ -181,11 +181,13 @@ export default async function PostPage({ params }: PostPageProps) {
       />
       <div className="min-h-screen bg-neutral-50">
         {/* Breadcrumbs */}
-        <div className="bg-white border-b border-neutral-100">
-          <div className="container mx-auto px-4 py-3">
-            <Breadcrumbs items={breadcrumbItems} />
+        {breadcrumbItems && breadcrumbItems.length > 0 && (
+          <div className="bg-white border-b border-neutral-100">
+            <div className="container mx-auto px-4 py-3">
+              <Breadcrumbs items={breadcrumbItems} />
+            </div>
           </div>
-        </div>
+        )}
         
         {/* Post Content */}
         <PostDetailClient post={post} />

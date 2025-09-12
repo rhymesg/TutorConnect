@@ -14,10 +14,16 @@ export function generateBreadcrumbs(
   pathname: string,
   searchParams?: { [key: string]: string | string[] | undefined }
 ): BreadcrumbItem[] {
-  const items: BreadcrumbItem[] = [];
-  
-  // Split pathname into segments
-  const segments = pathname.split('/').filter(Boolean);
+  try {
+    const items: BreadcrumbItem[] = [];
+    
+    // Safety check for pathname
+    if (!pathname || typeof pathname !== 'string') {
+      return [];
+    }
+    
+    // Split pathname into segments
+    const segments = pathname.split('/').filter(Boolean);
   
   // Handle different page types
   if (segments.length === 0) {
@@ -39,22 +45,29 @@ export function generateBreadcrumbs(
         const subject = Array.isArray(searchParams.subject) 
           ? searchParams.subject[0] 
           : searchParams.subject;
-        items.push({ 
-          label: getSubjectLabelEN(subject), 
-          href: `/posts/teachers?subject=${subject}` 
-        });
+        
+        const subjectLabel = getSubjectLabelEN(subject);
+        if (subjectLabel) {
+          items.push({ 
+            label: subjectLabel, 
+            href: `/posts/teachers?subject=${subject}` 
+          });
+        }
       }
       
       if (searchParams?.location) {
         const location = Array.isArray(searchParams.location) 
           ? searchParams.location[0] 
           : searchParams.location;
-        items.push({ 
-          label: location, 
-          href: searchParams?.subject 
-            ? `/posts/teachers?subject=${searchParams.subject}&location=${location}`
-            : `/posts/teachers?location=${location}`
-        });
+        
+        if (location && typeof location === 'string') {
+          items.push({ 
+            label: location, 
+            href: searchParams?.subject 
+              ? `/posts/teachers?subject=${searchParams.subject}&location=${location}`
+              : `/posts/teachers?location=${location}`
+          });
+        }
       }
       
       // Mark last item as current if no individual post
@@ -69,22 +82,29 @@ export function generateBreadcrumbs(
         const subject = Array.isArray(searchParams.subject) 
           ? searchParams.subject[0] 
           : searchParams.subject;
-        items.push({ 
-          label: getSubjectLabelEN(subject), 
-          href: `/posts/students?subject=${subject}` 
-        });
+        
+        const subjectLabel = getSubjectLabelEN(subject);
+        if (subjectLabel) {
+          items.push({ 
+            label: subjectLabel, 
+            href: `/posts/students?subject=${subject}` 
+          });
+        }
       }
       
       if (searchParams?.location) {
         const location = Array.isArray(searchParams.location) 
           ? searchParams.location[0] 
           : searchParams.location;
-        items.push({ 
-          label: location, 
-          href: searchParams?.subject 
-            ? `/posts/students?subject=${searchParams.subject}&location=${location}`
-            : `/posts/students?location=${location}`
-        });
+        
+        if (location && typeof location === 'string') {
+          items.push({ 
+            label: location, 
+            href: searchParams?.subject 
+              ? `/posts/students?subject=${searchParams.subject}&location=${location}`
+              : `/posts/students?location=${location}`
+          });
+        }
       }
       
       if (segments.length === 2) {
@@ -123,7 +143,12 @@ export function generateBreadcrumbs(
     }
   }
   
-  return items;
+  // Filter out any invalid items before returning
+  return items.filter(item => item && item.label && typeof item.label === 'string');
+  } catch (error) {
+    console.warn('Error generating breadcrumbs:', error);
+    return [];
+  }
 }
 
 
