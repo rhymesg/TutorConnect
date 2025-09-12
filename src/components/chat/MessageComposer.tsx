@@ -5,6 +5,7 @@ import { Send, Paperclip, Mic, X, Image, FileText } from 'lucide-react';
 import { Message } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
+import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface MessageComposerProps {
   onSendMessage: (content: string, type?: Message['type']) => Promise<void>;
@@ -160,24 +161,32 @@ export default function MessageComposer({
   };
 
   const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
-    // Combine date and time
-    const dateTime = `${appointmentData.date}T${appointmentData.startTime}`;
-    const endDateTime = `${appointmentData.date}T${appointmentData.endTime}`;
-    
-    // Create appointment request message
-    const appointmentMessage = JSON.stringify({
-      dateTime,
-      endDateTime,
-      date: appointmentData.date,
-      startTime: appointmentData.startTime,
-      endTime: appointmentData.endTime,
-      location: appointmentData.location
-    });
+    // Set sending state
+    setIsSending(true);
     
     try {
+      // Combine date and time
+      const dateTime = `${appointmentData.date}T${appointmentData.startTime}`;
+      const endDateTime = `${appointmentData.date}T${appointmentData.endTime}`;
+      
+      // Create appointment request message
+      const appointmentMessage = JSON.stringify({
+        dateTime,
+        endDateTime,
+        date: appointmentData.date,
+        startTime: appointmentData.startTime,
+        endTime: appointmentData.endTime,
+        location: appointmentData.location
+      });
+      
       await onSendMessage(appointmentMessage, 'APPOINTMENT_REQUEST');
+      
+      // Close appointment modal on success
+      setShowAppointmentModal(false);
     } catch (error) {
       console.error('Failed to send appointment request:', error);
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -305,7 +314,7 @@ export default function MessageComposer({
           }`}
         >
           {isSending ? (
-            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
             <Send className="h-5 w-5" />
           )}
@@ -333,7 +342,7 @@ export default function MessageComposer({
       
       {isUploading && (
         <div className="flex items-center justify-center gap-2 text-sm text-blue-600 mt-2">
-          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
           <span>{t.composer.uploading}</span>
         </div>
       )}
@@ -345,6 +354,7 @@ export default function MessageComposer({
         onSubmit={handleAppointmentSubmit}
         language={language}
         chatId={chatId || ''}
+        isSubmitting={isSending}
       />
     </div>
   );

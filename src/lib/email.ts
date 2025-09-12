@@ -67,31 +67,34 @@ function createBaseEmailTemplate(templateData: BaseEmailTemplate): EmailTemplate
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>TutorConnect</title>
     </head>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="color: #2563eb;">TutorConnect</h1>
+    <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 700px; margin: 0 auto; padding: 0; background-color: #f8fafc;">
+      <!-- Header -->
+      <div style="background: white; padding: 32px 24px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+        <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: bold; letter-spacing: -0.02em;">TutorConnect</h1>
       </div>
       
-      <div style="background-color: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);">
+      <!-- Content -->
+      <div style="background-color: white; padding: 40px 32px;">
         ${greeting}
         
         ${mainContent}
-        
-        <hr style="margin: 24px 0; border: none; border-top: 1px solid #e5e7eb;">
-        
-        <p style="color: #6b7280; font-size: 14px; line-height: 1.5;">
-          Dette er en automatisk varslings-e-post${settingsUrl ? `. Du kan <a href="${settingsUrl}" style="color: #2563eb; text-decoration: none;">endre dine varselsinnstillinger her</a>` : ''}.
+      </div>
+      
+      <!-- Footer -->
+      <div style="background-color: #f1f5f9; padding: 40px 48px; border-top: 1px solid #e2e8f0;">
+        <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">
+          Dette er en automatisk varslings-e-post${settingsUrl ? `. Du kan <a href="${settingsUrl}" style="color: #0ea5e9; text-decoration: none; font-weight: 500;">endre dine varselsinnstillinger her</a>` : ''}.
         </p>
         
         ${footerText ? `
-        <p style="color: #6b7280; font-size: 14px;">
+        <p style="color: #64748b; font-size: 14px; line-height: 1.6; margin: 0 0 16px 0;">
           ${footerText}
         </p>
         ` : ''}
         
-        <p style="color: #6b7280; font-size: 14px;">
+        <p style="color: #64748b; font-size: 14px; margin: 0;">
           Med vennlig hilsen,<br>
-          TutorConnect
+          <strong style="color: #334155;">TutorConnect</strong>
         </p>
       </div>
     </body>
@@ -171,7 +174,7 @@ function createVerificationEmailTemplate(name: string, verificationToken: string
   });
   
   return {
-    subject: 'Bekreft din e-postadresse - TutorConnect',
+    subject: 'Bekreft din e-postadresse',
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
@@ -184,7 +187,7 @@ function createPasswordResetEmailTemplate(name: string, resetToken: string): Ema
   const resetUrl = `${EMAIL_CONFIG.baseUrl}/auth/reset-password?token=${resetToken}`;
   
   return {
-    subject: 'Tilbakestill passordet ditt - TutorConnect',
+    subject: 'Tilbakestill passordet ditt',
     html: `
       <!DOCTYPE html>
       <html>
@@ -193,7 +196,7 @@ function createPasswordResetEmailTemplate(name: string, resetToken: string): Ema
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Tilbakestill passordet ditt</title>
       </head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #2563eb;">TutorConnect</h1>
         </div>
@@ -321,7 +324,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Velkommen til TutorConnect!</title>
       </head>
-      <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+      <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #2563eb;">TutorConnect</h1>
         </div>
@@ -460,7 +463,7 @@ function createMessageDigestEmailTemplate(name: string, unreadChats: UnreadChatI
   });
 
   return {
-    subject: `Du har ${totalUnreadCount} ${totalUnreadCount === 1 ? 'ny melding' : 'nye meldinger'} på TutorConnect`,
+    subject: `Du har ${totalUnreadCount} ${totalUnreadCount === 1 ? 'ny melding' : 'nye meldinger'}`,
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
@@ -524,7 +527,7 @@ function createNewChatEmailTemplate(receiverName: string, senderName: string, po
   });
   
   return {
-    subject: `${senderName} har startet en ny samtale med deg - TutorConnect`,
+    subject: `${senderName} har startet en ny samtale med deg`,
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
@@ -573,40 +576,49 @@ function createAppointmentCompletionEmailTemplate(
     minute: '2-digit' 
   });
   
-  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${userName}! 📅</h2>`;
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${userName}! 📅</h2>`;
   
   const mainContent = `
-    <div style="background-color: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-      <p style="margin: 0; color: #92400e; font-weight: 500;">
-        ⏰ <strong>Påminnelse: Vennligst bekreft fullføring av avtalen din</strong>
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 20px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #92400e; font-weight: 600; font-size: 18px;">
+        ⏰ Påminnelse: Vennligst bekreft fullføring av avtalen din
       </p>
     </div>
     
-    <p style="color: #374151; line-height: 1.6;">
-      Din avtale med <strong>${otherUserName}</strong> var planlagt til:
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      Din avtale med <strong style="color: #0f172a;">${otherUserName}</strong> var planlagt til:
     </p>
     
-    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-      <p style="margin: 0; color: #374151; font-weight: 500;">
+    <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #cbd5e1;">
+      <p style="margin: 0; color: #1e293b; font-weight: 500; line-height: 1.6; font-size: 16px;">
         📅 ${formattedDate}<br>
         🕐 ${startTime} - ${endTime} (Fag: ${getSubjectLabel(subject)})
       </p>
     </div>
     
-    <p style="color: #374151; line-height: 1.6;">
-      For å fullføre prosessen, vennligst gå til avtaler-siden og bekreft om undervisningstimen ble gjennomført som planlagt.
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      <strong style="color: #0f172a;">Den avtalte undervisningstimen har nå blitt avsluttet.</strong> Hvis undervisningen ble gjennomført som planlagt, vennligst bekreft dette ved å klikke på knappen nedenfor.
     </p>
     
-    <div style="text-align: center; margin: 32px 0;">
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #86efac;">
+      <p style="margin: 0 0 12px 0; color: #166534; font-size: 15px; line-height: 1.6;">
+        <strong>Hvorfor bekrefte fullføring?</strong>
+      </p>
+      <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">
+        Når både du og ${otherUserName} bekrefter at undervisningen ble gjennomført, blir dette registrert i din undervisningshistorikk. Basert på antall fullførte timer kan du oppnå <a href="${EMAIL_CONFIG.baseUrl}/badges" style="color: #059669; font-weight: 600;">forskjellige utmerkelser (badges)</a> som vises på profilen din.
+      </p>
+    </div>
+    
+    <div style="text-align: center; margin: 40px 0;">
       <a href="${appointmentUrl}" 
-         style="background-color: #f59e0b; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
-        Gå til avtaler
+         style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); transition: all 0.2s; font-size: 15px;">
+        Bekreft fullføring
       </a>
     </div>
     
-    <div style="background-color: #dbeafe; padding: 12px; border-radius: 6px; margin: 20px 0;">
-      <p style="margin: 0; color: #1e40af; font-size: 14px;">
-        💡 <strong>Tips:</strong> Du vil finne avtalen under "Venter på fullføring" fanen når du klikker på lenken ovenfor.
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #93c5fd;">
+      <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+        💡 <strong>Tips:</strong> Du vil finne avtalen under "Venter på fullføring" fanen. Hvis undervisningen ikke ble gjennomført, kan du også markere dette.
       </p>
     </div>
   `;
@@ -619,7 +631,7 @@ function createAppointmentCompletionEmailTemplate(
   });
   
   return {
-    subject: `Påminnelse: Bekreft fullføring av avtalen din med ${otherUserName} - TutorConnect`,
+    subject: `Påminnelse: Bekreft fullføring av avtalen din med ${otherUserName}`,
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
@@ -676,44 +688,44 @@ function createAppointmentConfirmationEmailTemplate(
     minute: '2-digit' 
   });
   
-  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${userName}! 🎉</h2>`;
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${userName}! 🎉</h2>`;
   
   const mainContent = `
-    <div style="background-color: #dcfce7; border-left: 4px solid #16a34a; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-      <p style="margin: 0; color: #15803d; font-weight: 500;">
-        ✅ <strong>Avtalen din har blitt bekreftet!</strong>
+    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; padding: 20px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #065f46; font-weight: 600; font-size: 18px;">
+        ✅ Avtalen din har blitt bekreftet!
       </p>
     </div>
     
-    <p style="color: #374151; line-height: 1.6;">
-      Din avtale med <strong>${otherUserName}</strong> er nå bekreftet og planlagt til:
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      Din avtale med <strong style="color: #0f172a;">${otherUserName}</strong> er nå bekreftet og planlagt til:
     </p>
     
-    <div style="background-color: #f3f4f6; padding: 16px; border-radius: 8px; margin: 16px 0;">
-      <p style="margin: 0; color: #374151; font-weight: 500;">
+    <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #cbd5e1;">
+      <p style="margin: 0; color: #1e293b; font-weight: 500; line-height: 1.6; font-size: 16px;">
         📅 ${formattedDate}<br>
         🕐 ${startTime} - ${endTime} (Fag: ${getSubjectLabel(subject)})<br>
         📍 ${location}
       </p>
     </div>
     
-    <p style="color: #374151; line-height: 1.6;">
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
       Du kan se alle detaljer om avtalen og eventuelle meldinger ved å gå til avtaler-siden.
     </p>
     
-    <div style="text-align: center; margin: 32px 0;">
+    <div style="text-align: center; margin: 40px 0;">
       <a href="${appointmentUrl}" 
-         style="background-color: #16a34a; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500; margin-right: 12px;">
+         style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; margin: 0 8px 8px 0; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); transition: all 0.2s; font-size: 15px;">
         Se avtaledetaljer
       </a>
       ${postUrl ? `<a href="${postUrl}" 
-         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
+         style="background: linear-gradient(135deg, #64748b 0%, #475569 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; margin: 0 8px 8px 0; box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3); transition: all 0.2s; font-size: 15px;">
         📝 Se annonsen
       </a>` : ''}
     </div>
     
-    <div style="background-color: #dbeafe; padding: 12px; border-radius: 6px; margin: 20px 0;">
-      <p style="margin: 0; color: #1e40af; font-size: 14px;">
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #93c5fd;">
+      <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
         💡 <strong>Tips:</strong> Husk å forberede deg til timen og ta kontakt med ${otherUserName} hvis du har spørsmål.
       </p>
     </div>
@@ -727,7 +739,7 @@ function createAppointmentConfirmationEmailTemplate(
   });
   
   return {
-    subject: `Avtalen din med ${otherUserName} er bekreftet - TutorConnect`,
+    subject: `Avtalen din med ${otherUserName} er bekreftet`,
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
