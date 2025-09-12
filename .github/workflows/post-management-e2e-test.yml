@@ -5,7 +5,7 @@
 # - Post detail view navigation from post cards
 # - Post edit page access and functionality
 # - Post status toggle (Sett Aktiv/Sett Pauset) with state verification
-# - Post update workflow with "Lagre endringer" button
+# - Post update workflow with "Lagre endringer" button and redirect verification
 # - Edit button functionality from post detail view
 # - Requires authenticated user session with existing posts
 
@@ -289,8 +289,29 @@ jobs:
               console.log('✅ Status button is still present and clickable');
             }
             
-            // Test 6: Go to post detail page and verify Rediger button exists
-            console.log('🧪 Test 6: Navigate to post detail page to check Rediger button');
+            // Click "Lagre endringer" button and verify redirect to post detail page
+            console.log('🔄 Clicking Lagre endringer button...');
+            const saveButton = page.locator('button:has-text("Lagre endringer")');
+            await expect(saveButton).toBeVisible({ timeout: 5000 });
+            await saveButton.click();
+            await page.waitForTimeout(3000);
+            
+            // Verify redirect to post detail page using the stored post ID
+            const expectedDetailUrl = `/posts/${postId}`;
+            const currentUrl = await page.url();
+            expect(currentUrl).toContain(expectedDetailUrl);
+            console.log(`✅ Successfully redirected to post detail page: ${expectedDetailUrl}`);
+            
+            // Test 6: Already on post detail page, verify save operation worked
+            console.log('🧪 Test 6: Verify save operation and post detail page');
+            
+            // Verify we're on the correct post detail page
+            expect(page.url()).toMatch(/\/posts\/[^\/]+$/);
+            expect(page.url()).not.toContain('/edit');
+            console.log('✅ Confirmed on post detail page after save operation');
+            
+            // Test 7: Go to post detail page and verify Rediger button exists
+            console.log('🧪 Test 7: Navigate to post detail page to check Rediger button');
             
             // Go back to Mine annonser page
             await page.goto('/profile/posts');
