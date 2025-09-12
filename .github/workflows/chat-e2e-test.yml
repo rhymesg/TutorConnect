@@ -224,14 +224,92 @@ jobs:
             await expect(messageComposer).toBeVisible({ timeout: 10000 });
             console.log('✅ Message composer is visible for first chat');
             
-            console.log('✅ Chat E2E test completed successfully');
+            console.log('✅ Chat interface loaded successfully');
+          });
+
+          test('should navigate from chat to appointments via Se timer button', async ({ page, context }) => {
+            // Navigate to chat page
+            await page.goto('/chat');
             
-            // Note: Testing switching between chats would require either:
-            // 1. Mobile-specific back button in the chat header
-            // 2. Desktop sidebar remaining visible
-            // Since the implementation uses state management and hides the chat list
-            // when a chat is selected (especially on mobile), we've verified the core
-            // functionality: loading chat list and opening a chat successfully.
+            // Wait for chat list to load
+            console.log('⏳ Waiting for chat data to load...');
+            await page.waitForTimeout(5000);
+            
+            const chatItems = page.locator('div.divide-y.divide-gray-100 > button.w-full.p-4.text-left');
+            const chatCount = await chatItems.count();
+            
+            if (chatCount === 0) {
+              console.log('No chats available for Se timer test. Skipping.');
+              return;
+            }
+            
+            // Click on the first chat to open it
+            await chatItems.first().click();
+            await page.waitForTimeout(3000);
+            
+            // Look for "Se timer" button in the chat header
+            const seTimerButton = page.locator('text="Se timer"').first();
+            
+            if (await seTimerButton.count() === 0) {
+              console.log('Se timer button not found in chat interface. This might be expected if no appointments exist.');
+              return;
+            }
+            
+            // Set up listener for new page (Se timer opens in new tab)
+            const pagePromise = context.waitForEvent('page');
+            
+            console.log('✅ Clicking Se timer button');
+            await seTimerButton.click();
+            
+            // Wait for new page to open
+            const appointmentsPage = await pagePromise;
+            await appointmentsPage.waitForLoadState();
+            
+            // Verify we're on the appointments page
+            expect(appointmentsPage.url()).toContain('/appointments');
+            console.log('✅ Appointments page opened successfully');
+            
+            // Close the new page for cleanup
+            await appointmentsPage.close();
+          });
+
+          test('should navigate back to chat from appointments via Gå til chat button', async ({ page }) => {
+            // Navigate directly to appointments page
+            await page.goto('/appointments');
+            
+            // Wait for appointments page to load
+            await page.waitForTimeout(3000);
+            
+            // Look for "Tidigare" tab (Previous appointments)
+            const tidligereTab = page.locator('text="Tidigare"').first();
+            
+            if (await tidligereTab.count() === 0) {
+              console.log('Tidigare tab not found. Appointments may not have tab structure. Skipping.');
+              return;
+            }
+            
+            await tidligereTab.click();
+            await page.waitForTimeout(2000);
+            
+            // Look for "Gå til chat" button
+            const gaTilChatButton = page.locator('text="Gå til chat"').first();
+            
+            if (await gaTilChatButton.count() === 0) {
+              console.log('Gå til chat button not found in Tidigare tab. This might be expected if no previous appointments exist.');
+              return;
+            }
+            
+            console.log('✅ Clicking Gå til chat button');
+            await gaTilChatButton.click();
+            
+            // Wait for navigation back to chat page
+            await page.waitForURL('**/chat**', { timeout: 10000 });
+            
+            // Verify we're back on the chat page
+            expect(page.url()).toContain('/chat');
+            console.log('✅ Successfully navigated back to chat page');
+            
+            console.log('✅ Chat navigation E2E test completed successfully');
           });
         });
         EOF

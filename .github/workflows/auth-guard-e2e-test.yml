@@ -1,0 +1,266 @@
+# 🛡️ Auth Guard E2E Test Workflow
+# 
+# This workflow tests authentication guards for protected pages:
+# - Tests that protected pages redirect to login when not authenticated
+# - Tests that login redirects back to the original protected page
+# - Tests logout functionality from protected pages
+# - Covers chat, settings, profile/posts, and appointments pages
+
+name: Auth Guard E2E Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_ENV: production
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  auth-guard-test:
+    name: Test Auth Guard Protection
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --include=dev
+      
+    - name: Setup environment
+      run: |
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
+        echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
+        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        echo "TESTER_PASSWORD=${{ secrets.TESTER_PASSWORD }}" >> $GITHUB_ENV
+        echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
+        
+    - name: Build application
+      run: npm run build
+      
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+      
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 10
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:3000
+      
+    - name: Run auth guard E2E test
+      run: |
+        cat > playwright-auth-guard.config.ts << 'EOF'
+        import { defineConfig } from '@playwright/test';
+
+        export default defineConfig({
+          testDir: './tests/e2e',
+          timeout: 30000,
+          expect: { timeout: 5000 },
+          fullyParallel: false,
+          forbidOnly: !!process.env.CI,
+          retries: process.env.CI ? 2 : 0,
+          workers: 1,
+          reporter: 'html',
+          use: {
+            baseURL: 'http://localhost:3000',
+            trace: 'on-first-retry',
+            screenshot: 'only-on-failure',
+          },
+          projects: [
+            {
+              name: 'chromium',
+              use: { browserName: 'chromium' },
+            },
+          ],
+        });
+        EOF
+        
+        mkdir -p tests/e2e
+        cat > tests/e2e/auth-guard.test.ts << 'EOF'
+        import { test, expect } from '@playwright/test';
+
+        test.describe('Auth Guard Protection', () => {
+          test('should protect chat page with auth guard', async ({ page }) => {
+            // Visit chat page without authentication
+            await page.goto('/chat');
+            
+            // Should redirect to login page
+            await expect(page).toHaveURL('/auth/login');
+            
+            // Should show login form
+            await expect(page.locator('h2:has-text("Logg inn")')).toBeVisible();
+            
+            // Login with test account
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            // Submit login form
+            const loginPromise = page.waitForResponse(response => response.url().includes('/api/auth/login'));
+            await page.click('button[type="submit"]');
+            const loginResponse = await loginPromise;
+            
+            expect(loginResponse.status()).toBe(200);
+            
+            // Wait for redirect back to chat page
+            await page.waitForTimeout(3000);
+            await expect(page).toHaveURL('/chat');
+            
+            // Verify we're on the chat page
+            await expect(page.locator('h1:has-text("Chat")')).toBeVisible();
+            
+            // Logout
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible();
+            await userMenuButton.click();
+            
+            const logoutButton = page.locator('button:has-text("Logg ut")');
+            await logoutButton.click();
+            await page.waitForTimeout(2000);
+            
+            console.log('✅ Chat page auth guard test passed');
+          });
+
+          test('should protect settings page with auth guard', async ({ page }) => {
+            // Visit settings page without authentication
+            await page.goto('/settings');
+            
+            // Should redirect to login page
+            await expect(page).toHaveURL('/auth/login');
+            
+            // Should show login form
+            await expect(page.locator('h2:has-text("Logg inn")')).toBeVisible();
+            
+            // Login with test account
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            // Submit login form
+            const loginPromise = page.waitForResponse(response => response.url().includes('/api/auth/login'));
+            await page.click('button[type="submit"]');
+            const loginResponse = await loginPromise;
+            
+            expect(loginResponse.status()).toBe(200);
+            
+            // Wait for redirect back to settings page
+            await page.waitForTimeout(3000);
+            await expect(page).toHaveURL('/settings');
+            
+            // Verify we're on the settings page
+            await expect(page.locator('h1:has-text("Innstillinger")')).toBeVisible();
+            
+            // Logout
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible();
+            await userMenuButton.click();
+            
+            const logoutButton = page.locator('button:has-text("Logg ut")');
+            await logoutButton.click();
+            await page.waitForTimeout(2000);
+            
+            console.log('✅ Settings page auth guard test passed');
+          });
+
+          test('should protect profile/posts page with auth guard', async ({ page }) => {
+            // Visit profile/posts page without authentication
+            await page.goto('/profile/posts');
+            
+            // Should redirect to login page
+            await expect(page).toHaveURL('/auth/login');
+            
+            // Should show login form
+            await expect(page.locator('h2:has-text("Logg inn")')).toBeVisible();
+            
+            // Login with test account
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            // Submit login form
+            const loginPromise = page.waitForResponse(response => response.url().includes('/api/auth/login'));
+            await page.click('button[type="submit"]');
+            const loginResponse = await loginPromise;
+            
+            expect(loginResponse.status()).toBe(200);
+            
+            // Wait for redirect back to profile/posts page
+            await page.waitForTimeout(3000);
+            await expect(page).toHaveURL('/profile/posts');
+            
+            // Verify we're on the profile posts page
+            await expect(page.locator('h1:has-text("Mine annonser")')).toBeVisible();
+            
+            // Logout
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible();
+            await userMenuButton.click();
+            
+            const logoutButton = page.locator('button:has-text("Logg ut")');
+            await logoutButton.click();
+            await page.waitForTimeout(2000);
+            
+            console.log('✅ Profile/posts page auth guard test passed');
+          });
+
+          test('should protect appointments page with auth guard', async ({ page }) => {
+            // Visit appointments page without authentication
+            await page.goto('/appointments');
+            
+            // Should redirect to login page
+            await expect(page).toHaveURL('/auth/login');
+            
+            // Should show login form
+            await expect(page.locator('h2:has-text("Logg inn")')).toBeVisible();
+            
+            // Login with test account
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            // Submit login form
+            const loginPromise = page.waitForResponse(response => response.url().includes('/api/auth/login'));
+            await page.click('button[type="submit"]');
+            const loginResponse = await loginPromise;
+            
+            expect(loginResponse.status()).toBe(200);
+            
+            // Wait for redirect back to appointments page
+            await page.waitForTimeout(3000);
+            await expect(page).toHaveURL('/appointments');
+            
+            // Verify we're on the appointments page
+            await expect(page.locator('h1:has-text("Mine avtaler")')).toBeVisible();
+            
+            // Logout
+            const userMenuButton = page.locator('button[aria-label="Brukermeny"]');
+            await expect(userMenuButton).toBeVisible();
+            await userMenuButton.click();
+            
+            const logoutButton = page.locator('button:has-text("Logg ut")');
+            await logoutButton.click();
+            await page.waitForTimeout(2000);
+            
+            console.log('✅ Appointments page auth guard test passed');
+          });
+        });
+        EOF
+        
+        npx playwright test --config=playwright-auth-guard.config.ts
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-auth-guard-report
+        path: playwright-report/
+        retention-days: 30

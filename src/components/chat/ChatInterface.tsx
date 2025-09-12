@@ -433,7 +433,7 @@ export default function ChatInterface({
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             } transition-transform duration-300 ease-in-out`
           : 'w-80 flex-shrink-0'
-      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden`}>
+      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden`}
         
         <ChatRoomList
           chats={chats}
