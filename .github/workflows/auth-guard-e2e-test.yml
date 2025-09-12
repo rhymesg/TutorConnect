@@ -103,6 +103,10 @@ jobs:
         test.describe('Auth Guard Tests', () => {
           // Helper function to ensure logout state
           const ensureLoggedOut = async (page) => {
+            // Navigate to home page first to ensure we have a proper document context
+            await page.goto('/');
+            await page.waitForTimeout(1000);
+            
             await page.evaluate(() => {
               localStorage.removeItem('accessToken');
               localStorage.removeItem('user');
@@ -168,8 +172,7 @@ jobs:
             test(`should redirect to login when accessing ${protectedPage.name} without auth`, async ({ page }) => {
               console.log(`\n🧪 Testing ${protectedPage.name} (${protectedPage.path})`);
               
-              // Ensure logged out state
-              await ensureLoggedOut(page);
+              // Ensure logged out state (beforeEach already handles this)
               
               // Try to access protected page
               console.log(`📍 Attempting to access ${protectedPage.path}`);
@@ -228,8 +231,7 @@ jobs:
           test('should maintain redirect URL through login process', async ({ page }) => {
             console.log('\n🧪 Testing redirect URL preservation');
             
-            // Ensure logged out
-            await ensureLoggedOut(page);
+            // Clean state already ensured by beforeEach
             
             // Try to access a specific protected page
             const targetPage = '/profile';
@@ -259,7 +261,7 @@ jobs:
           test('should handle multiple protected page access attempts', async ({ page }) => {
             console.log('\n🧪 Testing multiple protected page access attempts');
             
-            await ensureLoggedOut(page);
+            // Clean state already ensured by beforeEach
             
             // Try accessing multiple pages while logged out
             for (const protectedPage of PROTECTED_PAGES.slice(0, 2)) { // Test first 2 pages
