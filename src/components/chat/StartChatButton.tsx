@@ -72,7 +72,7 @@ export default function StartChatButton({
       setMessage('');
       onChatStarted?.(chatId);
       
-      // Navigate to chat page
+      // Navigate to chat page with chat ID
       window.location.href = `/chat?id=${chatId}`;
       
     } catch (error) {
