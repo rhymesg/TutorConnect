@@ -1,0 +1,243 @@
+# 📅 Appointments E2E Test Workflow
+# 
+# This workflow tests the appointments page navigation flow:
+# - Login with test user account
+# - Navigate to appointments page
+# - Switch to "Tidligere" (Previous) tab
+# - Click "Ga til chat" button on first appointment
+# - Verify navigation to chat page
+# - Click "Se timer" button in chat
+# - Verify navigation to chat appointments page with correct URL format
+
+name: Appointments E2E Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_ENV: production
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  appointments-test:
+    name: Test Appointments Navigation Flow
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci --include=dev
+      
+    - name: Setup environment
+      run: |
+        echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+        echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+        echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
+        echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
+        echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
+        echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+        echo "TESTER_PASSWORD=${{ secrets.TESTER_PASSWORD }}" >> $GITHUB_ENV
+        echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
+        
+    - name: Build application
+      run: npm run build
+      
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+      
+    - name: Start application
+      run: |
+        npm run start &
+        sleep 10
+        curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:3000
+      
+    - name: Run appointments E2E test
+      run: |
+        cat > playwright-appointments.config.ts << 'EOF'
+        import { defineConfig } from '@playwright/test';
+
+        export default defineConfig({
+          testDir: './tests/e2e',
+          timeout: 60000,
+          expect: { timeout: 15000 },
+          fullyParallel: false,
+          forbidOnly: !!process.env.CI,
+          retries: process.env.CI ? 2 : 0,
+          workers: 1,
+          reporter: 'html',
+          use: {
+            baseURL: 'http://localhost:3000',
+            trace: 'on-first-retry',
+            screenshot: 'only-on-failure',
+          },
+          projects: [
+            {
+              name: 'chromium',
+              use: { browserName: 'chromium' },
+            },
+          ],
+        });
+        EOF
+        
+        mkdir -p tests/e2e
+        cat > tests/e2e/appointments.test.ts << 'EOF'
+        import { test, expect } from '@playwright/test';
+
+        test.describe('Appointments Navigation Flow', () => {
+          test('should navigate from appointments to chat and then to chat appointments', async ({ page }) => {
+            console.log('\n🧪 Testing Appointments Navigation Flow');
+            
+            // Step 1: Login
+            console.log('🔐 Step 1: Logging in...');
+            await page.goto('/auth/login');
+            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
+            
+            const [loginResponse] = await Promise.all([
+              page.waitForResponse(response => response.url().includes('/api/auth/login'), { timeout: 15000 }),
+              page.click('button[type="submit"]')
+            ]);
+            
+            expect(loginResponse.status()).toBe(200);
+            await page.waitForTimeout(3000);
+            console.log('✅ Login successful');
+            
+            // Step 2: Navigate to appointments page
+            console.log('📅 Step 2: Navigating to appointments page...');
+            await page.goto('/appointments');
+            await page.waitForTimeout(3000);
+            
+            // Verify we're on appointments page
+            expect(page.url()).toContain('/appointments');
+            
+            // Verify appointments page title
+            await expect(page.locator('h1, h2')).toContainText('Mine timer', { timeout: 10000 });
+            console.log('✅ Successfully navigated to appointments page with "Mine timer" title');
+            
+            // Step 3: Switch to "Tidligere" tab
+            console.log('📋 Step 3: Switching to "Tidligere" tab...');
+            const tidligereTab = page.locator('button:has-text("Tidligere"), [role="tab"]:has-text("Tidligere"), .tab:has-text("Tidligere")');
+            await tidligereTab.waitFor({ state: 'visible', timeout: 10000 });
+            await tidligereTab.click();
+            await page.waitForTimeout(2000);
+            console.log('✅ Switched to "Tidligere" tab');
+            
+            // Step 4: Find first appointment and click "Ga til chat"
+            console.log('💬 Step 4: Looking for first appointment "Ga til chat" button...');
+            
+            // Wait for appointments to load
+            await page.waitForTimeout(3000);
+            
+            // Try multiple selectors for the "Ga til chat" button
+            const gaTilChatButton = page.locator('button:has-text("Ga til chat"), a:has-text("Ga til chat"), [data-testid="go-to-chat"], button:has-text("Chat")').first();
+            
+            // Must find and click "Ga til chat" button - if not found, test should fail
+            await gaTilChatButton.waitFor({ state: 'visible', timeout: 15000 });
+            await gaTilChatButton.click();
+            await page.waitForTimeout(2000);
+            
+            console.log('✅ Clicked "Ga til chat" button');
+            
+            // Step 5: Verify navigation to chat page
+            console.log('💬 Step 5: Verifying navigation to chat page...');
+            await page.waitForTimeout(3000);
+            
+            const currentUrl = page.url();
+            console.log(`📍 Current URL: ${currentUrl}`);
+            
+            // Should be on chat page (either /chat or /chat?id=... or /chat/chatId)
+            expect(page.url()).toMatch(/\/chat/);
+            console.log('✅ Successfully navigated to chat page');
+            
+            // Verify chat interface is loaded - check for chat messages area and message composer
+            console.log('📱 Verifying chat interface is loaded...');
+            
+            // Wait for chat messages area to load (from chat E2E test)
+            await page.waitForSelector('div.flex-1.overflow-y-auto', { timeout: 10000 });
+            console.log('✅ Chat messages area loaded');
+            
+            // Check for message composer (from chat E2E test)
+            const messageComposer = page.locator('textarea, input[type="text"]').first();
+            await expect(messageComposer).toBeVisible({ timeout: 10000 });
+            console.log('✅ Message composer is visible - chat interface fully loaded');
+            
+            // Step 6: Look for and click "Se timer" button
+            console.log('⏰ Step 6: Looking for "Se timer" button...');
+            await page.waitForTimeout(2000);
+            
+            // Try multiple selectors for "Se timer" button
+            const seTimerButton = page.locator('button:has-text("Se timer"), a:has-text("Se timer"), [data-testid="view-appointments"], button:has-text("timer")').first();
+            
+            // Wait for the button to be available
+            await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
+            
+            // "Se timer" button opens a new tab, so we need to wait for the new page
+            console.log('🔗 "Se timer" button opens new tab, waiting for popup...');
+            const [newPage] = await Promise.all([
+              page.context().waitForEvent('page'),
+              seTimerButton.click()
+            ]);
+            
+            // Wait for the new page to load
+            await newPage.waitForLoadState('networkidle');
+            await newPage.waitForTimeout(3000);
+            
+            console.log('✅ Clicked "Se timer" button and new tab opened');
+            
+            // Step 7: Verify navigation to chat appointments page with correct URL format
+            console.log('📅 Step 7: Verifying navigation to chat appointments page...');
+            
+            const finalUrl = newPage.url();
+            console.log(`📍 Final URL: ${finalUrl}`);
+            
+            // Should match pattern: /chat/{chatId}/appointments
+            const chatAppointmentsUrlPattern = /\/chat\/[a-zA-Z0-9]+\/appointments/;
+            expect(finalUrl).toMatch(chatAppointmentsUrlPattern);
+            
+            // Extract chat ID from URL for verification
+            const chatIdMatch = finalUrl.match(/\/chat\/([a-zA-Z0-9]+)\/appointments/);
+            if (chatIdMatch) {
+              const chatId = chatIdMatch[1];
+              console.log(`✅ Successfully navigated to chat appointments page with chat ID: ${chatId}`);
+              console.log(`✅ URL format is correct: /chat/${chatId}/appointments`);
+            } else {
+              throw new Error(`URL format is incorrect: ${finalUrl}`);
+            }
+            
+            // Step 8: Verify page loads properly
+            console.log('📄 Step 8: Verifying page loads properly...');
+            
+            // Wait for page content to load
+            await newPage.waitForTimeout(3000);
+            
+            // Check for specific title that should be present on chat appointments page
+            await expect(newPage.locator('h1, h2')).toContainText('Avtaler for denne chatten', { timeout: 10000 });
+            console.log('✅ Found "Avtaler for denne chatten" title');
+            
+            console.log('✅ Chat appointments page loaded successfully');
+            console.log('✅ Complete appointments navigation flow test passed');
+          });
+        });
+        EOF
+        
+        npx playwright test --config=playwright-appointments.config.ts
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-appointments-report
+        path: playwright-report/
+        retention-days: 30
