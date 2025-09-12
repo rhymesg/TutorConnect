@@ -4,18 +4,70 @@ import PostsPageClient from './PostsPageClient';
 import { PostListLoading } from '@/components/posts/LoadingStates';
 
 export const metadata: Metadata = {
-  title: 'Finn lærer eller student | TutorConnect',
-  description: 'Søk blant tusenvis av lærere og studenter i Norge. Finn den perfekte matchen for dine undervisningsbehov.',
-  keywords: 'privatundervisning, lærer, student, Norge, matematikk, norsk, engelsk, naturfag',
+  title: 'Læringsstøtte og undervisning | TutorConnect Norge',
+  description: 'Finn kvalifiserte lærere og studenter for leksehjelp, språktrening og privat undervisning i Norge. Oslo, Bergen, Trondheim, Stavanger - alle fag og aldersgrupper.',
+  keywords: [
+    // Core education terms
+    'læringsstøtte', 'privatundervisning', 'leksehjelp', 'tilleggsundervisning',
+    'skolehjelp', 'sammen læring', 'vennlig hjelp', 'profesjonell støtte',
+    
+    // Academic subjects  
+    'matematikk', 'norsk', 'engelsk', 'naturfag', 'samfunnsfag', 'fysikk', 'kjemi', 
+    'historie', 'geografi', 'programmering', 'IT', 'økonomi',
+    
+    // Adult learning
+    'engelsk konversasjon', 'norsk språktrening', 'tennis privattimer', 'ski instruksjon',
+    'private lesson', 'voksen opplæring', 'adult learning', 'hobby undervisning',
+    
+    // Cultural sensitivity
+    'avlaste foreldre', 'ikke foreldre', 'forhåndslæring', 'advanced learning',
+    'korean tutor', 'chinese math', 'asian families', 'flerspråklig støtte',
+    
+    // Part-time work  
+    'deltidsjobb', 'student jobb', 'fleksibel jobb', 'bijobb', 'undervisning jobb',
+    'tjene penger student', 'part time teaching',
+    
+    // School levels
+    'barneskole', 'ungdomsskole', 'videregående', 'universitet', 'høgskole',
+    'skolebarn', 'elementary', 'middle school', 'high school', 'university',
+    
+    // Locations
+    'Oslo', 'Bergen', 'Trondheim', 'Stavanger', 'Kristiansand', 'Norge', 'Norway',
+    
+    // Integration keywords
+    'innvandrere', 'integrering', 'språktest', 'norskprøve', 'bergenstest',
+    
+    // Economic terms
+    'gig economy', 'studiestøtte', 'ekstrajobb', 'education', 'utdanning'
+  ],
   openGraph: {
-    title: 'Finn lærer eller student | TutorConnect',
-    description: 'Søk blant tusenvis av lærere og studenter i Norge.',
+    title: 'Læringsstøtte og undervisning | TutorConnect Norge',
+    description: 'Finn kvalifiserte lærere og studenter for alle fag og aldersgrupper i Norge. Profesjonell læringsstøtte fra Oslo til Tromsø.',
     type: 'website',
     locale: 'nb_NO',
+    siteName: 'TutorConnect',
+    images: [
+      {
+        url: '/images/og-posts.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'TutorConnect - Læringsstøtte for alle i Norge',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Læringsstøtte og undervisning | TutorConnect Norge',
+    description: 'Finn kvalifiserte lærere og studenter for alle fag og aldersgrupper i Norge.',
+    images: ['/images/twitter-posts.jpg'],
   },
   alternates: {
-    canonical: '/posts'
-  }
+    canonical: '/posts',
+    languages: {
+      'nb-NO': '/posts',
+      'en': '/en/posts',
+    },
+  },
 };
 
 // Server-side data fetching
