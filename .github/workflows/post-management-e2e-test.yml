@@ -321,12 +321,17 @@ jobs:
             
             // Go back to Mine annonser page
             await page.goto('/profile/posts');
-            await page.waitForTimeout(2000);
+            await page.waitForLoadState('networkidle');
             
             // Click first post card to go to detail page (exclude search pages like /posts/teachers)
             const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
+            
+            // Wait for post cards to load
+            await expect(detailPostCards.first()).toBeVisible({ timeout: 10000 });
+            const detailPostCardCount = await detailPostCards.count();
+            console.log(`✅ Found ${detailPostCardCount} post cards for navigation test`);
+            
             const firstDetailPostCard = detailPostCards.first();
-            await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
             
             // Get the href before clicking to know where we're going
             const detailPostHref = await firstDetailPostCard.getAttribute('href');
@@ -335,29 +340,23 @@ jobs:
             // Verify it's actually a post detail page (should have alphanumeric ID)
             expect(detailPostHref).toMatch(/^\/posts\/[a-zA-Z0-9]+$/);
             
-            await firstDetailPostCard.click();
-            
-            // Wait for navigation to complete using URL change
-            await page.waitForURL(/\/posts\/[^\/]+$/, { timeout: 10000 });
+            // Click and wait for navigation
+            await Promise.all([
+              page.waitForURL(/\/posts\/[^\/]+$/, { timeout: 10000 }),
+              firstDetailPostCard.click()
+            ]);
             
             // Verify we're on post detail page
             const detailPageUrl = await page.url();
             expect(detailPageUrl).toMatch(/\/posts\/[^\/]+$/);
             expect(detailPageUrl).not.toContain('/edit');
-            console.log('✅ Successfully navigated to post detail page');
+            console.log('✅ Successfully navigated to post detail page via post card click');
             
             // Check that "Rediger" button exists (critical UI element)
             const redigerButton = page.locator('button:has-text("Rediger"), a:has-text("Rediger")');
             
-            if (await redigerButton.isVisible({ timeout: 5000 })) {
-              console.log('✅ Rediger button found on post detail page');
-            } else {
-              // This is a critical UI element that must be present
-              const allButtons = await page.locator('button').allTextContents();
-              console.log('❌ Rediger button not found on post detail page');
-              console.log('🔍 All buttons on detail page:', allButtons);
-              throw new Error('Rediger button is missing from post detail page - this is a critical UI element that must be present');
-            }
+            await expect(redigerButton).toBeVisible({ timeout: 10000 });
+            console.log('✅ Rediger button found on post detail page');
 
             console.log('✅ Post management workflow test completed');
           });
