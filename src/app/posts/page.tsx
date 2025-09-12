@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { Suspense } from 'react';
 import PostsPageClient from './PostsPageClient';
 import { PostListLoading } from '@/components/posts/LoadingStates';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { generateBreadcrumbs } from '@/lib/breadcrumbs';
 
 interface PostsPageProps {
   searchParams: Promise<{
@@ -115,6 +117,9 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
   const location = params.location;
   const target = params.target;
 
+  // Generate breadcrumbs
+  const breadcrumbItems = generateBreadcrumbs('/posts', params);
+
   // Generate dynamic JSON-LD structured data based on URL parameters  
   let jsonLd: any = {
     '@context': 'https://schema.org',
@@ -205,6 +210,15 @@ export default async function PostsPage({ searchParams }: PostsPageProps) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="min-h-screen bg-neutral-50">
+        {/* Breadcrumbs */}
+        {breadcrumbItems.length > 0 && (
+          <div className="bg-white border-b border-neutral-100">
+            <div className="container mx-auto px-4 py-3">
+              <Breadcrumbs items={breadcrumbItems} />
+            </div>
+          </div>
+        )}
+        
         {/* Page Header */}
       <div className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-12 sm:py-16">

@@ -1,5 +1,15 @@
 import { Metadata } from 'next';
 import PostsPageLayout from '@/components/posts/PostsPageLayout';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { generateBreadcrumbs } from '@/lib/breadcrumbs';
+
+interface TeachersPageProps {
+  searchParams: Promise<{
+    subject?: string;
+    location?: string;
+    target?: string;
+  }>;
+}
 
 export const metadata: Metadata = {
   title: 'Finn lærer og læringsstøtte | TutorConnect Norge',
@@ -73,7 +83,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function TeachersPage() {
+export default async function TeachersPage({ searchParams }: TeachersPageProps) {
+  const params = await searchParams;
+  const breadcrumbItems = generateBreadcrumbs('/posts/teachers', params);
   // JSON-LD structured data for teachers directory
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -168,6 +180,7 @@ export default async function TeachersPage() {
           </>
         }
         subtitle="Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov."
+        breadcrumbs={breadcrumbItems}
       />
     </>
   );

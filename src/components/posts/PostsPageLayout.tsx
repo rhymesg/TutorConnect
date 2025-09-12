@@ -4,19 +4,23 @@ import { Suspense } from 'react';
 import PostListEnhanced from './PostListEnhanced';
 import { PostListLoading } from './LoadingStates';
 import { PostType, PaginatedPosts } from '@/types/database';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { BreadcrumbItem } from '@/lib/breadcrumbs';
 
 interface PostsPageLayoutProps {
   type: PostType;
   title: React.ReactNode;
   subtitle: string;
   initialPosts?: PaginatedPosts | null;
+  breadcrumbs?: BreadcrumbItem[];
 }
 
 export default function PostsPageLayout({ 
   type, 
   title, 
   subtitle, 
-  initialPosts 
+  initialPosts,
+  breadcrumbs
 }: PostsPageLayoutProps) {
   // Create initial filters with the specified type
   const initialFilters = {
@@ -40,6 +44,15 @@ export default function PostsPageLayout({
 
   return (
     <div className="bg-neutral-50">
+      {/* Breadcrumbs */}
+      {breadcrumbs && breadcrumbs.length > 0 && (
+        <div className="bg-white border-b border-neutral-100">
+          <div className="container mx-auto px-4 py-3">
+            <Breadcrumbs items={breadcrumbs} />
+          </div>
+        </div>
+      )}
+      
       {/* Page Header */}
       <div className="bg-white border-b border-neutral-200">
         <div className="container mx-auto px-4 py-12 sm:py-16">

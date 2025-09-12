@@ -1,5 +1,15 @@
 import { Metadata } from 'next';
 import PostsPageLayout from '@/components/posts/PostsPageLayout';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { generateBreadcrumbs } from '@/lib/breadcrumbs';
+
+interface StudentsPageProps {
+  searchParams: Promise<{
+    subject?: string;
+    location?: string;
+    target?: string;
+  }>;
+}
 
 export const metadata: Metadata = {
   title: 'Undervisningsjobb og deltidsarbeid | TutorConnect Norge',
@@ -79,7 +89,9 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function StudentsPage() {
+export default async function StudentsPage({ searchParams }: StudentsPageProps) {
+  const params = await searchParams;
+  const breadcrumbItems = generateBreadcrumbs('/posts/students', params);
   // JSON-LD structured data for students/job opportunities
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -169,6 +181,7 @@ export default async function StudentsPage() {
           </>
         }
         subtitle="Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov."
+        breadcrumbs={breadcrumbItems}
       />
     </>
   );

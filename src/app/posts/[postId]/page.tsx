@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PostDetailClient from './PostDetailClient';
 import { getPostById } from '@/lib/actions/posts';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { BreadcrumbItem } from '@/lib/breadcrumbs';
 
 interface PostPageProps {
   params: Promise<{
@@ -103,6 +105,17 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
 
+  // Generate breadcrumbs for individual post
+  // NOTE: Breadcrumbs are kept in English for international user accessibility and familiarity
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: 'Posts', href: '/posts' },
+    { 
+      label: post.type === 'TEACHER' ? 'Find Teachers' : 'Find Students', 
+      href: post.type === 'TEACHER' ? '/posts/teachers' : '/posts/students' 
+    },
+    { label: post.title, current: true }
+  ];
+
   // Generate JSON-LD structured data based on post type
   const jsonLd = post.type === 'TEACHER' ? {
     '@context': 'https://schema.org',
@@ -166,7 +179,17 @@ export default async function PostPage({ params }: PostPageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <PostDetailClient post={post} />
+      <div className="min-h-screen bg-neutral-50">
+        {/* Breadcrumbs */}
+        <div className="bg-white border-b border-neutral-100">
+          <div className="container mx-auto px-4 py-3">
+            <Breadcrumbs items={breadcrumbItems} />
+          </div>
+        </div>
+        
+        {/* Post Content */}
+        <PostDetailClient post={post} />
+      </div>
     </>
   );
 }
