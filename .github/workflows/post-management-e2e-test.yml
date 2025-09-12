@@ -171,8 +171,8 @@ jobs:
             
             await page.waitForTimeout(3000); // Wait for posts to load
             
-            // Look for actual post cards, exclude "new post" button and edit links
-            const postCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"])');
+            // Look for actual post cards, exclude "new post" button, edit links, and search pages
+            const postCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
             const postCardCount = await postCards.count();
             
             expect(postCardCount).toBeGreaterThan(0);
@@ -182,8 +182,10 @@ jobs:
             const postHref = await firstPostCard.getAttribute('href');
             console.log(`🔗 First post URL: ${postHref}`);
             
-            // Verify it's not the "new" URL
+            // Verify it's a real post ID (alphanumeric string, not search pages)
             expect(postHref).not.toBe('/posts/new');
+            expect(postHref).not.toBe('/posts/teachers');
+            expect(postHref).not.toBe('/posts/students');
             expect(postHref).toMatch(/^\/posts\/[a-zA-Z0-9]+$/);
             
             await firstPostCard.click();
