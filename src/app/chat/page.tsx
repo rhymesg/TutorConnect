@@ -2,11 +2,15 @@
 
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { ChatInterface } from '@/components/chat';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AuthGuard from '@/components/auth/AuthGuard';
 
 function ChatPageContent() {
+  // Track user activity on chat page
+  useActivityTracking();
+  
   const searchParams = useSearchParams();
   const initialChatId = searchParams.get('id') || undefined;
   const appointmentId = searchParams.get('appointment') || undefined;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import PostListEnhanced from '@/components/posts/PostListEnhanced';
 import { PaginatedPosts, PostFilters, PostType } from '@/types/database';
 
@@ -14,6 +15,9 @@ export default function PostsPageClient({
   initialPosts, 
   searchParams 
 }: PostsPageClientProps) {
+  // Track user activity on posts page
+  useActivityTracking();
+  
   const router = useRouter();
   const urlSearchParams = useSearchParams();
   

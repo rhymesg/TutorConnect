@@ -7,6 +7,7 @@ import { PostWithDetails, PostType } from '@/types/database';
 import { formatters, education } from '@/lib/translations';
 import { StartChatButton } from '@/components/chat';
 import { MagicCard } from '@/components/ui/MagicCard';
+import { isUserOnline } from '@/lib/user-utils';
 
 interface PostCardMagicProps {
   post: PostWithDetails;
@@ -117,7 +118,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
               {!imageLoaded && post.user.profileImage && (
                 <div className="absolute inset-0 w-full h-full rounded-full bg-neutral-200 animate-pulse" />
               )}
-              {post.user.isActive && (
+              {isUserOnline(post.user.lastActive) && (
                 <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-400 rounded-full border-2 border-white" />
               )}
             </div>

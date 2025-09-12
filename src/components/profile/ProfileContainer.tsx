@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiCall } from '@/hooks/useApiCall';
+import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
@@ -44,6 +45,9 @@ interface ProfileData extends User {
 }
 
 export function ProfileContainer() {
+  // Track user activity on profile page
+  useActivityTracking();
+  
   const router = useRouter();
   const { authError, clearAuthError, refreshAuth } = useAuth();
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
