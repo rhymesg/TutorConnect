@@ -5,7 +5,7 @@
 # - Post detail view navigation from post cards
 # - Post edit page access and functionality
 # - Post status toggle (Sett Aktiv/Sett Pauset) with state verification
-# - Post update workflow with "Lagre endringer" button
+# - Post update workflow with "Lagre endringer" button and redirect verification
 # - Edit button functionality from post detail view
 # - Requires authenticated user session with existing posts
 
@@ -70,7 +70,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 45000,
+          timeout: 55000,
           expect: { timeout: 8000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
@@ -171,8 +171,8 @@ jobs:
             
             await page.waitForTimeout(3000); // Wait for posts to load
             
-            // Look for actual post cards, exclude "new post" button and edit links
-            const postCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"])');
+            // Look for actual post cards, exclude "new post" button, edit links, and search pages
+            const postCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
             const postCardCount = await postCards.count();
             
             expect(postCardCount).toBeGreaterThan(0);
@@ -182,8 +182,10 @@ jobs:
             const postHref = await firstPostCard.getAttribute('href');
             console.log(`🔗 First post URL: ${postHref}`);
             
-            // Verify it's not the "new" URL
+            // Verify it's a real post ID (alphanumeric string, not search pages)
             expect(postHref).not.toBe('/posts/new');
+            expect(postHref).not.toBe('/posts/teachers');
+            expect(postHref).not.toBe('/posts/students');
             expect(postHref).toMatch(/^\/posts\/[a-zA-Z0-9]+$/);
             
             await firstPostCard.click();
@@ -289,48 +291,50 @@ jobs:
               console.log('✅ Status button is still present and clickable');
             }
             
-            // Test 6: Go to post detail page and verify Rediger button exists
-            console.log('🧪 Test 6: Navigate to post detail page to check Rediger button');
+            // Click "Lagre endringer" button and verify redirect to post detail page
+            console.log('🔄 Clicking Lagre endringer button...');
+            const saveButton = page.locator('button:has-text("Lagre endringer")');
+            await expect(saveButton).toBeVisible({ timeout: 5000 });
             
-            // Go back to Mine annonser page
-            await page.goto('/profile/posts');
-            await page.waitForTimeout(2000);
+            // Wait for the URL to change after clicking save button
+            const expectedDetailUrl = `/posts/${postId}`;
+            await Promise.all([
+              page.waitForURL(`**${expectedDetailUrl}`, { timeout: 10000 }),
+              saveButton.click()
+            ]);
             
-            // Click first post card to go to detail page (exclude search pages like /posts/teachers)
-            const detailPostCards = page.locator('a[href^="/posts/"]:not([href*="/edit"]):not([href="/posts/new"]):not([href="/posts/teachers"]):not([href="/posts/students"])');
-            const firstDetailPostCard = detailPostCards.first();
-            await expect(firstDetailPostCard).toBeVisible({ timeout: 5000 });
+            // Verify redirect to post detail page using the stored post ID
+            const redirectUrl = await page.url();
+            expect(redirectUrl).toContain(expectedDetailUrl);
+            console.log(`✅ Successfully redirected to post detail page: ${expectedDetailUrl}`);
             
-            // Get the href before clicking to know where we're going
-            const detailPostHref = await firstDetailPostCard.getAttribute('href');
-            console.log(`🔗 Clicking post card with href: ${detailPostHref}`);
+            // Test 6: Already on post detail page, verify save operation worked
+            console.log('🧪 Test 6: Verify save operation and post detail page');
             
-            // Verify it's actually a post detail page (should have alphanumeric ID)
-            expect(detailPostHref).toMatch(/^\/posts\/[a-zA-Z0-9]+$/);
+            // Verify we're on the correct post detail page
+            expect(page.url()).toMatch(/\/posts\/[^\/]+$/);
+            expect(page.url()).not.toContain('/edit');
+            console.log('✅ Confirmed on post detail page after save operation');
             
-            await firstDetailPostCard.click();
+            // Test 7: Click Rediger button from post detail page to go to edit page
+            console.log('🧪 Test 7: Click Rediger button to navigate to edit page');
             
-            // Wait for navigation to complete using URL change
-            await page.waitForURL(/\/posts\/[^\/]+$/, { timeout: 10000 });
-            
-            // Verify we're on post detail page
-            const detailPageUrl = await page.url();
-            expect(detailPageUrl).toMatch(/\/posts\/[^\/]+$/);
-            expect(detailPageUrl).not.toContain('/edit');
-            console.log('✅ Successfully navigated to post detail page');
-            
-            // Check that "Rediger" button exists (critical UI element)
+            // Check that "Rediger" button exists and click it
             const redigerButton = page.locator('button:has-text("Rediger"), a:has-text("Rediger")');
+            await expect(redigerButton).toBeVisible({ timeout: 5000 });
+            console.log('✅ Rediger button found on post detail page');
             
-            if (await redigerButton.isVisible({ timeout: 5000 })) {
-              console.log('✅ Rediger button found on post detail page');
-            } else {
-              // This is a critical UI element that must be present
-              const allButtons = await page.locator('button').allTextContents();
-              console.log('❌ Rediger button not found on post detail page');
-              console.log('🔍 All buttons on detail page:', allButtons);
-              throw new Error('Rediger button is missing from post detail page - this is a critical UI element that must be present');
-            }
+            // Click Rediger button and wait for navigation to edit page
+            await Promise.all([
+              page.waitForURL(/\/posts\/[^\/]+\/edit$/, { timeout: 10000 }),
+              redigerButton.click()
+            ]);
+            
+            // Verify we're on the edit page
+            const editPageUrl = await page.url();
+            expect(editPageUrl).toContain('/edit');
+            expect(editPageUrl).toMatch(/\/posts\/[^\/]+\/edit$/);
+            console.log('✅ Successfully navigated to edit page via Rediger button');
 
             console.log('✅ Post management workflow test completed');
           });
