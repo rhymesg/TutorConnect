@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
       userId: searchParams.get('userId'),
       includePaused: searchParams.get('includePaused') === 'true',
       q: searchParams.get('q'),
+      ageGroups: searchParams.getAll('ageGroups'),
     };
 
     // Build where clause
@@ -62,6 +63,13 @@ export async function GET(request: NextRequest) {
     // Add location filter
     if (params.location) {
       where.location = params.location;
+    }
+
+    // Add age groups filter
+    if (params.ageGroups && params.ageGroups.length > 0) {
+      where.ageGroups = {
+        hasSome: params.ageGroups
+      };
     }
 
     // CRITICAL: Add status filter - exclude PAUSET posts by default
