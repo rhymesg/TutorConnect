@@ -64,7 +64,7 @@ export default function PostsPageLayout({
               {subtitle}
             </p>
             <p className="mx-auto mt-2 text-sm text-neutral-500">
-              * Vi tar ingen gebyrer - All betaling skjer direkte mellom dere
+              Vi tar ingen gebyrer - Betaling skjer direkte mellom dere
             </p>
           </div>
         </div>
