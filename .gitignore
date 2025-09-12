@@ -183,6 +183,9 @@ test-*.ts
 *.backup
 *.bak
 
+# Debug APIs (development only)
+src/app/api/debug/
+
 # Private documents
 documents/TutorConnect - Plan.pdf
 documents/tutorconnect-launch-strategy.md

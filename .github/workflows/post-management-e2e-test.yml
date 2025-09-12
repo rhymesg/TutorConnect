@@ -293,11 +293,15 @@ jobs:
             console.log('🔄 Clicking Lagre endringer button...');
             const saveButton = page.locator('button:has-text("Lagre endringer")');
             await expect(saveButton).toBeVisible({ timeout: 5000 });
-            await saveButton.click();
-            await page.waitForTimeout(3000);
+            
+            // Wait for the URL to change after clicking save button
+            const expectedDetailUrl = `/posts/${postId}`;
+            await Promise.all([
+              page.waitForURL(`**${expectedDetailUrl}`, { timeout: 10000 }),
+              saveButton.click()
+            ]);
             
             // Verify redirect to post detail page using the stored post ID
-            const expectedDetailUrl = `/posts/${postId}`;
             const redirectUrl = await page.url();
             expect(redirectUrl).toContain(expectedDetailUrl);
             console.log(`✅ Successfully redirected to post detail page: ${expectedDetailUrl}`);
