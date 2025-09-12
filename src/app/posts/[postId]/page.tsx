@@ -2,6 +2,8 @@ import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import PostDetailClient from './PostDetailClient';
 import { getPostById } from '@/lib/actions/posts';
+import Breadcrumbs from '@/components/common/Breadcrumbs';
+import { BreadcrumbItem } from '@/lib/breadcrumbs';
 
 interface PostPageProps {
   params: Promise<{
@@ -15,13 +17,83 @@ export async function generateMetadata({ params }: PostPageProps): Promise<Metad
   
   if (!post) {
     return {
-      title: 'Annonse ikke funnet',
+      title: 'Annonse ikke funnet | TutorConnect',
+      description: 'Denne annonsen eksisterer ikke eller har blitt fjernet.',
     };
   }
 
+  // Generate SEO-friendly description
+  const subjectInfo = post.subject ? ` - ${post.subject}` : '';
+  const locationInfo = post.location ? ` i ${post.location}` : ' i Norge';
+  const typeInfo = post.type === 'TEACHER' ? 'lærer' : 'student som trenger hjelp';
+  
+  const seoDescription = `${post.description.substring(0, 100)}... Finn ${typeInfo}${subjectInfo}${locationInfo}. Profesjonell læringsstøtte på TutorConnect.`;
+  
+  // Generate keywords based on post content
+  const keywords = [
+    // Basic keywords
+    post.subject || 'undervisning',
+    post.location || 'Norge',
+    post.type === 'TEACHER' ? 'lærer' : 'student',
+    
+    // Subject-specific
+    ...(post.subject ? [
+      `${post.subject} lærer`,
+      `${post.subject} undervisning`,
+      `${post.subject} hjelp`,
+      `privat ${post.subject}`
+    ] : []),
+    
+    // Location-specific
+    ...(post.location ? [
+      `lærer ${post.location}`,
+      `undervisning ${post.location}`,
+      `${post.location} privattimer`
+    ] : []),
+    
+    // Type-specific keywords
+    post.type === 'TEACHER' ? [
+      'finn lærer', 'læringsstøtte', 'privat undervisning', 'leksehjelp',
+      'profesjonell hjelp', 'avlaste foreldre', 'skolehjelp'
+    ] : [
+      'undervisning jobb', 'deltidsjobb', 'student jobb', 'fleksibel jobb',
+      'bijobb', 'tjene penger', 'part time teaching'
+    ],
+    
+    // Cultural keywords based on content
+    'læringsstøtte', 'sammen læring', 'vennlig hjelp', 'profesjonell støtte'
+  ].flat().filter(Boolean);
+
+  const title = `${post.title} | TutorConnect Norge`;
+
   return {
-    title: post.title,
-    description: post.description.substring(0, 160),
+    title,
+    description: seoDescription,
+    keywords: keywords.join(', '),
+    openGraph: {
+      title,
+      description: seoDescription,
+      type: 'article',
+      locale: 'nb_NO',
+      siteName: 'TutorConnect',
+      images: [
+        {
+          url: '/images/og-post-default.jpg',
+          width: 1200,
+          height: 630,
+          alt: `${post.title} - TutorConnect`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title,
+      description: seoDescription,
+      images: ['/images/twitter-post-default.jpg'],
+    },
+    alternates: {
+      canonical: `/posts/${postId}`,
+    },
   };
 }
 
@@ -33,5 +105,93 @@ export default async function PostPage({ params }: PostPageProps) {
     notFound();
   }
 
-  return <PostDetailClient post={post} />;
+  // Generate breadcrumbs for individual post
+  // NOTE: Breadcrumbs are kept in English for international user accessibility and familiarity
+  const breadcrumbItems: BreadcrumbItem[] = [
+    { label: 'Posts', href: '/posts' },
+    { 
+      label: post.type === 'TEACHER' ? 'Find Teachers' : 'Find Students', 
+      href: post.type === 'TEACHER' ? '/posts/teachers' : '/posts/students' 
+    },
+    { label: post.title || 'Post Details', current: true }
+  ].filter(item => item.label); // Filter out any invalid items
+
+  // Generate JSON-LD structured data based on post type
+  const jsonLd = post.type === 'TEACHER' ? {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: post.user.name,
+    description: post.description,
+    knowsAbout: post.subject,
+    workLocation: {
+      '@type': 'Place',
+      name: post.location || 'Norge'
+    },
+    offers: {
+      '@type': 'Service',
+      name: `${post.subject} undervisning`,
+      description: post.description,
+      serviceType: 'Læringsstøtte',
+      areaServed: {
+        '@type': 'Place',
+        name: post.location || 'Norge'
+      },
+      provider: {
+        '@type': 'Person',
+        name: post.user.name
+      },
+      audience: {
+        '@type': 'EducationalAudience',
+        educationalRole: post.subject?.includes('voksen') || post.subject?.includes('tennis') || post.subject?.includes('ski') ? 'adult learner' : 'student'
+      },
+      availableLanguage: ['Norwegian', 'English']
+    },
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'education services',
+      url: `https://tutorconnect.no/posts/${postId}`
+    }
+  } : {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: post.title,
+    description: post.description,
+    hiringOrganization: {
+      '@type': 'Person',
+      name: post.user.name
+    },
+    jobLocation: {
+      '@type': 'Place',
+      name: post.location || 'Norge'
+    },
+    employmentType: 'PART_TIME',
+    industry: 'Education',
+    skills: post.subject,
+    workHours: 'Fleksible timer',
+    benefits: 'Fleksibel jobb, godt betalt, meningsfullt arbeid',
+    url: `https://tutorconnect.no/posts/${postId}`,
+    datePosted: post.createdAt
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <div className="min-h-screen bg-neutral-50">
+        {/* Breadcrumbs */}
+        {breadcrumbItems && breadcrumbItems.length > 0 && (
+          <div className="bg-white border-b border-neutral-100">
+            <div className="container mx-auto px-4 py-3">
+              <Breadcrumbs items={breadcrumbItems} />
+            </div>
+          </div>
+        )}
+        
+        {/* Post Content */}
+        <PostDetailClient post={post} />
+      </div>
+    </>
+  );
 }
