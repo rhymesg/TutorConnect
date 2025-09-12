@@ -141,10 +141,15 @@ export async function createPostAction(
 
     console.log(`Post created successfully: ID=${post.id}, User=${user.sub}, Type=${post.type}`);
 
-    // Revalidate relevant paths
+    // Revalidate relevant paths - comprehensive cache invalidation
     revalidatePath('/posts');
     revalidatePath('/dashboard');
     revalidatePath(`/posts/${post.id}`);
+    
+    // Revalidate post listing pages
+    revalidatePath('/profile/posts'); // Mine annonser page
+    revalidatePath('/posts/teachers'); // Teachers listing
+    revalidatePath('/posts/students'); // Students listing
 
     // Redirect to the created post
     redirect(`/posts/${post.id}?created=true`);
@@ -279,11 +284,27 @@ export async function updatePostAction(
       hourlyRateMax: updatedPost.hourlyRateMax ? Number(updatedPost.hourlyRateMax) : null,
     };
 
-    // Revalidate relevant paths
+    // Revalidate relevant paths - comprehensive cache invalidation
     revalidatePath('/posts');
     revalidatePath('/dashboard');
     revalidatePath(`/posts/${postId}`);
     revalidatePath(`/posts/${postId}/edit`);
+    
+    // Revalidate post listing pages
+    revalidatePath('/profile/posts'); // Mine annonser page
+    revalidatePath('/posts/teachers'); // Teachers listing
+    revalidatePath('/posts/students'); // Students listing
+    
+    // Revalidate filtered pages with common subjects/locations
+    if (updatedPost.subject) {
+      revalidatePath(`/posts/teachers?subject=${updatedPost.subject}`);
+      revalidatePath(`/posts/students?subject=${updatedPost.subject}`);
+    }
+    
+    if (updatedPost.location) {
+      revalidatePath(`/posts/teachers?location=${updatedPost.location}`);
+      revalidatePath(`/posts/students?location=${updatedPost.location}`);
+    }
 
     // Return success response instead of redirecting
     return {
@@ -352,10 +373,15 @@ export async function deletePostAction(postId: string): Promise<{ success: boole
       where: { id: postId }
     });
 
-    // Revalidate relevant paths
+    // Revalidate relevant paths - comprehensive cache invalidation
     revalidatePath('/posts');
     revalidatePath('/dashboard');
     revalidatePath(`/posts/${postId}`);
+    
+    // Revalidate post listing pages
+    revalidatePath('/profile/posts'); // Mine annonser page
+    revalidatePath('/posts/teachers'); // Teachers listing
+    revalidatePath('/posts/students'); // Students listing
 
     return { success: true };
 
@@ -399,10 +425,15 @@ export async function togglePostActiveAction(
       data: { isActive }
     });
 
-    // Revalidate relevant paths
+    // Revalidate relevant paths - comprehensive cache invalidation
     revalidatePath('/posts');
     revalidatePath('/dashboard');
     revalidatePath(`/posts/${postId}`);
+    
+    // Revalidate post listing pages
+    revalidatePath('/profile/posts'); // Mine annonser page
+    revalidatePath('/posts/teachers'); // Teachers listing
+    revalidatePath('/posts/students'); // Students listing
 
     return { success: true };
 
