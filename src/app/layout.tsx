@@ -113,9 +113,17 @@ export default function RootLayout({
         {/* DNS prefetch for external resources */}
         <link rel="dns-prefetch" href="//fonts.googleapis.com" />
         <link rel="dns-prefetch" href="//www.google-analytics.com" />
+        <link rel="dns-prefetch" href="//pagead2.googlesyndication.com" />
         {process.env.NEXT_PUBLIC_SUPABASE_URL && (
           <link rel="dns-prefetch" href={process.env.NEXT_PUBLIC_SUPABASE_URL} />
         )}
+
+        {/* Google AdSense */}
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8612922709654862"
+          crossOrigin="anonymous"
+        />
       </head>
       <body className="h-screen overflow-hidden bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
         <AuthProvider>
