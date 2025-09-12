@@ -298,8 +298,8 @@ jobs:
             
             // Verify redirect to post detail page using the stored post ID
             const expectedDetailUrl = `/posts/${postId}`;
-            const currentUrl = await page.url();
-            expect(currentUrl).toContain(expectedDetailUrl);
+            const redirectUrl = await page.url();
+            expect(redirectUrl).toContain(expectedDetailUrl);
             console.log(`✅ Successfully redirected to post detail page: ${expectedDetailUrl}`);
             
             // Test 6: Already on post detail page, verify save operation worked
