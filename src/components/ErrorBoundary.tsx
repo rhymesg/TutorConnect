@@ -77,7 +77,7 @@ export default class ErrorBoundary extends React.Component<ErrorBoundaryProps, E
 
               <a
                 href={mailtoLink}
-                className="w-full inline-block bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                className="w-full inline-block bg-gray-800 text-white px-6 py-3 rounded-lg hover:bg-gray-900 transition-colors font-medium"
               >
                 📧 Report Error via Email
               </a>
