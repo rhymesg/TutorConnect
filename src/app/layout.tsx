@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -126,14 +127,16 @@ export default function RootLayout({
         />
       </head>
       <body className="h-screen overflow-hidden bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
-        <AuthProvider>
-          <MainLayout>
-            {children}
-          </MainLayout>
-        </AuthProvider>
+        <ErrorBoundary>
+          <AuthProvider>
+            <MainLayout>
+              {children}
+            </MainLayout>
+          </AuthProvider>
+        </ErrorBoundary>
         
-        {/* Service Worker registration script will be added by PWA configuration */}
-        <script
+        {/* Service Worker registration disabled until sw.js is created */}
+        {/* <script
           dangerouslySetInnerHTML={{
             __html: `
               if ('serviceWorker' in navigator && '${process.env.NODE_ENV}' === 'production') {
@@ -147,7 +150,7 @@ export default function RootLayout({
               }
             `,
           }}
-        />
+        /> */}
       </body>
     </html>
   );
