@@ -4,6 +4,7 @@ import './globals.css';
 import { AuthProvider } from '@/contexts/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
+import { Analytics } from '@vercel/analytics/next';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -134,6 +135,7 @@ export default function RootLayout({
             </MainLayout>
           </AuthProvider>
         </ErrorBoundary>
+        <Analytics />
         
         {/* Service Worker registration disabled until sw.js is created */}
         {/* <script
