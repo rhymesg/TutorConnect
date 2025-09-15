@@ -4,7 +4,7 @@
 # - Tests redirect to login page when accessing protected pages without authentication
 # - Tests proper redirect back to intended page after login
 # - Covers protected pages: profile, profile/posts, chat, appointments
-# - Uses test user account (tester@tutorconnect.no) for login testing
+# - Uses test user account from environment variables for login testing
 # - Ensures logout between tests to maintain clean state
 
 name: Auth Guard E2E Test
@@ -15,6 +15,8 @@ on:
 
 env:
   NODE_ENV: production
+  TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
+  TESTER_PASSWORD: ${{ secrets.TESTER_PASSWORD }}
 
 permissions:
   contents: read
@@ -46,7 +48,6 @@ jobs:
         echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
         echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
         echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-        echo "TESTER_PASSWORD=${{ secrets.TESTER_PASSWORD }}" >> $GITHUB_ENV
         echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
         
     - name: Build application
@@ -118,7 +119,7 @@ jobs:
           // Helper function to login
           const loginUser = async (page) => {
             await page.goto('/auth/login');
-            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="email"]', process.env.TESTER_EMAIL || '');
             await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
             
             const [loginResponse] = await Promise.all([
@@ -190,7 +191,7 @@ jobs:
               
               // Now login and verify redirect to original page
               console.log(`🔐 Logging in to access ${protectedPage.path}`);
-              await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+              await page.fill('input[type="email"]', process.env.TESTER_EMAIL || '');
               await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
               
               const [loginResponse] = await Promise.all([

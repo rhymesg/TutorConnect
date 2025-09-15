@@ -125,17 +125,15 @@ TutorConnect/
 
 ## Domain Information
 - **Domain**: tutorconnect.no
-- **Registrar**: Domene.no
-- **Web Hosting**: MJOLNIR.DOMENE.NO server
-- **SSL**: Free provision (up to 24 hours for activation)
-- **Email**: mail.tutorconnect.no setup available
-- **Account**: rhymesg@gmail.com
+- **Purpose**: Norwegian tutoring platform
 
 ## Test Account Information
-- **Email**: tester@tutorconnect.no
-- **Password**: Use `secret.TESTER_PASSWORD`
 - **Purpose**: Development testing, E2E tests, manual testing
-- **Note**: Password stored in .env.local as TEST_EMAIL and TEST_PASSWORD
+- **Configuration**: 
+  - Environment variables: Use `TESTER_EMAIL` and `TESTER_PASSWORD` 
+  - For local development: Set in .env.local 
+  - For GitHub Actions: Set `TESTER_EMAIL` and `TESTER_PASSWORD` in GitHub Secrets
+  - Test credentials should never be hardcoded in any files
 
 ## Contact Information
 - **Main Contact**: contact@tutorconnect.no (all inquiries)
@@ -147,3 +145,37 @@ TutorConnect/
 - **Original Plan**: ./documents/TutorConnect - Plan.pdf
 - **Reference Apps**: Finn.no, Midttanbud
 - **User**: Norwegian permanent resident, local resident
+
+## Security Guidelines for Public Repository
+**IMPORTANT: This repository is PUBLIC. Follow these security rules strictly:**
+
+### Never Commit Sensitive Information
+- **NO hardcoded passwords** - Use environment variables only
+- **NO API keys or secrets** - All secrets must be in .env.local (gitignored)
+- **NO personal emails** - Use project emails (contact@tutorconnect.no, noreply@tutorconnect.no)
+- **NO production URLs with credentials** - Use placeholder values in examples
+- **NO real user data** - Use generated test data only
+
+### Security Checklist Before Commits
+1. Check for hardcoded passwords (including test passwords)
+2. Verify no API keys are exposed
+3. Ensure .env.local is in .gitignore
+4. Remove any debug console.log with sensitive data
+5. Use environment variables for ALL configuration
+
+### Security Reminders
+- Test user credentials must be in .env.local only
+- GitHub Actions should use GitHub Secrets for test credentials
+- Never hardcode passwords in any scripts
+
+### Best Practices
+- Always use `process.env.VARIABLE_NAME` for sensitive values
+- Document required environment variables in .env.example without real values
+- Use GitHub Secrets for CI/CD workflows
+- Implement proper error messages that don't expose system details
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.

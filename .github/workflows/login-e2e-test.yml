@@ -17,6 +17,8 @@ on:
 
 env:
   NODE_ENV: production
+  TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
+  TESTER_PASSWORD: ${{ secrets.TESTER_PASSWORD }}
 
 permissions:
   contents: read
@@ -48,7 +50,6 @@ jobs:
         echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
         echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
         echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
-        echo "TESTER_PASSWORD=${{ secrets.TESTER_PASSWORD }}" >> $GITHUB_ENV
         echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
         
     - name: Build application
@@ -113,7 +114,7 @@ jobs:
             await expect(page.locator('input[type="password"]')).toBeVisible();
             
             // Fill login form
-            await page.fill('input[type="email"]', 'tester@tutorconnect.no');
+            await page.fill('input[type="email"]', process.env.TESTER_EMAIL || '');
             await page.fill('input[type="password"]', process.env.TESTER_PASSWORD || '');
             
             // Click login button and wait for any response
