@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { 
   Bars3Icon, 
@@ -33,9 +32,36 @@ export default function Header({
   notificationCount = 0
 }: HeaderProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+  const [navigating, setNavigating] = useState<string | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, logout } = useAuth();
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Mount stabilization pattern
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  // Safe navigation that preserves auth state
+  const handleNavigation = (href: string) => {
+    if (!isMounted || navigating) return;
+    
+    // If already on the same page, don't navigate
+    if (pathname === href) return;
+    
+    // Prevent double clicks
+    setNavigating(href);
+    
+    // Use Next.js router for client-side navigation to preserve state
+    setTimeout(() => {
+      router.push(href);
+    }, 50); // Small delay to ensure state update
+    
+    // Reset navigating state
+    setTimeout(() => setNavigating(null), 300);
+  };
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -58,6 +84,28 @@ export default function Header({
     { name: 'Om oss', href: '/om-oss', current: pathname === '/om-oss' },
   ];
 
+  // Prevent hydration issues by rendering static placeholder until mounted
+  if (!isMounted) {
+    return (
+      <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex items-center space-x-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold text-sm">
+                  TC
+                </div>
+                <span className="text-xl font-bold text-neutral-900 hidden sm:block">
+                  TutorConnect
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+    );
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -76,10 +124,12 @@ export default function Header({
             )}
             
             {/* Logo */}
-            <Link 
-              href="/" 
+            <button
+              type="button"
               className="flex items-center space-x-2"
               aria-label="Gå til forsiden"
+              onClick={() => handleNavigation('/')}
+              disabled={navigating !== null}
             >
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-500 to-brand-600 text-white font-bold text-sm">
                 TC
@@ -87,40 +137,45 @@ export default function Header({
               <span className="text-xl font-bold text-neutral-900 hidden sm:block">
                 TutorConnect
               </span>
-            </Link>
+            </button>
           </div>
 
           {/* Center - Navigation (desktop) */}
           <nav className="hidden md:flex items-center space-x-6" aria-label="Hovednavigasjon">
             {/* Create post button */}
             {isAuthenticated && (
-              <Link
-                href="/posts/new"
-                className="flex items-center px-3 py-2 text-sm font-medium text-neutral-700 hover:text-brand-600 hover:bg-neutral-50 rounded-md transition-colors"
+              <button
+                type="button"
+                className="flex items-center px-3 py-2 text-sm font-medium text-neutral-700 hover:text-brand-600 hover:bg-neutral-50 rounded-md transition-colors disabled:opacity-50"
+                onClick={() => handleNavigation('/posts/new')}
+                disabled={navigating !== null}
               >
                 <PlusCircleIcon className="h-5 w-5 mr-1.5" aria-hidden="true" />
                 Opprett annonse
-              </Link>
+              </button>
             )}
             
             {publicNavigation.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                href={item.href}
+                type="button"
                 className={`
                   flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors
                   ${item.current 
                     ? 'text-brand-600 bg-brand-50' 
                     : 'text-neutral-700 hover:text-brand-600 hover:bg-neutral-50'
                   }
+                  ${navigating === item.href ? 'opacity-50' : ''}
                 `}
                 aria-current={item.current ? 'page' : undefined}
+                onClick={() => handleNavigation(item.href)}
+                disabled={navigating !== null}
               >
                 {(item.name === 'Finn en lærer' || item.name === 'Finn en student') && (
                   <MagnifyingGlassIcon className="h-4 w-4 mr-1.5" aria-hidden="true" />
                 )}
                 {item.name}
-              </Link>
+              </button>
             ))}
           </nav>
 
@@ -130,10 +185,12 @@ export default function Header({
             {isAuthenticated ? (
               <>
                 {/* Notifications */}
-                <Link
-                  href="/chat"
-                  className="relative block rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                <button
+                  type="button"
+                  className="relative rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500 disabled:opacity-50"
                   aria-label="Vis meldinger"
+                  onClick={() => handleNavigation('/chat')}
+                  disabled={navigating !== null}
                 >
                   <BellIcon className="h-6 w-6" aria-hidden="true" />
                   {/* Notification badge */}
@@ -142,7 +199,7 @@ export default function Header({
                       {notificationCount > 99 ? '99+' : notificationCount}
                     </span>
                   )}
-                </Link>
+                </button>
 
                 {/* User menu */}
                 <div className="relative" ref={userMenuRef}>
@@ -162,14 +219,18 @@ export default function Header({
                   {userMenuOpen && (
                     <div className="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-medium ring-1 ring-black ring-opacity-5 focus:outline-none">
                       <div className="py-1" role="menu">
-                        <Link
-                          href="/profile"
-                          className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100"
+                        <button
+                          type="button"
+                          className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100 disabled:opacity-50"
                           role="menuitem"
-                          onClick={() => setUserMenuOpen(false)}
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            handleNavigation('/profile');
+                          }}
+                          disabled={navigating !== null}
                         >
                           Min side
-                        </Link>
+                        </button>
                         <hr className="my-1 border-neutral-200" />
                         <button
                           type="button"
@@ -190,18 +251,22 @@ export default function Header({
             ) : (
               <>
                 {/* Login/Register buttons for non-authenticated users */}
-                <Link
-                  href="/auth/login"
-                  className="text-sm font-medium text-neutral-700 hover:text-brand-600 transition-colors"
+                <button
+                  type="button"
+                  className="text-sm font-medium text-neutral-700 hover:text-brand-600 transition-colors disabled:opacity-50"
+                  onClick={() => handleNavigation('/auth/login')}
+                  disabled={navigating !== null}
                 >
                   Logg inn
-                </Link>
-                <Link
-                  href="/auth/register"
-                  className="btn-primary text-sm"
+                </button>
+                <button
+                  type="button"
+                  className="btn-primary text-sm disabled:opacity-50"
+                  onClick={() => handleNavigation('/auth/register')}
+                  disabled={navigating !== null}
                 >
                   Registrer deg
-                </Link>
+                </button>
               </>
             )}
           </div>
@@ -214,33 +279,38 @@ export default function Header({
           <div className="flex flex-wrap items-center gap-2">
             {/* Create post button for mobile */}
             {isAuthenticated && (
-              <Link
-                href="/posts/new"
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-neutral-700 hover:text-brand-600 rounded-md transition-colors"
+              <button
+                type="button"
+                onClick={() => handleNavigation('/posts/new')}
+                className="flex items-center px-3 py-1.5 text-sm font-medium text-neutral-700 hover:text-brand-600 rounded-md transition-colors disabled:opacity-50"
+                disabled={navigating !== null}
               >
                 <PlusCircleIcon className="h-4 w-4 mr-1" aria-hidden="true" />
                 Opprett
-              </Link>
+              </button>
             )}
             
             {publicNavigation.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                href={item.href}
+                type="button"
+                onClick={() => handleNavigation(item.href)}
                 className={`
                   flex items-center px-3 py-1.5 text-sm font-medium rounded-md transition-colors
                   ${item.current 
                     ? 'text-brand-600 bg-brand-50' 
                     : 'text-neutral-700 hover:text-brand-600'
                   }
+                  ${navigating === item.href ? 'opacity-50' : ''}
                 `}
                 aria-current={item.current ? 'page' : undefined}
+                disabled={navigating !== null}
               >
                 {(item.name === 'Finn en lærer' || item.name === 'Finn en student') && (
                   <MagnifyingGlassIcon className="h-4 w-4 mr-1" aria-hidden="true" />
                 )}
                 {item.name}
-              </Link>
+              </button>
             ))}
           </div>
         </nav>
