@@ -184,23 +184,31 @@ jobs:
             // Wait for the button to be available
             await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
             
+            // Debug: Check URL before clicking
+            console.log(`📍 Current URL before "Se timer" click: ${page.url()}`);
+            
+            // Debug: Check if we're in the right chat context
+            const chatUrl = page.url();
+            const chatIdMatch = chatUrl.match(/\/chat\?id=([^&]+)/) || chatUrl.match(/\/chat\/([^\/]+)/);
+            const chatId = chatIdMatch ? chatIdMatch[1] : null;
+            console.log(`🔍 Detected chat ID: ${chatId}`);
+            
             // Click "Se timer" button - this navigates to chat appointments page
             console.log('🔗 Clicking "Se timer" button...');
             await seTimerButton.click();
             
             // Wait for navigation to chat appointments page
             await page.waitForURL('**/chat/**/appointments', { timeout: 15000 });
-            console.log('✅ Clicked "Se timer" button and navigated to appointments page');
-            
-            // Step 7: Verify navigation to appointments page
-            console.log('📅 Step 7: Verifying navigation to appointments page...');
             
             const finalUrl = page.url();
-            console.log(`📍 Final URL: ${finalUrl}`);
+            console.log(`📍 Final URL after clicking "Se timer": ${finalUrl}`);
+            
+            // Step 7: Verify navigation to chat appointments page
+            console.log('📅 Step 7: Verifying navigation to chat appointments page...');
             
             // Should be the chat-specific appointments page
             expect(finalUrl).toMatch(/\/chat\/[^\/]+\/appointments$/);
-            console.log(`✅ Successfully navigated to appointments page: ${finalUrl}`);
+            console.log(`✅ Successfully navigated to chat appointments page: ${finalUrl}`);
             
             // Step 8: Verify page loads properly
             console.log('📄 Step 8: Verifying page loads properly...');
