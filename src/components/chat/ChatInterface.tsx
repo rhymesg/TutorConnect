@@ -374,8 +374,13 @@ export default function ChatInterface({
   };
 
   const handleViewAppointments = () => {
+    console.log('handleViewAppointments called, selectedChatId:', selectedChatId);
     if (selectedChatId) {
+      console.log('Navigating to:', `/chat/${selectedChatId}/appointments`);
       router.push(`/chat/${selectedChatId}/appointments`);
+    } else {
+      console.log('No selectedChatId, fallback to global appointments');
+      router.push('/appointments');
     }
   };
 
