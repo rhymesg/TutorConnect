@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { 
   MapPin, 
   Clock, 
@@ -35,9 +36,20 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const { user, accessToken } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [backUrl, setBackUrl] = useState('/posts');
   
   const isTutorPost = post.type === 'TEACHER';
   const subjectName = getSubjectLabel(post.subject);
+
+  // Check if user came from a chat and set appropriate back URL
+  useEffect(() => {
+    const chatId = searchParams.get('from_chat');
+    if (chatId) {
+      setBackUrl(`/chat?id=${chatId}`);
+    }
+  }, [searchParams]);
 
   const handleStartChat = async () => {
     if (isOwner || !user || post.status === 'PAUSET' || isCreatingChat) {
@@ -127,13 +139,13 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
       <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link 
-              href="/posts" 
+            <button 
+              onClick={() => router.push(backUrl)}
               className="inline-flex items-center text-neutral-600 hover:text-neutral-900"
             >
               <ChevronLeft className="w-5 h-5 mr-1" />
-              Tilbake til annonser
-            </Link>
+              {backUrl.includes('/chat') ? 'Tilbake til chat' : 'Tilbake til annonser'}
+            </button>
             
             {/* Status and Type Badges */}
             <div className="flex items-center gap-2">

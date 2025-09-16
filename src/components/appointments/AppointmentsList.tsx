@@ -152,7 +152,11 @@ export default function AppointmentsList({
       }
 
       const data = await response.json();
-      setAppointments(data.data.appointments);
+      // Remove duplicates based on appointment ID
+      const uniqueAppointments = data.data.appointments.filter((appointment: Appointment, index: number, self: Appointment[]) => 
+        self.findIndex(a => a.id === appointment.id) === index
+      );
+      setAppointments(uniqueAppointments);
     } catch (error) {
       console.error('Error fetching appointments:', error);
       setError(translations.error);

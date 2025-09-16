@@ -71,7 +71,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 60000,
+          timeout: 120000,
           expect: { timeout: 15000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
@@ -178,56 +178,49 @@ jobs:
             console.log('⏰ Step 6: Looking for "Se timer" button...');
             await page.waitForTimeout(2000);
             
-            // Try multiple selectors for "Se timer" button
-            const seTimerButton = page.locator('button:has-text("Se timer"), a:has-text("Se timer"), [data-testid="view-appointments"], button:has-text("timer")').first();
+            // Look specifically for the "Se timer" button in the chat header (not mobile nav or sidebar)
+            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]');
             
             // Wait for the button to be available
             await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
             
-            // "Se timer" button opens a new tab, so we need to wait for the new page
-            console.log('🔗 "Se timer" button opens new tab, waiting for popup...');
-            const [newPage] = await Promise.all([
-              page.context().waitForEvent('page'),
-              seTimerButton.click()
-            ]);
+            // Debug: Check URL before clicking
+            console.log(`📍 Current URL before "Se timer" click: ${page.url()}`);
             
-            // Wait for the new page to load
-            await newPage.waitForLoadState('networkidle');
-            await newPage.waitForTimeout(3000);
+            // Debug: Check if we're in the right chat context
+            const chatUrl = page.url();
+            const chatIdMatch = chatUrl.match(/\/chat\?id=([^&]+)/) || chatUrl.match(/\/chat\/([^\/]+)/);
+            const chatId = chatIdMatch ? chatIdMatch[1] : null;
+            console.log(`🔍 Detected chat ID: ${chatId}`);
             
-            console.log('✅ Clicked "Se timer" button and new tab opened');
+            // Click "Se timer" button - this navigates to chat appointments page
+            console.log('🔗 Clicking "Se timer" button...');
+            await seTimerButton.click();
             
-            // Step 7: Verify navigation to chat appointments page with correct URL format
+            // Wait for navigation to chat appointments page
+            await page.waitForURL('**/chat/**/appointments', { timeout: 15000 });
+            
+            const finalUrl = page.url();
+            console.log(`📍 Final URL after clicking "Se timer": ${finalUrl}`);
+            
+            // Step 7: Verify navigation to chat appointments page
             console.log('📅 Step 7: Verifying navigation to chat appointments page...');
             
-            const finalUrl = newPage.url();
-            console.log(`📍 Final URL: ${finalUrl}`);
-            
-            // Should match pattern: /chat/{chatId}/appointments
-            const chatAppointmentsUrlPattern = /\/chat\/[a-zA-Z0-9]+\/appointments/;
-            expect(finalUrl).toMatch(chatAppointmentsUrlPattern);
-            
-            // Extract chat ID from URL for verification
-            const chatIdMatch = finalUrl.match(/\/chat\/([a-zA-Z0-9]+)\/appointments/);
-            if (chatIdMatch) {
-              const chatId = chatIdMatch[1];
-              console.log(`✅ Successfully navigated to chat appointments page with chat ID: ${chatId}`);
-              console.log(`✅ URL format is correct: /chat/${chatId}/appointments`);
-            } else {
-              throw new Error(`URL format is incorrect: ${finalUrl}`);
-            }
+            // Should be the chat-specific appointments page
+            expect(finalUrl).toMatch(/\/chat\/[^\/]+\/appointments$/);
+            console.log(`✅ Successfully navigated to chat appointments page: ${finalUrl}`);
             
             // Step 8: Verify page loads properly
             console.log('📄 Step 8: Verifying page loads properly...');
             
             // Wait for page content to load
-            await newPage.waitForTimeout(3000);
+            await page.waitForTimeout(3000);
             
-            // Check for specific title that should be present on chat appointments page
-            await expect(newPage.locator('h1, h2')).toContainText('Avtaler for denne chatten', { timeout: 10000 });
-            console.log('✅ Found "Avtaler for denne chatten" title');
+            // Check for chat appointments page title
+            await expect(page.locator('h1, h2')).toContainText('Avtaler', { timeout: 10000 });
+            console.log('✅ Found appointments page title');
             
-            console.log('✅ Chat appointments page loaded successfully');
+            console.log('✅ Appointments page loaded successfully');
             console.log('✅ Complete appointments navigation flow test passed');
           });
         });

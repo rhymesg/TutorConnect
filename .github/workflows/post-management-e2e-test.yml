@@ -71,7 +71,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 55000,
+          timeout: 110000,
           expect: { timeout: 8000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,

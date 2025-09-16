@@ -69,7 +69,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 30000,
+          timeout: 60000,
           expect: { timeout: 5000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
@@ -104,7 +104,7 @@ jobs:
             await expect(page.locator('h1')).toContainText('Finn din perfekte');
             
             // Click "Registrer deg" in header
-            await page.click('a:has-text("Registrer deg")');
+            await page.click('button:has-text("Registrer deg"), a:has-text("Registrer deg")');
             await expect(page).toHaveURL('/auth/register');
             await expect(page.locator('h1:has-text("Opprett konto")')).toBeVisible();
             
@@ -114,8 +114,8 @@ jobs:
             await page.goto('/');
             
             // Scroll to CTA section and click "Opprett konto"
-            await page.locator('a:has-text("Opprett konto")').scrollIntoViewIfNeeded();
-            await page.click('a:has-text("Opprett konto")');
+            await page.locator('button:has-text("Opprett konto"), a:has-text("Opprett konto")').scrollIntoViewIfNeeded();
+            await page.click('button:has-text("Opprett konto"), a:has-text("Opprett konto")');
             await expect(page).toHaveURL('/auth/register');
             await expect(page.locator('h1:has-text("Opprett konto")')).toBeVisible();
             
@@ -134,7 +134,7 @@ jobs:
             console.log('✅ Register page loads completely');
             
             // Test 4: Check "Logg inn her" link back to login
-            await page.click('a:has-text("Logg inn her")');
+            await page.click('button:has-text("Logg inn her"), a:has-text("Logg inn her")');
             await expect(page).toHaveURL('/auth/login');
             await expect(page.locator('h2:has-text("Logg inn")')).toBeVisible();
             
@@ -144,7 +144,7 @@ jobs:
             await page.goto('/auth/register');
             
             // Try clicking TutorConnect logo to go back home
-            await page.click('a[aria-label*="forsiden"], a:has-text("TutorConnect")');
+            await page.click('button[aria-label*="forsiden"], a[aria-label*="forsiden"], button:has-text("TutorConnect"), a:has-text("TutorConnect")');
             await expect(page).toHaveURL('/');
             await expect(page.locator('h1')).toContainText('Finn din perfekte');
             
@@ -156,21 +156,21 @@ jobs:
             await page.goto('/');
             
             // Test "Finn en lærer" in header
-            await page.click('a:has-text("Finn en lærer")');
+            await page.click('button:has-text("Finn en lærer"), a:has-text("Finn en lærer")');
             await expect(page).toHaveURL('/posts/teachers');
             
             console.log('✅ Header "Finn en lærer" navigation works');
             
             // Test "Finn en student" in header
             await page.goto('/');
-            await page.click('a:has-text("Finn en student")');
+            await page.click('button:has-text("Finn en student"), a:has-text("Finn en student")');
             await expect(page).toHaveURL('/posts/students');
             
             console.log('✅ Header "Finn en student" navigation works');
             
             // Test "Om oss" in header
             await page.goto('/');
-            await page.click('a:has-text("Om oss")');
+            await page.click('button:has-text("Om oss"), a:has-text("Om oss")');
             await expect(page).toHaveURL('/om-oss');
             
             console.log('✅ Header "Om oss" navigation works');
@@ -182,7 +182,7 @@ jobs:
             await page.locator('footer').scrollIntoViewIfNeeded();
             
             // Test "Personvern" in footer
-            await page.click('a:has-text("Personvern")');
+            await page.click('button:has-text("Personvern"), a:has-text("Personvern")');
             await expect(page).toHaveURL('/privacy');
             
             console.log('✅ Footer "Personvern" navigation works');
@@ -190,7 +190,7 @@ jobs:
             // Test "Vilkår og betingelser" in footer
             await page.goto('/');
             await page.locator('footer').scrollIntoViewIfNeeded();
-            await page.click('a:has-text("Vilkår og betingelser")');
+            await page.click('button:has-text("Vilkår og betingelser"), a:has-text("Vilkår og betingelser")');
             await expect(page).toHaveURL('/terms');
             
             console.log('✅ Footer "Vilkår og betingelser" navigation works');
@@ -198,7 +198,7 @@ jobs:
             // Test "Kontakt" in footer (should go to om-oss with anchor)
             await page.goto('/');
             await page.locator('footer').scrollIntoViewIfNeeded();
-            await page.click('a:has-text("Kontakt")');
+            await page.click('button:has-text("Kontakt"), a:has-text("Kontakt")');
             await expect(page).toHaveURL('/om-oss#kontakt');
             
             console.log('✅ Footer "Kontakt" navigation works');

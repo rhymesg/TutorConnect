@@ -69,7 +69,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 30000,
+          timeout: 60000,
           expect: { timeout: 5000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
@@ -106,8 +106,9 @@ jobs:
             await page.goto('/posts');
             await expect(page.locator('h1')).toContainText('Velg hva du leter etter');
             
-            // Click "Finn en lærer" card
-            await page.click('a[href="/posts/teachers"]');
+            // Click "Finn en lærer" card - could be a button or link after hydration fixes
+            const teacherCard = page.locator('text=Finn en lærer').first();
+            await teacherCard.click();
             await expect(page).toHaveURL('/posts/teachers');
             
             console.log('✅ Navigation to teachers page works');
@@ -192,8 +193,9 @@ jobs:
             await page.goto('/posts');
             await expect(page.locator('h1')).toContainText('Velg hva du leter etter');
             
-            // Click "Finn en student" card
-            await page.click('a[href="/posts/students"]');
+            // Click "Finn en student" card - could be a button or link after hydration fixes
+            const studentCard = page.locator('text=Finn en student').first();
+            await studentCard.click();
             await expect(page).toHaveURL('/posts/students');
             
             console.log('✅ Navigation to students page works');

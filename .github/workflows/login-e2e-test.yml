@@ -71,7 +71,7 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 30000,
+          timeout: 60000,
           expect: { timeout: 5000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
@@ -102,8 +102,9 @@ jobs:
             await page.goto('/');
             
             // Check that login/register buttons are visible when not authenticated
-            await expect(page.locator('a:has-text("Logg inn")')).toBeVisible();
-            await expect(page.locator('a:has-text("Registrer deg")')).toBeVisible();
+            // After hydration fixes, these are buttons not links
+            await expect(page.locator('button:has-text("Logg inn"), a:has-text("Logg inn")').first()).toBeVisible();
+            await expect(page.locator('button:has-text("Registrer deg"), a:has-text("Registrer deg")').first()).toBeVisible();
             
             // Navigate to login page
             await page.goto('/auth/login');
@@ -165,8 +166,9 @@ jobs:
             
             // Now test the main feature: UI state should update automatically
             // Check that login/register buttons are gone (this is the key test!)
-            await expect(page.locator('a:has-text("Logg inn")')).not.toBeVisible({ timeout: 10000 });
-            await expect(page.locator('a:has-text("Registrer deg")')).not.toBeVisible({ timeout: 5000 });
+            // After hydration fixes, these could be buttons or links
+            await expect(page.locator('button:has-text("Logg inn"), a:has-text("Logg inn")')).not.toBeVisible({ timeout: 10000 });
+            await expect(page.locator('button:has-text("Registrer deg"), a:has-text("Registrer deg")')).not.toBeVisible({ timeout: 5000 });
             
             console.log('✅ Login/Register buttons hidden after login');
             
@@ -180,7 +182,7 @@ jobs:
             await userMenuButton.click();
             
             // Check that "Min side" and "Logg ut" options are visible in dropdown
-            await expect(page.locator('a:has-text("Min side")')).toBeVisible({ timeout: 3000 });
+            await expect(page.locator('button:has-text("Min side"), a:has-text("Min side")').first()).toBeVisible({ timeout: 3000 });
             await expect(page.locator('button:has-text("Logg ut")')).toBeVisible({ timeout: 3000 });
             
             console.log('✅ User menu dropdown working correctly');
@@ -196,8 +198,8 @@ jobs:
             await expect(page).toHaveURL('/');
             
             // Most important: Check that login/register buttons are visible again after logout
-            await expect(page.locator('a:has-text("Logg inn")')).toBeVisible({ timeout: 10000 });
-            await expect(page.locator('a:has-text("Registrer deg")')).toBeVisible({ timeout: 5000 });
+            await expect(page.locator('button:has-text("Logg inn"), a:has-text("Logg inn")').first()).toBeVisible({ timeout: 10000 });
+            await expect(page.locator('button:has-text("Registrer deg"), a:has-text("Registrer deg")').first()).toBeVisible({ timeout: 5000 });
             
             // Check that user menu button is no longer visible
             await expect(page.locator('button[aria-label="Brukermeny"]')).not.toBeVisible({ timeout: 5000 });

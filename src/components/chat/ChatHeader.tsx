@@ -1,6 +1,7 @@
 'use client';
 
 // import { useState } from 'react'; // TODO: Re-add when menu functionality is implemented
+import { useRouter } from 'next/navigation';
 import { 
   Phone, 
   Video, 
@@ -50,6 +51,7 @@ export default function ChatHeader({
   onViewAppointments,
 }: ChatHeaderProps) {
   const t = chatTranslations[language];
+  const router = useRouter();
   // const [showMenu, setShowMenu] = useState(false); // TODO: Re-enable when menu functionality is implemented
   
   // Get badges for the other user - use same pattern as PostCard and InlineProfileView
@@ -174,7 +176,7 @@ export default function ChatHeader({
               <div className="flex items-center gap-4">
                 {chat.relatedPost?.id && (
                   <button
-                    onClick={() => window.open(`/posts/${chat.relatedPost.id}`, '_blank')}
+                    onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
                     className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                   >
                     Se annonse
@@ -186,6 +188,7 @@ export default function ChatHeader({
                 
                 <button
                   onClick={onViewAppointments}
+                  data-testid="chat-header-view-appointments"
                   className="flex-shrink-0 inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
                 >
                   Se timer
