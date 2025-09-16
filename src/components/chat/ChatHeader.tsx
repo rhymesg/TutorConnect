@@ -176,7 +176,7 @@ export default function ChatHeader({
               <div className="flex items-center gap-4">
                 {chat.relatedPost?.id && (
                   <button
-                    onClick={() => router.push(`/posts/${chat.relatedPost.id}`)}
+                    onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
                     className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                   >
                     Se annonse
