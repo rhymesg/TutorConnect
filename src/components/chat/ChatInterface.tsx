@@ -375,7 +375,7 @@ export default function ChatInterface({
 
   const handleViewAppointments = () => {
     if (selectedChatId) {
-      window.open(`/chat/${selectedChatId}/appointments`, '_blank');
+      router.push(`/chat/${selectedChatId}/appointments`);
     }
   };
 
