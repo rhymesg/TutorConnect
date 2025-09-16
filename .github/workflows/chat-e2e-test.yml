@@ -69,8 +69,8 @@ jobs:
 
         export default defineConfig({
           testDir: './tests/e2e',
-          timeout: 60000,
-          expect: { timeout: 10000 },
+          timeout: 120000,
+          expect: { timeout: 15000 },
           fullyParallel: false,
           forbidOnly: !!process.env.CI,
           retries: process.env.CI ? 2 : 0,
@@ -212,14 +212,120 @@ jobs:
             await expect(messageComposer).toBeVisible({ timeout: 10000 });
             console.log('✅ Message composer is visible for first chat');
             
-            console.log('✅ Chat E2E test completed successfully');
+            console.log('✅ Basic chat E2E test completed successfully');
+          });
+
+          test('should test "Se timer" navigation and back button flow', async ({ page }) => {
+            // Navigate to chat page
+            await page.goto('/chat');
+            await page.waitForURL('**/chat**', { timeout: 10000 });
             
-            // Note: Testing switching between chats would require either:
-            // 1. Mobile-specific back button in the chat header
-            // 2. Desktop sidebar remaining visible
-            // Since the implementation uses state management and hides the chat list
-            // when a chat is selected (especially on mobile), we've verified the core
-            // functionality: loading chat list and opening a chat successfully.
+            // Wait for chat list to load
+            await page.waitForTimeout(5000);
+            
+            // Click first chat
+            const chatItems = page.locator('div.divide-y.divide-gray-100 > button.w-full.p-4.text-left');
+            const firstChat = chatItems.first();
+            await expect(firstChat).toBeVisible({ timeout: 5000 });
+            await firstChat.click();
+            await page.waitForTimeout(3000);
+            
+            // Get current chat URL for comparison
+            const originalChatUrl = page.url();
+            console.log(`🔗 Original chat URL: ${originalChatUrl}`);
+            
+            // Look for "Se timer" button in chat header
+            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]');
+            await seTimerButton.waitFor({ state: 'visible', timeout: 10000 });
+            console.log('✅ Found "Se timer" button in chat header');
+            
+            // Click "Se timer" button
+            await seTimerButton.click();
+            console.log('🔗 Clicked "Se timer" button');
+            
+            // Wait for navigation to chat appointments page
+            await page.waitForURL('**/chat/**/appointments', { timeout: 15000 });
+            const appointmentsUrl = page.url();
+            console.log(`📅 Navigated to appointments: ${appointmentsUrl}`);
+            
+            // Verify we're on the correct chat appointments page
+            expect(appointmentsUrl).toMatch(/\/chat\/[^\/]+\/appointments$/);
+            
+            // Look for "Tilbake" button
+            const tilbakeButton = page.locator('button:has-text("Tilbake"), [aria-label*="Tilbake"], [aria-label*="Back"]');
+            await tilbakeButton.waitFor({ state: 'visible', timeout: 10000 });
+            console.log('✅ Found "Tilbake" button');
+            
+            // Click "Tilbake" button
+            await tilbakeButton.click();
+            console.log('↩️ Clicked "Tilbake" button');
+            
+            // Wait for navigation back to chat
+            await page.waitForTimeout(3000);
+            
+            // Verify we're back to the original chat URL
+            const backToChatUrl = page.url();
+            console.log(`🔄 Back to chat URL: ${backToChatUrl}`);
+            expect(backToChatUrl).toBe(originalChatUrl);
+            
+            console.log('✅ "Se timer" navigation and back button flow test completed');
+          });
+
+          test('should test "Se annonse" navigation and back button flow', async ({ page }) => {
+            // Navigate to chat page
+            await page.goto('/chat');
+            await page.waitForURL('**/chat**', { timeout: 10000 });
+            
+            // Wait for chat list to load
+            await page.waitForTimeout(5000);
+            
+            // Click first chat
+            const chatItems = page.locator('div.divide-y.divide-gray-100 > button.w-full.p-4.text-left');
+            const firstChat = chatItems.first();
+            await expect(firstChat).toBeVisible({ timeout: 5000 });
+            await firstChat.click();
+            await page.waitForTimeout(3000);
+            
+            // Get current chat URL for comparison
+            const originalChatUrl = page.url();
+            console.log(`🔗 Original chat URL: ${originalChatUrl}`);
+            
+            // Look for "Se annonse" button in chat header
+            const seAnnonseButton = page.locator('button:has-text("Se annonse")');
+            await seAnnonseButton.waitFor({ state: 'visible', timeout: 10000 });
+            console.log('✅ Found "Se annonse" button in chat header');
+            
+            // Click "Se annonse" button
+            await seAnnonseButton.click();
+            console.log('🔗 Clicked "Se annonse" button');
+            
+            // Wait for navigation to post page with from_chat parameter
+            await page.waitForURL('**/posts/**', { timeout: 15000 });
+            const postUrl = page.url();
+            console.log(`📄 Navigated to post: ${postUrl}`);
+            
+            // Verify we're on a post page with from_chat parameter
+            expect(postUrl).toMatch(/\/posts\/[^\/]+/);
+            expect(postUrl).toContain('from_chat=');
+            
+            // Look for "Tilbake" button (should say "Tilbake til chat")
+            const tilbakeButton = page.locator('button:has-text("Tilbake til chat"), button:has-text("Tilbake")');
+            await tilbakeButton.waitFor({ state: 'visible', timeout: 10000 });
+            console.log('✅ Found "Tilbake" button');
+            
+            // Click "Tilbake" button
+            await tilbakeButton.click();
+            console.log('↩️ Clicked "Tilbake" button');
+            
+            // Wait for navigation back to chat
+            await page.waitForTimeout(3000);
+            
+            // Verify we're back to the original chat URL
+            const backToChatUrl = page.url();
+            console.log(`🔄 Back to chat URL: ${backToChatUrl}`);
+            expect(backToChatUrl).toBe(originalChatUrl);
+            
+            console.log('✅ "Se annonse" navigation and back button flow test completed');
           });
         });
         EOF
