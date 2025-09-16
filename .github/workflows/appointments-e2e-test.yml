@@ -184,12 +184,12 @@ jobs:
             // Wait for the button to be available
             await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
             
-            // Click "Se timer" button - this navigates to global appointments page
+            // Click "Se timer" button - this navigates to chat appointments page
             console.log('🔗 Clicking "Se timer" button...');
             await seTimerButton.click();
             
-            // Wait for navigation to appointments page (global appointments, not chat-specific)
-            await page.waitForURL('**/appointments', { timeout: 15000 });
+            // Wait for navigation to chat appointments page
+            await page.waitForURL('**/chat/**/appointments', { timeout: 15000 });
             console.log('✅ Clicked "Se timer" button and navigated to appointments page');
             
             // Step 7: Verify navigation to appointments page
@@ -198,8 +198,8 @@ jobs:
             const finalUrl = page.url();
             console.log(`📍 Final URL: ${finalUrl}`);
             
-            // Should be the global appointments page
-            expect(finalUrl).toMatch(/\/appointments$/);
+            // Should be the chat-specific appointments page
+            expect(finalUrl).toMatch(/\/chat\/[^\/]+\/appointments$/);
             console.log(`✅ Successfully navigated to appointments page: ${finalUrl}`);
             
             // Step 8: Verify page loads properly
@@ -208,8 +208,8 @@ jobs:
             // Wait for page content to load
             await page.waitForTimeout(3000);
             
-            // Check for main appointments page title
-            await expect(page.locator('h1, h2')).toContainText('Mine avtaler', { timeout: 10000 });
+            // Check for chat appointments page title
+            await expect(page.locator('h1, h2')).toContainText('Avtaler', { timeout: 10000 });
             console.log('✅ Found appointments page title');
             
             console.log('✅ Appointments page loaded successfully');
