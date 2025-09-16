@@ -188,6 +188,7 @@ export default function ChatHeader({
                 
                 <button
                   onClick={onViewAppointments}
+                  data-testid="chat-header-view-appointments"
                   className="flex-shrink-0 inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
                 >
                   Se timer

@@ -178,8 +178,8 @@ jobs:
             console.log('⏰ Step 6: Looking for "Se timer" button...');
             await page.waitForTimeout(2000);
             
-            // Try multiple selectors for "Se timer" button
-            const seTimerButton = page.locator('button:has-text("Se timer"), a:has-text("Se timer"), [data-testid="view-appointments"], button:has-text("timer")').first();
+            // Look specifically for the "Se timer" button in the chat header (not mobile nav or sidebar)
+            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]');
             
             // Wait for the button to be available
             await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
