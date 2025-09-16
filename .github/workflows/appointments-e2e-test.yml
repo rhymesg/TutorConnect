@@ -184,23 +184,18 @@ jobs:
             // Wait for the button to be available
             await seTimerButton.waitFor({ state: 'visible', timeout: 15000 });
             
-            // "Se timer" button opens a new tab, so we need to wait for the new page
-            console.log('🔗 "Se timer" button opens new tab, waiting for popup...');
-            const [newPage] = await Promise.all([
-              page.context().waitForEvent('page'),
-              seTimerButton.click()
-            ]);
+            // Click "Se timer" button - after hydration fixes, it uses client-side navigation
+            console.log('🔗 Clicking "Se timer" button...');
+            await seTimerButton.click();
             
-            // Wait for the new page to load
-            await newPage.waitForLoadState('networkidle');
-            await newPage.waitForTimeout(3000);
-            
-            console.log('✅ Clicked "Se timer" button and new tab opened');
+            // Wait for navigation to chat appointments page
+            await page.waitForURL('**/chat/**/appointments', { timeout: 15000 });
+            console.log('✅ Clicked "Se timer" button and navigated');
             
             // Step 7: Verify navigation to chat appointments page with correct URL format
             console.log('📅 Step 7: Verifying navigation to chat appointments page...');
             
-            const finalUrl = newPage.url();
+            const finalUrl = page.url();
             console.log(`📍 Final URL: ${finalUrl}`);
             
             // Should match pattern: /chat/{chatId}/appointments
@@ -221,10 +216,10 @@ jobs:
             console.log('📄 Step 8: Verifying page loads properly...');
             
             // Wait for page content to load
-            await newPage.waitForTimeout(3000);
+            await page.waitForTimeout(3000);
             
             // Check for specific title that should be present on chat appointments page
-            await expect(newPage.locator('h1, h2')).toContainText('Avtaler for denne chatten', { timeout: 10000 });
+            await expect(page.locator('h1, h2')).toContainText('Avtaler for denne chatten', { timeout: 10000 });
             console.log('✅ Found "Avtaler for denne chatten" title');
             
             console.log('✅ Chat appointments page loaded successfully');
