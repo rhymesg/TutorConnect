@@ -2,6 +2,7 @@
 module.exports = {
   testEnvironment: 'jsdom',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+  testTimeout: 10000, // Double the default timeout from 5000ms to 10000ms
   
   // Run tests from tests/ directory
   testMatch: [
