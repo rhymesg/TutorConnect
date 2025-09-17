@@ -17,11 +17,11 @@ function ChatPageContent() {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Chat Interface filling available height */}
+      {/* Chat Interface filling available height with safe area */}
       <ChatInterface 
         initialChatId={initialChatId} 
         appointmentId={appointmentId}
-        className="h-full" 
+        className="flex-1 min-h-0" 
       />
     </div>
   );

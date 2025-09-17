@@ -431,15 +431,15 @@ export default function ChatInterface({
   };
 
   return (
-    <div className={`flex h-full bg-gray-50 ${className}`}>
+    <div className={`flex bg-gray-50 ${className} h-full`}>
       {/* Chat List Sidebar */}
       <div className={`${
         isMobile 
-          ? `fixed inset-y-0 left-0 z-40 w-full transform ${
+          ? `fixed top-16 left-0 z-40 w-full h-[calc(100vh-4rem)] transform ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             } transition-transform duration-300 ease-in-out`
-          : 'w-80 flex-shrink-0'
-      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200 flex flex-col h-full overflow-hidden`}>
+          : 'w-80 flex-shrink-0 h-full'
+      } ${!isMobile && !showSidebar ? 'hidden' : ''} bg-white border-r border-gray-200 flex flex-col overflow-hidden`}>
         
         <ChatRoomList
           chats={chats}
@@ -461,9 +461,9 @@ export default function ChatInterface({
       </div>
 
       {/* Conversation View */}
-      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} h-full overflow-hidden`}>
+      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} ${isMobile ? 'min-h-0' : 'h-full'} overflow-hidden`}>
         {selectedChatId && chat ? (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col flex-1 min-h-0">
             {/* Error display */}
             {(chatError || messageError || appointmentResponseError) && (
               <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
