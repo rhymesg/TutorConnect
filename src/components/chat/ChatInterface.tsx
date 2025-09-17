@@ -73,7 +73,7 @@ export default function ChatInterface({
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setShowSidebar(!mobile || !selectedChatId);
-      setShowChatHeader(!mobile); // Hide chat header on mobile by default
+      setShowChatHeader(true); // Show chat header by default
     };
     
     checkMobile();
