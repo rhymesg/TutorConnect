@@ -374,18 +374,14 @@ export default function ChatInterface({
   };
 
   const handleViewAppointments = () => {
-    console.log('handleViewAppointments called, selectedChatId:', selectedChatId);
     if (selectedChatId) {
-      console.log('Navigating to:', `/chat/${selectedChatId}/appointments`);
       router.push(`/chat/${selectedChatId}/appointments`);
     } else {
-      console.log('No selectedChatId, fallback to global appointments');
       router.push('/appointments');
     }
   };
 
   const handleAppointmentSubmit = async (appointmentData: AppointmentData) => {
-    console.log('Sending appointment request:', appointmentData);
     setAppointmentError(null);
     
     // Double-check if appointment exists before sending
@@ -423,12 +419,9 @@ export default function ChatInterface({
       location: appointmentData.location
     });
     
-    console.log('Appointment message content:', appointmentMessage);
-    console.log('Message type:', 'APPOINTMENT_REQUEST');
     
     try {
       await sendMessage(appointmentMessage, 'APPOINTMENT_REQUEST');
-      console.log('Appointment request sent successfully');
       setShowAppointmentModal(false);
       setAppointmentError(null);
     } catch (error: any) {
