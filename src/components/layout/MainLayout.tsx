@@ -88,7 +88,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           className={`
             flex-1 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
             ${showSidebar ? 'lg:ml-64' : ''}
-            ${showMobileNav && !isChatPage ? 'pb-16' : ''}
+            ${showMobileNav ? 'pb-15 md:pb-0' : ''}
           `}
           role="main"
           aria-label="Hovedinnhold"

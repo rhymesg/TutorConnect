@@ -199,7 +199,7 @@ export default function MessageComposer({
   const canSend = (message.trim() || attachments.length > 0) && !isSending && !disabled;
 
   return (
-    <div className="border-t border-gray-200 p-4 bg-white">
+    <div className="border-t border-gray-200 p-4 pb-8 md:pb-4 bg-white">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="mb-3">
@@ -250,7 +250,7 @@ export default function MessageComposer({
           <button
             onClick={() => setShowAttachMenu(!showAttachMenu)}
             disabled={disabled}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center justify-center w-9 h-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Paperclip className="h-5 w-5" />
           </button>
@@ -307,7 +307,7 @@ export default function MessageComposer({
         <button
           onClick={handleSend}
           disabled={!canSend}
-          className={`p-2 rounded-lg transition-colors ${
+          className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors -translate-y-1.5 ${
             canSend
               ? 'bg-blue-500 text-white hover:bg-blue-600'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'
