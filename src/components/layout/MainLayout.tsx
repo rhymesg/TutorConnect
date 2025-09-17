@@ -54,7 +54,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
 
   return (
-    <div className={`${isChatPage ? 'h-screen' : 'min-h-screen'} bg-neutral-50 ${isChatPage ? 'overflow-hidden' : ''}`}>
+    <div className="min-h-screen bg-neutral-50">
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -72,7 +72,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         />
       )}
 
-      <div className={`flex ${showHeader ? 'h-[calc(100vh-4rem)]' : 'h-screen'} ${isChatPage ? 'overflow-hidden' : ''}`}>
+      <div className={`flex ${showHeader ? (isChatPage ? 'h-[calc(100vh-4rem)] pt-0' : 'h-[calc(100vh-4rem)]') : 'h-screen'} ${isChatPage ? 'overflow-hidden' : ''}`}>
         {/* Desktop Sidebar */}
         {showSidebar && (
           <Sidebar 

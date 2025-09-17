@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Mic, X, Image, FileText } from 'lucide-react';
+import { Send, Paperclip, Mic, X, Image, FileText, Info } from 'lucide-react';
 import { Message } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
@@ -13,6 +13,9 @@ interface MessageComposerProps {
   disabled?: boolean;
   placeholder?: string;
   chatId?: string;
+  showChatHeader?: boolean;
+  onToggleChatHeader?: () => void;
+  isMobile?: boolean;
 }
 
 interface FileAttachment {
@@ -30,6 +33,9 @@ export default function MessageComposer({
   disabled = false,
   placeholder,
   chatId,
+  showChatHeader = true,
+  onToggleChatHeader,
+  isMobile = false,
 }: MessageComposerProps) {
   const t = chatTranslations[language];
   
@@ -244,48 +250,64 @@ export default function MessageComposer({
       )}
       
       <div className="flex items-end gap-2">
-
-        {/* Attachment Menu */}
-        <div className="relative" ref={attachMenuRef}>
-          <button
-            onClick={() => setShowAttachMenu(!showAttachMenu)}
-            disabled={disabled}
-            className="flex items-center justify-center w-9 h-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Paperclip className="h-5 w-5" />
-          </button>
-          
-          {showAttachMenu && (
-            <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed rounded-t-lg opacity-50"
-              >
-                <Image className="h-4 w-4 text-gray-400" />
-                {t.composer.attachments.image}
-              </button>
-              
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50"
-              >
-                <FileText className="h-4 w-4 text-gray-400" />
-                {t.composer.attachments.document}
-              </button>
-              
-              <button
-                type="button"
-                disabled
-                className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50 rounded-b-lg"
-              >
-                <Mic className="h-4 w-4 text-gray-400" />
-                {t.composer.attachments.audio}
-              </button>
-              
-            </div>
+        {/* Buttons Stack - Info and Attachment buttons vertically stacked */}
+        <div className="flex flex-col gap-2">
+          {/* Chat Header Toggle (Mobile only) */}
+          {isMobile && onToggleChatHeader && (
+            <button
+              onClick={onToggleChatHeader}
+              className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
+                showChatHeader 
+                  ? 'bg-blue-500 text-white hover:bg-blue-600' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Info className="h-5 w-5" />
+            </button>
           )}
+
+          {/* Attachment Menu */}
+          <div className="relative" ref={attachMenuRef}>
+            <button
+              onClick={() => setShowAttachMenu(!showAttachMenu)}
+              disabled={disabled}
+              className="flex items-center justify-center w-9 h-9 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Paperclip className="h-5 w-5" />
+            </button>
+            
+            {showAttachMenu && (
+              <div className="absolute bottom-full left-0 mb-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-10">
+                <button
+                  type="button"
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed rounded-t-lg opacity-50"
+                >
+                  <Image className="h-4 w-4 text-gray-400" />
+                  {t.composer.attachments.image}
+                </button>
+                
+                <button
+                  type="button"
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50"
+                >
+                  <FileText className="h-4 w-4 text-gray-400" />
+                  {t.composer.attachments.document}
+                </button>
+                
+                <button
+                  type="button"
+                  disabled
+                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50 rounded-b-lg"
+                >
+                  <Mic className="h-4 w-4 text-gray-400" />
+                  {t.composer.attachments.audio}
+                </button>
+                
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Message Input */}

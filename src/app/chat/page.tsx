@@ -21,7 +21,7 @@ function ChatPageContent() {
       <ChatInterface 
         initialChatId={initialChatId} 
         appointmentId={appointmentId}
-        className="flex-1 min-h-0" 
+        className="h-full" 
       />
     </div>
   );

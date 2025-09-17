@@ -37,6 +37,7 @@ export default function ChatInterface({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(initialChatId || null);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
+  const [showChatHeader, setShowChatHeader] = useState(true);
   const [isChangingChat, setIsChangingChat] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
@@ -72,6 +73,7 @@ export default function ChatInterface({
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setShowSidebar(!mobile || !selectedChatId);
+      setShowChatHeader(!mobile); // Hide chat header on mobile by default
     };
     
     checkMobile();
@@ -431,11 +433,11 @@ export default function ChatInterface({
   };
 
   return (
-    <div className={`flex bg-gray-50 ${className} h-full`}>
+    <div className={`flex bg-gray-50 ${className} h-full relative z-0`}>
       {/* Chat List Sidebar */}
       <div className={`${
         isMobile 
-          ? `fixed top-16 left-0 z-40 w-full h-[calc(100vh-4rem)] transform ${
+          ? `fixed top-16 left-0 z-30 w-full h-[calc(100vh-4rem)] transform ${
               showSidebar ? 'translate-x-0' : '-translate-x-full'
             } transition-transform duration-300 ease-in-out`
           : 'w-80 flex-shrink-0 h-full'
@@ -461,9 +463,9 @@ export default function ChatInterface({
       </div>
 
       {/* Conversation View */}
-      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} ${isMobile ? 'min-h-0' : 'h-full'} overflow-hidden`}>
+      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} overflow-hidden ${isMobile ? 'mt-[156px]' : ''}`}>
         {selectedChatId && chat ? (
-          <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex flex-col h-full">
             {/* Error display */}
             {(chatError || messageError || appointmentResponseError) && (
               <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
@@ -484,22 +486,24 @@ export default function ChatInterface({
             )}
 
             {/* Chat Header */}
-            <ChatHeader
-              chat={chats.find(c => c.id === selectedChatId) || chat}
-              language={language}
-              onBack={isMobile ? handleBackToList : undefined}
-              onShowPostDetails={() => {/* console.log('Show post details') */}}
-              onArchiveChat={() => handleArchiveChat(selectedChatId)}
-              onDeleteChat={() => handleDeleteChat(selectedChatId)}
-              onBlockUser={() => {/* console.log('Block user') */}}
-              onReportUser={() => {/* console.log('Report user') */}}
-              onSettings={() => {/* console.log('Settings') */}}
-              onScheduleAppointment={handleScheduleAppointment}
-              onViewAppointments={handleViewAppointments}
-            />
+            {(!isMobile || showChatHeader) && (
+              <ChatHeader
+                chat={chats.find(c => c.id === selectedChatId) || chat}
+                language={language}
+                onBack={isMobile ? handleBackToList : undefined}
+                onShowPostDetails={() => {/* console.log('Show post details') */}}
+                onArchiveChat={() => handleArchiveChat(selectedChatId)}
+                onDeleteChat={() => handleDeleteChat(selectedChatId)}
+                onBlockUser={() => {/* console.log('Block user') */}}
+                onReportUser={() => {/* console.log('Report user') */}}
+                onSettings={() => {/* console.log('Settings') */}}
+                onScheduleAppointment={handleScheduleAppointment}
+                onViewAppointments={handleViewAppointments}
+              />
+            )}
             
             {/* Messages - scrollable area */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-y-auto min-h-0">
               <MessageList
                 messages={messages}
                 currentUserId={user?.id || ""}
@@ -515,12 +519,15 @@ export default function ChatInterface({
             </div>
             
             {/* Message Composer - fixed at bottom */}
-            <div className="border-t border-gray-200">
+            <div className="flex-shrink-0">
               <MessageComposer
                 onSendMessage={handleSendMessage}
                 language={language}
                 disabled={false}
                 chatId={selectedChatId}
+                showChatHeader={showChatHeader}
+                onToggleChatHeader={() => setShowChatHeader(!showChatHeader)}
+                isMobile={isMobile}
               />
             </div>
           </div>
