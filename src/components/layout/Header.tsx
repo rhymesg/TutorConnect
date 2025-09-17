@@ -277,18 +277,7 @@ export default function Header({
       <div className="md:hidden border-t border-neutral-200 bg-white">
         <nav className="mx-auto max-w-7xl px-4 py-2" aria-label="Mobilnavigasjon">
           <div className="flex flex-wrap items-center gap-2">
-            {/* Create post button for mobile */}
-            {isAuthenticated && (
-              <button
-                type="button"
-                onClick={() => handleNavigation('/posts/new')}
-                className="flex items-center px-3 py-1.5 text-sm font-medium text-neutral-700 hover:text-brand-600 rounded-md transition-colors disabled:opacity-50"
-                disabled={navigating !== null}
-              >
-                <PlusCircleIcon className="h-4 w-4 mr-1" aria-hidden="true" />
-                Opprett
-              </button>
-            )}
+            {/* Create post button for mobile - REMOVED to make header single line */}
             
             {publicNavigation.map((item) => (
               <button
