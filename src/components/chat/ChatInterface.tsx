@@ -534,7 +534,7 @@ export default function ChatInterface({
         ) : (
           /* Empty state */
           <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center">
+            <div className="text-center -mt-60 md:mt-0">
               <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageCircle className="h-8 w-8 text-gray-400" />
               </div>
