@@ -149,7 +149,11 @@ export default function MessageBubble({
     } else if (diffDays === 1) {
       return `${language === 'no' ? 'I går' : 'Yesterday'} ${formatTime(date)}`;
     } else if (diffDays < 7) {
-      return `${date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { weekday: 'short' })} ${formatTime(date)}`;
+      const weekday = new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+        timeZone: 'Europe/Oslo',
+        weekday: 'short',
+      }).format(date);
+      return `${weekday} ${formatTime(date)}`;
     } else {
       return formatters.date(date);
     }

@@ -68,7 +68,8 @@ export default function AppointmentCard({
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'Europe/Oslo'
     };
     return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', options);
   };
@@ -93,7 +94,8 @@ export default function AppointmentCard({
     return date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', { 
       hour: '2-digit', 
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      timeZone: 'Europe/Oslo'
     });
   };
 

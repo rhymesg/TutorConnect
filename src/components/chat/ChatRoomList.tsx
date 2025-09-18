@@ -84,12 +84,16 @@ export default function ChatRoomList({
     } else if (diffDays === 1) {
       return language === 'no' ? 'I går' : 'Yesterday';
     } else if (diffDays < 7) {
-      return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { weekday: 'short' });
+      return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+        timeZone: 'Europe/Oslo',
+        weekday: 'short',
+      }).format(date);
     } else {
-      return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { 
-        month: 'short', 
-        day: 'numeric' 
-      });
+      return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+        timeZone: 'Europe/Oslo',
+        month: 'short',
+        day: 'numeric',
+      }).format(date);
     }
   };
 
