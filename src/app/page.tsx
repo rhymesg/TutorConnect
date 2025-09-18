@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { GraduationCap, Users } from 'lucide-react';
 import StatsSection from '@/components/home/StatsSection';
 
 export const metadata: Metadata = {
@@ -11,7 +12,7 @@ export default function HomePage() {
   return (
     <div className="flex-1">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 py-16 sm:py-24 lg:py-32">
+      <section className="relative overflow-hidden bg-gradient-to-br from-brand-500 via-brand-600 to-brand-700 py-12 sm:py-20 lg:py-24">
         <div className="absolute inset-0 bg-[url('/images/hero-pattern.svg')] opacity-10" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
@@ -30,10 +31,18 @@ export default function HomePage() {
               i hele Norge. Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-              <Link href="/posts/teachers" className="btn-primary px-6 py-3 text-base">
+              <Link
+                href="/posts/teachers"
+                className="btn-primary px-6 py-3 text-base min-w-[200px] justify-center gap-2 shadow-lg shadow-brand-500/10 hover:shadow-brand-600/20 transition-transform hover:-translate-y-0.5"
+              >
+                <GraduationCap className="h-5 w-5" />
                 Finn en lærer
               </Link>
-              <Link href="/posts/students" className="btn-secondary px-6 py-3 text-base">
+              <Link
+                href="/posts/students"
+                className="btn-secondary px-6 py-3 text-base min-w-[200px] justify-center gap-2 border border-white/30 bg-white/90 text-brand-600 backdrop-blur hover:bg-white shadow-lg shadow-brand-500/10 hover:shadow-brand-600/20 transition-transform hover:-translate-y-0.5"
+              >
+                <Users className="h-5 w-5" />
                 Finn en student
               </Link>
             </div>
