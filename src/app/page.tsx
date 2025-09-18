@@ -29,6 +29,14 @@ export default function HomePage() {
               TutorConnect kobler sammen lærere og studenter som ønsker å dele kunnskap 
               i hele Norge. Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov.
             </p>
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <Link href="/posts/teachers" className="btn-primary px-6 py-3 text-base">
+                Finn en lærer
+              </Link>
+              <Link href="/posts/students" className="btn-secondary px-6 py-3 text-base">
+                Finn en student
+              </Link>
+            </div>
           </div>
         </div>
       </section>
