@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { UserIcon } from '@heroicons/react/24/solid';
 
 interface Props {
@@ -24,44 +25,36 @@ const iconSizes = {
 };
 
 export function ProfileImage({ src, name, size = 'md', className = '' }: Props) {
+  const [hasError, setHasError] = useState(false);
+
   const initials = name
     .split(' ')
-    .map(n => n[0])
+    .filter(Boolean)
+    .map((part) => part[0])
     .join('')
     .toUpperCase()
     .slice(0, 2);
 
   const baseClasses = `${sizeClasses[size]} rounded-full flex-shrink-0 ${className}`;
+  const showFallback = !src || hasError;
 
-  if (src) {
+  if (!showFallback) {
     return (
       <img
-        src={src}
+        src={src as string}
         alt={`${name} sitt profilbilde`}
         className={`${baseClasses} object-cover`}
-        onError={(e) => {
-          // Fallback to initials if image fails to load
-          const target = e.target as HTMLImageElement;
-          target.style.display = 'none';
-          const parent = target.parentElement;
-          if (parent) {
-            parent.innerHTML = `
-              <div class="${baseClasses} bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-                <span class="text-white font-medium text-${size === 'sm' ? 'xs' : size === 'lg' || size === 'xl' ? 'lg' : 'sm'}">
-                  ${initials || <UserIcon className="${iconSizes[size]}" />}
-                </span>
-              </div>
-            `;
-          }
-        }}
+        onError={() => setHasError(true)}
       />
     );
   }
 
+  const textSize = size === 'sm' ? 'text-xs' : size === 'lg' || size === 'xl' ? 'text-lg' : 'text-sm';
+
   return (
     <div className={`${baseClasses} bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center`}>
       {initials ? (
-        <span className={`text-white font-medium ${size === 'sm' ? 'text-xs' : size === 'lg' || size === 'xl' ? 'text-lg' : 'text-sm'}`}>
+        <span className={`text-white font-medium ${textSize}`}>
           {initials}
         </span>
       ) : (
