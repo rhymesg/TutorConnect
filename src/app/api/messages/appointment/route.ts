@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { verifyJWT } from '@/lib/jwt';
 import { APIError } from '@/lib/errors';
 import type { CreateAppointmentData } from "@prisma/client";
-
+import { formatOsloDate, formatOsloTime } from '@/lib/datetime';
 
 export async function POST(request: NextRequest) {
   try {
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // Create system message about the appointment request
     const systemMessageContent = messageContent || 
-      `${participant.user.name} has requested an appointment for ${appointmentDate.toLocaleDateString('no-NO')} at ${appointmentDate.toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' })} in ${location}.`;
+      `${participant.user.name} has requested an appointment for ${formatOsloDate(appointmentDate)} at ${formatOsloTime(appointmentDate)} in ${location}.`;
 
     const message = await prisma.message.create({
       data: {

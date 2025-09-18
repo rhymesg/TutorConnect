@@ -1,4 +1,5 @@
 import { Metadata } from 'next';
+import { formatOsloDate } from '@/lib/datetime';
 
 export const metadata: Metadata = {
   title: 'Vilkår for bruk',
@@ -10,6 +11,12 @@ export const metadata: Metadata = {
 };
 
 export default function TermsPage() {
+  const lastUpdatedDisplay = formatOsloDate(new Date('2025-01-10T00:00:00Z'), 'nb-NO', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
   return (
     <div className="min-h-screen bg-neutral-50 py-16">
       <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
@@ -27,7 +34,7 @@ export default function TermsPage() {
         <div className="bg-white rounded-lg shadow-sm border border-neutral-200">
           <div className="p-8 space-y-8">
             <div className="text-sm text-neutral-500">
-              <p>Sist oppdatert: {new Date().toLocaleDateString('no-NO')}</p>
+              <p>Sist oppdatert: {lastUpdatedDisplay}</p>
             </div>
 
             <section>

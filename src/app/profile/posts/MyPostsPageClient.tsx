@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import { PostWithDetails } from '@/types/database';
 import { PostListLoading } from '@/components/posts/LoadingStates';
 import { getSubjectLabel } from '@/constants/subjects';
 import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
-import { 
+import {
   DocumentTextIcon,
   MapPinIcon,
   ClockIcon,
@@ -16,12 +16,22 @@ import {
   PlusIcon
   // EyeIcon - TODO: Re-add when view count tracking is implemented
 } from '@heroicons/react/24/outline';
+import { createOsloFormatter } from '@/lib/datetime';
 
 export default function MyPostsPageClient() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const dateFormatter = useMemo(
+    () =>
+      createOsloFormatter('nb-NO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    []
+  );
 
   useEffect(() => {
     const fetchMyPosts = async () => {
@@ -113,11 +123,7 @@ export default function MyPostsPageClient() {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('no-NO', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
-    });
+    return dateFormatter.format(date);
   };
 
   const getPostTypeLabel = (type: string) => {

@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Check, CheckCheck, Clock, AlertCircle, RotateCcw, Wifi, WifiOff } from 'lucide-react';
 import { MessageStatus as MessageStatusType } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
+import { createOsloFormatter } from '@/lib/datetime';
 
 interface MessageStatusProps {
   status: MessageStatusType['status'];
@@ -30,6 +31,28 @@ export default function MessageStatus({
 }: MessageStatusProps) {
   const t = chatTranslations[language];
   const [isAnimating, setIsAnimating] = useState(isRealTimeUpdate);
+  const locale = language === 'no' ? 'nb-NO' : 'en-US';
+  const timeFormatter = useMemo(
+    () =>
+      createOsloFormatter(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: language === 'en',
+      }),
+    [language, locale]
+  );
+  const tooltipFormatter = useMemo(
+    () =>
+      createOsloFormatter(locale, {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
+    [locale]
+  );
   
   // Animation effect for real-time updates
   useEffect(() => {
@@ -143,18 +166,14 @@ export default function MessageStatus({
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: language === 'en'
-    });
+    return timeFormatter.format(date);
   };
 
   return (
     <div className={`flex items-center gap-1.5 ${getStatusColor()} transition-all duration-300`}>
       <span 
         className={`${size === 'sm' ? 'text-xs' : 'text-sm'} font-mono tabular-nums`}
-        title={timestamp.toLocaleString(language === 'no' ? 'nb-NO' : 'en-US')}
+        title={tooltipFormatter.format(timestamp)}
       >
         {formatTime(timestamp)}
       </span>
@@ -205,32 +224,47 @@ export function MessageTimestamp({
   isOwn?: boolean;
   onRetry?: () => void;
 }) {
+  const locale = language === 'no' ? 'nb-NO' : 'en-US';
+  const timeFormatter = useMemo(
+    () =>
+      createOsloFormatter(locale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: language === 'en',
+      }),
+    [language, locale]
+  );
+  const weekdayFormatter = useMemo(
+    () =>
+      createOsloFormatter(locale, {
+        weekday: 'short',
+      }),
+    [locale]
+  );
+  const dateFormatter = useMemo(
+    () =>
+      createOsloFormatter(locale, {
+        month: 'short',
+        day: 'numeric',
+      }),
+    [locale]
+  );
+
   const formatDateTime = (date: Date) => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
-    const timeStr = date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: language === 'en',
-      timeZone: 'Europe/Oslo'
-    });
+    const timeStr = timeFormatter.format(date);
 
     if (diffDays === 0) {
       return timeStr;
     } else if (diffDays === 1) {
       return `${language === 'no' ? 'I går' : 'Yesterday'} ${timeStr}`;
     } else if (diffDays < 7) {
-      const dayName = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { weekday: 'short', timeZone: 'Europe/Oslo' });
-      return `${dayName} ${timeStr}`;
+      return `${weekdayFormatter.format(date)} ${timeStr}`;
     } else {
-      const dateStr = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', {
-        month: 'short',
-        day: 'numeric',
-        timeZone: 'Europe/Oslo'
-      });
-      return `${dateStr} ${timeStr}`;
+      return `${dateFormatter.format(date)} ${timeStr}`;
     }
   };
 
