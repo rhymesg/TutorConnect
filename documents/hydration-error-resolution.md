@@ -1,156 +1,58 @@
 # Hydration Error Resolution Guide
 
 ## Overview
-This document outlines the hydration errors encountered in the TutorConnect project and the solution implemented to resolve them.
+This document captures the hydration issues we encountered in TutorConnect and the modern fixes now in place. The previous workaround relied on replacing `Link` components with buttons. We have since reverted that change in favour of keeping declarative navigation and addressing the true sources of mismatch.
 
 ## The Problem
 
 ### What is a Hydration Error?
-Hydration errors occur in Next.js when the server-rendered HTML doesn't match what React tries to render on the client side. This mismatch causes React to throw errors and can lead to unpredictable behavior.
+Next.js hydrates the server-rendered HTML on the client. If the markup generated during SSR differs from the markup React produces on the client, hydration fails with messages such as “The object can not be found here.”
 
 ### Symptoms Observed
-1. **Error Message**: "The object cannot be found here" with `insertBefore@[native code]` in the stack trace
-2. **Visual Issues**: 
-   - Authentication state flickering (user appears logged out momentarily)
-   - Navigation buttons showing incorrect states
-   - Page content jumping or re-rendering unexpectedly
-3. **Occurrence**: Primarily when navigating between pages, especially to the chat page
+- Error message: **“The object can not be found here.”**
+- Chat view flashing from the empty state (“Velg en samtale”) to the actual conversation.
+- Date/time labels showing different values between SSR and CSR, especially around midnight or on mobile.
+- Pages with their own scroll containers fighting with the browser scroll, occasionally triggering hydration warnings.
 
-### Root Cause
-The hydration errors were caused by differences in how Next.js `Link` components rendered on the server versus the client, particularly when:
-- Authentication state was being checked
-- Dynamic content was rendered based on client-side state
-- Navigation components were rendered differently based on route
+### Root Causes
+1. **Locale-sensitive formatting during render** – calls to `toLocaleDateString` / `toLocaleTimeString` ran during SSR and CSR, each with the machine’s timezone. This caused different strings to be rendered.
+2. **Client-only data rendering synchronously** – chat content attempted to render before the client finished loading chat data, making the initial DOM inconsistent with the server’s placeholder.
+3. **Layout wrappers with fixed heights** – multiple nested scroll containers altered layout between server and client when safe-area padding kicked in on mobile.
 
 ## The Solution
 
-### Approach: Replace Link Components with Button Navigation
+### 1. Standardise Date/Time Formatting
+- Introduced `src/lib/datetime.ts` with helpers like `createOsloFormatter`, `formatOsloDate`, and `formatOsloTime`.
+- All user-facing timestamps (chat lists, appointments, emails, posts, etc.) now use a deterministic Oslo timezone formatter so SSR and CSR output identical strings.
 
-Instead of using Next.js `Link` components, we replaced them with regular HTML buttons that handle navigation programmatically. This ensures consistent rendering between server and client.
+### 2. Defer Client-only UI Until Data Is Ready
+- Added `ChatLoadingSkeleton` and a client-mount flag in `ChatInterface` so the chat detail pane only renders after the chat data exists.
+- `useChat` now loads the target chat first, then refreshes the list, reducing flicker and avoiding extra renders.
 
-### Implementation Details
+### 3. Simplify Layout Scroll Behaviour
+- `MainLayout` shifted to a single-column flex layout. Only the main content scrolls, and it honours `env(safe-area-inset-bottom)`.
+- Removed hardcoded body heights. Mobile browsers now manage one scroll context, preventing mismatches and ensuring safe-area padding is applied consistently.
 
-1. **Navigation Handler Pattern**
-```tsx
-// Safe navigation that preserves auth state
-const handleNavigation = (href: string) => {
-  if (!isMounted || navigating) return;
-  
-  // If already on the same page, don't navigate
-  if (pathname === href) return;
-  
-  // Prevent double clicks
-  setNavigating(href);
-  
-  // Use Next.js router for client-side navigation
-  setTimeout(() => {
-    router.push(href);
-  }, 50); // Small delay to ensure state update
-  
-  // Reset navigating state
-  setTimeout(() => setNavigating(null), 300);
-};
-```
+### 4. Keep Declarative Navigation
+- Reinstated Next.js `Link` usage across header, sidebar, breadcrumbs, etc. With the above fixes in place, hydration remains stable while we retain prefetching and SEO benefits.
 
-2. **Button Implementation**
-```tsx
-// Before: Using Link component
-<Link href="/chat" className="...">
-  Chat
-</Link>
-
-// After: Using button with navigation handler
-<button
-  type="button"
-  onClick={() => handleNavigation('/chat')}
-  disabled={navigating !== null}
-  className={navigating === '/chat' ? 'opacity-50' : ''}
->
-  Chat
-</button>
-```
-
-3. **Mount State Management**
-```tsx
-const [isMounted, setIsMounted] = useState(false);
-
-useEffect(() => {
-  setIsMounted(true);
-}, []);
-
-// Render static placeholder until mounted
-if (!isMounted) {
-  return <StaticPlaceholder />;
-}
-```
-
-### Components Modified
-
-1. **Header.tsx**
-   - Replaced all navigation links with buttons
-   - Added mount state management
-   - Implemented navigation state tracking
-
-2. **MobileNavigation.tsx**
-   - Converted bottom navigation links to buttons
-   - Added loading states for better UX
-   - Implemented double-click prevention
-
-3. **Sidebar.tsx**
-   - Replaced sidebar navigation links
-   - Special handling for mobile sidebar with Dialog component
-   - Used `window.location.href` for sidebar to avoid conflicts with transitions
-
-4. **Breadcrumbs.tsx**
-   - Converted breadcrumb links to buttons
-   - Added static placeholder for pre-mount rendering
-
-### Special Considerations
-
-1. **Sidebar Navigation**
-   - Due to Dialog/Transition components, used `window.location.href` instead of `router.push()`
-   - Added delay to wait for sidebar close animation
-
-2. **Static Placeholders**
-   - Render non-interactive placeholders before mount
-   - Ensures server and client render the same initial content
-
-3. **Navigation State**
-   - Track which link is being navigated to
-   - Disable all buttons during navigation
-   - Show loading state on active navigation
-
-## Benefits of This Approach
-
-1. **No Hydration Errors**: Server and client render identical HTML
-2. **Preserved Auth State**: No flickering or state loss during navigation
-3. **Better UX**: Loading states and double-click prevention
-4. **Consistent Behavior**: All navigation works the same way
-
-## Trade-offs
-
-1. **Slightly More Code**: Each navigation point requires more setup
-2. **Manual State Management**: Need to track navigation state manually
-3. **Loss of Link Prefetching**: Next.js Link component's automatic prefetching is lost
+## Benefits
+1. **Stable SSR/CSR output** – deterministic timezone formatting removes string mismatches.
+2. **Smooth chat transitions** – skeleton placeholders ensure the DOM structure remains constant while data loads.
+3. **Consistent scrolling** – a single scroll container makes pages behave the same during SSR and CSR, especially on mobile.
+4. **Preserved DX/UX** – we keep `Link` components and prefetching without reintroducing hydration errors.
 
 ## Testing Checklist
-
-- [ ] Navigate between all pages without hydration errors
-- [ ] Check authentication state remains stable during navigation
-- [ ] Verify loading states appear during navigation
-- [ ] Test double-click prevention works
-- [ ] Ensure mobile navigation works smoothly
-- [ ] Verify sidebar navigation closes before navigating
+- [ ] Navigate to `/chat`, select multiple conversations, verify no hydration warnings.
+- [ ] Inspect timestamps (chat list, appointments, profile posts) to confirm consistent formatting across refreshes.
+- [ ] Scroll long pages on mobile Safari/Chrome to ensure only one scroll context exists, and content is not clipped by safe areas.
+- [ ] Confirm navigation via header, sidebar, and breadcrumbs renders without flicker.
 
 ## Future Considerations
-
-If Next.js provides better hydration error handling in future versions, consider:
-1. Migrating back to Link components with proper hydration boundaries
-2. Using React 18's Suspense boundaries for better hydration control
-3. Implementing progressive enhancement strategies
+1. Adopt Suspense boundaries around large client-only regions once React Server Components usage increases.
+2. Monitor for any remaining locale-sensitive code paths; add ESLint rules or codemods to flag raw `toLocale*` calls.
+3. If hydration warnings reappear, capture stack traces and compare SSR/CSR snapshots to identify new mismatches quickly.
 
 ## References
-
 - [Next.js Hydration Documentation](https://nextjs.org/docs/messages/react-hydration-error)
 - [React Hydration Mismatch](https://react.dev/reference/react-dom/client/hydrateRoot#hydrating-server-rendered-html)
-- Original error discussion: TutorConnect Issue #hydration-fix
