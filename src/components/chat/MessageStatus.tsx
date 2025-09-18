@@ -213,7 +213,8 @@ export function MessageTimestamp({
     const timeStr = date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: language === 'en'
+      hour12: language === 'en',
+      timeZone: 'Europe/Oslo'
     });
 
     if (diffDays === 0) {
@@ -221,12 +222,13 @@ export function MessageTimestamp({
     } else if (diffDays === 1) {
       return `${language === 'no' ? 'I går' : 'Yesterday'} ${timeStr}`;
     } else if (diffDays < 7) {
-      const dayName = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { weekday: 'short' });
+      const dayName = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', { weekday: 'short', timeZone: 'Europe/Oslo' });
       return `${dayName} ${timeStr}`;
     } else {
       const dateStr = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', {
         month: 'short',
-        day: 'numeric'
+        day: 'numeric',
+        timeZone: 'Europe/Oslo'
       });
       return `${dateStr} ${timeStr}`;
     }

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Message, TypingIndicator } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
@@ -36,6 +36,29 @@ export default function MessageList({
   className = '',
 }: MessageListProps) {
   const t = chatTranslations[language];
+  const locale = language === 'no' ? 'nb-NO' : 'en-US';
+  const timeZone = 'Europe/Oslo';
+  const dateKeyFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }),
+    []
+  );
+  const longDateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        timeZone,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      }),
+    [locale]
+  );
   
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
@@ -83,7 +106,7 @@ export default function MessageList({
   // Message grouping logic
   const getMessageGroups = () => {
     const groups: Array<{
-      date: string;
+      dateKey: string;
       messages: Array<Message & {
         showAvatar: boolean;
         showTimestamp: boolean;
@@ -94,12 +117,12 @@ export default function MessageList({
     
     messages.forEach((message, index) => {
       const messageDate = new Date(message.sentAt);
-      const dateString = messageDate.toDateString();
+      const dateKey = dateKeyFormatter.format(messageDate);
       
       // Start new group if date changed
-      if (!currentGroup || currentGroup.date !== dateString) {
+      if (!currentGroup || currentGroup.dateKey !== dateKey) {
         currentGroup = {
-          date: dateString,
+          dateKey,
           messages: [],
         };
         groups.push(currentGroup);
@@ -133,23 +156,18 @@ export default function MessageList({
   };
 
   // Format date for group headers
-  const formatGroupDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    
-    if (date.toDateString() === today.toDateString()) {
+  const formatGroupDate = (dateKey: string) => {
+    const [year, month, day] = dateKey.split('-').map(Number);
+    const displayDate = new Date(Date.UTC(year, month - 1, day));
+    const todayKey = dateKeyFormatter.format(new Date());
+    const yesterdayKey = dateKeyFormatter.format(new Date(Date.now() - 24 * 60 * 60 * 1000));
+
+    if (dateKey === todayKey) {
       return language === 'no' ? 'I dag' : 'Today';
-    } else if (date.toDateString() === yesterday.toDateString()) {
+    } else if (dateKey === yesterdayKey) {
       return language === 'no' ? 'I går' : 'Yesterday';
     } else {
-      return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-      });
+      return longDateFormatter.format(displayDate);
     }
   };
 
@@ -234,11 +252,11 @@ export default function MessageList({
 
         {/* Message groups */}
         {messageGroups.map((group, groupIndex) => (
-          <div key={group.date} className="space-y-2">
+          <div key={group.dateKey} className="space-y-2">
             {/* Date separator */}
             <div className="flex items-center justify-center py-4">
               <div className="bg-gray-100 text-gray-600 text-xs px-3 py-1 rounded-full">
-                {formatGroupDate(group.date)}
+                {formatGroupDate(group.dateKey)}
               </div>
             </div>
             

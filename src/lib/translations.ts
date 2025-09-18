@@ -511,36 +511,41 @@ export function useLanguage(): Language {
   return 'no';
 }
 
+const DEFAULT_TIME_ZONE = 'Europe/Oslo';
+
 // Date/time formatters for Norwegian locale
 export const formatters = {
   date: (date: Date): string => {
     const language = useLanguage();
-    return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', {
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+      timeZone: DEFAULT_TIME_ZONE,
       year: 'numeric',
       month: 'short',
-      day: 'numeric'
-    });
+      day: 'numeric',
+    }).format(date);
   },
   
   time: (date: Date): string => {
     const language = useLanguage();
-    return date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', {
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+      timeZone: DEFAULT_TIME_ZONE,
       hour: '2-digit',
       minute: '2-digit',
-      hour12: language === 'en'
-    });
+      hour12: language === 'en',
+    }).format(date);
   },
   
   dateTime: (date: Date): string => {
     const language = useLanguage();
-    return date.toLocaleString(language === 'no' ? 'nb-NO' : 'en-US', {
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
+      timeZone: DEFAULT_TIME_ZONE,
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: language === 'en'
-    });
+      hour12: language === 'en',
+    }).format(date);
   },
 
   relativeTime: (date: Date): string => {
