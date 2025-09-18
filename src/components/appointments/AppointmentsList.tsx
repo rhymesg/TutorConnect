@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, User, MessageCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -48,6 +48,7 @@ export default function AppointmentsList({
   const router = useRouter();
   const language = useLanguage();
   const { user, accessToken } = useAuth();
+  const locale = language === 'no' ? 'nb-NO' : 'en-US';
   
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -165,30 +166,55 @@ export default function AppointmentsList({
     }
   };
 
-  const formatDateTime = (dateTime: string) => {
-    const date = new Date(dateTime);
-    const today = new Date();
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateKeyFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/Oslo',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+      }),
+    []
+  );
 
-    const timeString = date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
+  const timeFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        timeZone: 'Europe/Oslo',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      }),
+    [locale]
+  );
 
-    if (date.toDateString() === today.toDateString()) {
-      return `${language === 'no' ? 'I dag' : 'Today'} ${timeString}`;
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return `${language === 'no' ? 'I morgen' : 'Tomorrow'} ${timeString}`;
-    } else {
-      const dateString = date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', {
+  const dateFormatter = useMemo(
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        timeZone: 'Europe/Oslo',
         weekday: 'short',
         month: 'short',
-        day: 'numeric'
-      });
-      return `${dateString} ${timeString}`;
+        day: 'numeric',
+      }),
+    [locale]
+  );
+
+  const formatDateTime = (dateTime: string) => {
+    const date = new Date(dateTime);
+    const todayKey = dateKeyFormatter.format(new Date());
+    const tomorrowKey = dateKeyFormatter.format(new Date(Date.now() + 24 * 60 * 60 * 1000));
+    const targetKey = dateKeyFormatter.format(date);
+    const timeString = timeFormatter.format(date);
+
+    if (targetKey === todayKey) {
+      return `${language === 'no' ? 'I dag' : 'Today'} ${timeString}`;
     }
+
+    if (targetKey === tomorrowKey) {
+      return `${language === 'no' ? 'I morgen' : 'Tomorrow'} ${timeString}`;
+    }
+
+    return `${dateFormatter.format(date)} ${timeString}`;
   };
 
   const handleBackClick = () => {
