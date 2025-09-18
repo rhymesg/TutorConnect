@@ -248,7 +248,7 @@ jobs:
             
             // Look for "Se timer" button in chat header
             // Use first() to handle potential duplicate elements
-            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]').first();
+            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]:visible').first();
             await seTimerButton.waitFor({ state: 'visible', timeout: 10000 });
             console.log('✅ Found "Se timer" button in chat header');
             
@@ -317,7 +317,7 @@ jobs:
             
             // Look for "Se annonse" button in chat header
             // Use first() to handle potential duplicate elements
-            const seAnnonseButton = page.locator('button:has-text("Se annonse")').first();
+            const seAnnonseButton = page.locator('button:has-text("Se annonse"):visible').first();
             await seAnnonseButton.waitFor({ state: 'visible', timeout: 10000 });
             console.log('✅ Found "Se annonse" button in chat header');
             
