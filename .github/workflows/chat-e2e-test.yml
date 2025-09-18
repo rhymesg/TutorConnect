@@ -234,8 +234,21 @@ jobs:
             const originalChatUrl = page.url();
             console.log(`🔗 Original chat URL: ${originalChatUrl}`);
             
+            // Check if we're on mobile viewport (GitHub Actions uses mobile viewport)
+            const isMobile = await page.evaluate(() => window.innerWidth < 768);
+            
+            if (isMobile) {
+              // On mobile, first click Info button to show chat header
+              console.log('📱 Mobile view detected - clicking Info button to show chat header');
+              const infoButton = page.locator('button:has(svg.lucide-info)');
+              await infoButton.waitFor({ state: 'visible', timeout: 10000 });
+              await infoButton.click();
+              await page.waitForTimeout(1000);
+            }
+            
             // Look for "Se timer" button in chat header
-            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]');
+            // Use first() to handle potential duplicate elements
+            const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]').first();
             await seTimerButton.waitFor({ state: 'visible', timeout: 10000 });
             console.log('✅ Found "Se timer" button in chat header');
             
@@ -290,8 +303,21 @@ jobs:
             const originalChatUrl = page.url();
             console.log(`🔗 Original chat URL: ${originalChatUrl}`);
             
+            // Check if we're on mobile viewport (GitHub Actions uses mobile viewport)
+            const isMobile = await page.evaluate(() => window.innerWidth < 768);
+            
+            if (isMobile) {
+              // On mobile, first click Info button to show chat header
+              console.log('📱 Mobile view detected - clicking Info button to show chat header');
+              const infoButton = page.locator('button:has(svg.lucide-info)');
+              await infoButton.waitFor({ state: 'visible', timeout: 10000 });
+              await infoButton.click();
+              await page.waitForTimeout(1000);
+            }
+            
             // Look for "Se annonse" button in chat header
-            const seAnnonseButton = page.locator('button:has-text("Se annonse")');
+            // Use first() to handle potential duplicate elements
+            const seAnnonseButton = page.locator('button:has-text("Se annonse")').first();
             await seAnnonseButton.waitFor({ state: 'visible', timeout: 10000 });
             console.log('✅ Found "Se annonse" button in chat header');
             
