@@ -94,7 +94,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
             ${showMobileNav ? 'pb-15 md:pb-0' : ''}
             pb-[env(safe-area-inset-bottom)]
           `}
-          style={isChatPage ? undefined : { WebkitOverflowScrolling: 'touch' }}
+          style={isChatPage 
+            ? undefined 
+            : { WebkitOverflowScrolling: 'touch', scrollBehavior: 'smooth' }}
           role="main"
           aria-label="Hovedinnhold"
         >
