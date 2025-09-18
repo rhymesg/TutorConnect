@@ -127,11 +127,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body
-        className="min-h-screen bg-neutral-50 font-sans antialiased"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)', minHeight: '100vh' }}
-        suppressHydrationWarning
-      >
+      <body className="bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
         <ErrorBoundary>
           <AuthProvider>
             <MainLayout>

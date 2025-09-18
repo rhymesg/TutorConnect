@@ -56,7 +56,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
 
   return (
-    <div className="min-h-screen bg-neutral-50">
+    <div className="min-h-screen bg-neutral-50 flex flex-col">
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -74,7 +74,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         />
       )}
 
-      <div className={`flex ${showHeader ? (isChatPage ? 'h-[calc(100vh-4rem)] pt-0' : 'h-[calc(100vh-4rem)]') : 'h-screen'} ${isChatPage ? 'overflow-hidden' : ''}`}>
+      <div className={`flex flex-1 min-h-0 ${isChatPage ? 'overflow-hidden' : ''}`}>
         {/* Desktop Sidebar */}
         {shouldRenderSidebar && (
           <Sidebar 
@@ -89,19 +89,20 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <main 
           id="main-content"
           className={`
-            flex-1 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
+            flex-1 min-h-0 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
             ${showDesktopSidebar ? 'lg:ml-64' : ''}
             ${showMobileNav ? 'pb-15 md:pb-0' : ''}
+            pb-[env(safe-area-inset-bottom)]
           `}
+          style={isChatPage ? undefined : { WebkitOverflowScrolling: 'touch' }}
           role="main"
           aria-label="Hovedinnhold"
         >
-          <div className={isChatPage ? 'h-full' : 'min-h-full'}>
+          <div className={isChatPage ? 'flex h-full flex-col' : 'min-h-full'}>
             {children}
+            {/* Footer - show on all public pages */}
+            {isPublicPage && <Footer />}
           </div>
-          
-          {/* Footer - show on all public pages */}
-          {isPublicPage && <Footer />}
         </main>
       </div>
 
