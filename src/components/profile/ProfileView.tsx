@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { User } from '@prisma/client';
 import { 
   UserIcon, 
@@ -40,6 +41,14 @@ interface Props {
 }
 
 export function ProfileView({ profile, onEditClick, isPublicView = false }: Props) {
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const isOnline = hasMounted && isUserOnline(profile.lastActive);
+
   const formatAge = (birthYear: number | null) => {
     if (!birthYear) return null;
     const currentYear = new Date().getFullYear();
@@ -84,12 +93,9 @@ export function ProfileView({ profile, onEditClick, isPublicView = false }: Prop
               )}
             </div>
             <div className="flex items-center mt-2">
-              <div className="flex items-center text-sm text-green-600">
-                <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
-                {(() => {
-                  console.log('ProfileView - lastActive:', profile.lastActive, 'isOnline:', isUserOnline(profile.lastActive));
-                  return isUserOnline(profile.lastActive) ? 'Online' : 'Offline';
-                })()}
+              <div className={`flex items-center text-sm ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                <div className={`mr-2 h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                {isOnline ? 'Online' : 'Offline'}
               </div>
               {profile.emailVerified && (
                 <div className="flex items-center text-sm text-blue-600 ml-4">

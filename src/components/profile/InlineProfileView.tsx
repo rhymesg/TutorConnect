@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { User, NorwegianRegion, Gender } from '@prisma/client';
 import { 
   UserIcon, 
@@ -66,6 +66,13 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   const [saving, setSaving] = useState<string | null>(null);
   const [tempValues, setTempValues] = useState<Record<string, any>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [hasMounted, setHasMounted] = useState(false);
+
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+
+  const isOnline = hasMounted && isUserOnline(profile.lastActive);
 
   const formatAge = (birthYear: number | null) => {
     if (!birthYear) return null;
@@ -483,12 +490,9 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             <div className="flex items-center mt-2">
               <div className="flex items-center space-x-3">
                 {/* Show activity status with appropriate colors */}
-                <div className={`flex items-center text-sm ${(() => {
-                  console.log('InlineProfileView - lastActive:', profile.lastActive, 'isOnline:', isUserOnline(profile.lastActive));
-                  return isUserOnline(profile.lastActive) ? 'text-green-600' : 'text-gray-500';
-                })()}`}>
-                  <div className={`w-2 h-2 rounded-full mr-2 ${isUserOnline(profile.lastActive) ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  {isUserOnline(profile.lastActive) ? 'Online' : 'Offline'}
+                <div className={`flex items-center text-sm ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
+                  <div className={`mr-2 h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                  {isOnline ? 'Online' : 'Offline'}
                 </div>
                 
                 {/* Badges */}
