@@ -2,19 +2,7 @@
 
 // import { useState } from 'react'; // TODO: Re-add when menu functionality is implemented
 import { useRouter } from 'next/navigation';
-import { 
-  Phone, 
-  Video, 
-  // MoreVertical, // TODO: Re-add when menu functionality is implemented
-  User, 
-  // Archive, // TODO: Re-add when menu functionality is implemented
-  // Trash2, // TODO: Re-add when menu functionality is implemented
-  // Shield, // TODO: Re-add when menu functionality is implemented
-  // Flag, // TODO: Re-add when menu functionality is implemented
-  // Settings, // TODO: Re-add when menu functionality is implemented
-  ChevronLeft
-  // Calendar // TODO: Re-add when calendar functionality is implemented (now using text button)
-} from 'lucide-react';
+import { User } from 'lucide-react';
 import { ChatListItem } from '@/types/chat';
 import { Language, chat as chatTranslations } from '@/lib/translations';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
@@ -22,7 +10,6 @@ import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 interface ChatHeaderProps {
   chat: ChatListItem;
   language: Language;
-  onBack?: () => void; // Mobile back navigation
   onCall?: () => void;
   onVideoCall?: () => void;
   onShowPostDetails?: () => void;
@@ -38,7 +25,6 @@ interface ChatHeaderProps {
 export default function ChatHeader({
   chat,
   language,
-  onBack,
   onCall,
   onVideoCall,
   onShowPostDetails,
@@ -67,32 +53,31 @@ export default function ChatHeader({
   const { teacherBadge, studentBadge } = getOtherUserBadges();
 
   return (
-    <>
-      <div className="p-4 bg-white border-b border-gray-200 relative z-0 flex-shrink-0">
-        <div className="flex flex-col gap-2 md:gap-0 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            {/* Avatar */}
-            <div className="relative flex-shrink-0">
-              {chat.displayImage ? (
-                <img
-                  src={chat.displayImage}
-                  alt={chat.displayName}
-                  className="w-10 h-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="h-6 w-6 text-gray-400" />
-                </div>
-              )}
-              {chat.isOnline && (
-                <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-              )}
-            </div>
+    <div className="px-4 py-3" role="banner" data-testid="chat-header">
+      <div className="flex flex-col gap-2 md:gap-0 md:flex-row md:items-center md:justify-between">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
+          {/* Avatar */}
+          <div className="relative flex-shrink-0">
+            {chat.displayImage ? (
+              <img
+                src={chat.displayImage}
+                alt={chat.displayName}
+                className="w-10 h-10 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <User className="h-6 w-6 text-gray-400" />
+              </div>
+            )}
+            {chat.isOnline && (
+              <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
+            )}
+          </div>
 
-            {/* User info */}
-            <div className="min-w-0 flex-1">
-              {/* First row: User info */}
-              <div className="flex items-center gap-2 min-w-0">
+          {/* User info */}
+          <div className="min-w-0 flex-1">
+            {/* First row: User info */}
+            <div className="flex items-center gap-2 min-w-0">
                 {/* Show displayName (other participant's name) - same as ChatRoomList */}
                 {(chat.otherParticipant?.user?.id || chat.relatedPost?.user?.id) ? (
                   <button
@@ -132,8 +117,8 @@ export default function ChatHeader({
                 </div>
               </div>
               
-              {/* Second row: Action buttons (mobile only) */}
-              <div className="md:hidden flex items-center gap-2 mt-2 flex-wrap">
+            {/* Second row: Action buttons (mobile only) */}
+            <div className="md:hidden flex items-center gap-x-4 gap-y-2 mt-2 flex-wrap">
                 {chat.relatedPost?.id && (
                   <button
                     onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
@@ -157,19 +142,19 @@ export default function ChatHeader({
                   </svg>
                 </button>
                 
-                <button
-                  onClick={onScheduleAppointment}
-                  className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors"
-                  title="Avtale undervisningstime"
-                >
-                  Avtale time
-                </button>
-              </div>
+              <button
+                onClick={onScheduleAppointment}
+                className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors ml-auto"
+                title="Avtale undervisningstime"
+              >
+                Avtale time
+              </button>
             </div>
           </div>
-          
-          {/* Desktop action buttons */}
-          <div className="hidden md:flex items-center gap-4">
+        </div>
+
+        {/* Desktop action buttons */}
+        <div className="hidden md:flex items-center gap-4">
             {chat.relatedPost?.id && (
               <button
                 onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
@@ -193,16 +178,15 @@ export default function ChatHeader({
               </svg>
             </button>
             
-            <button
-              onClick={onScheduleAppointment}
-              className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors"
-              title="Avtale undervisningstime"
-            >
-              Avtale time
-            </button>
-          </div>
+          <button
+            onClick={onScheduleAppointment}
+            className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors ml-auto"
+            title="Avtale undervisningstime"
+          >
+            Avtale time
+          </button>
         </div>
       </div>
-    </>
+    </div>
   );
 }

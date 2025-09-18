@@ -178,20 +178,12 @@ jobs:
             console.log('⏰ Step 6: Looking for "Se timer" button...');
             await page.waitForTimeout(2000);
             
-            // Check if we're on mobile viewport
-            const isMobile = await page.evaluate(() => window.innerWidth < 768);
-            
-            if (isMobile) {
-              // On mobile, first click Info button to show chat header
-              console.log('📱 Mobile view detected - clicking Info button to show chat header');
-              const infoButton = page.locator('button:has(svg.lucide-info)');
-              await infoButton.waitFor({ state: 'visible', timeout: 10000 });
-              await infoButton.click();
-              await page.waitForTimeout(1000);
-            }
-            
+            // Ensure chat header is visible (sticky header introduced)
+            const chatHeader = page.locator('[data-testid="chat-header"]');
+            await expect(chatHeader).toBeVisible({ timeout: 15000 });
+            await chatHeader.scrollIntoViewIfNeeded();
+
             // Look specifically for the "Se timer" button in the chat header
-            // Use first() to handle potential duplicate elements
             const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]:visible').first();
             
             // Wait for the visible button to be available (handles hidden mobile variant)
