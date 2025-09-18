@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, MessageCircle } from 'lucide-react';
 import { useLanguage, chat as chatTranslations } from '@/lib/translations';
@@ -11,9 +11,9 @@ import ChatRoomList from './ChatRoomList';
 import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
 import AppointmentResponseModal from './AppointmentResponseModal';
+import ChatLoadingSkeleton from './ChatLoadingSkeleton';
 
 interface ChatInterfaceProps {
   initialChatId?: string;
@@ -67,6 +67,8 @@ export default function ChatInterface({
     enablePolling: true, // Enable polling for updates
   });
 
+  const isChatLoading = !!selectedChatId && (isChangingChat || isLoadingChat || isLoadingMessages || !chat);
+
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -82,13 +84,16 @@ export default function ChatInterface({
   }, [selectedChatId]);
 
   // Initialize with specific chat if provided, or reset if no chat ID
+  const prevInitialChatIdRef = useRef(initialChatId);
+
   useEffect(() => {
     if (initialChatId && initialChatId !== selectedChatId) {
+      setIsChangingChat(true);
       setSelectedChatId(initialChatId);
-    } else if (!initialChatId && selectedChatId) {
-      // Reset to "Velg en samtale" state when no chatId in URL
+    } else if (!initialChatId && prevInitialChatIdRef.current) {
       setSelectedChatId(null);
     }
+    prevInitialChatIdRef.current = initialChatId;
   }, [initialChatId, selectedChatId]);
 
   // Auto-open appointment modal if appointmentId is provided
@@ -106,17 +111,28 @@ export default function ChatInterface({
 
   // Reset isChangingChat when chat changes and loads
   useEffect(() => {
-    if (isChangingChat && chat && chat.id === selectedChatId) {
-      // Give a small delay to ensure the UI updates smoothly
+    if (
+      isChangingChat &&
+      chat &&
+      chat.id === selectedChatId &&
+      !isLoadingChat &&
+      !isLoadingMessages
+    ) {
       const timer = setTimeout(() => {
         setIsChangingChat(false);
-      }, 300);
+      }, 200);
       return () => clearTimeout(timer);
     }
-  }, [isChangingChat, chat, selectedChatId]);
+  }, [isChangingChat, chat, selectedChatId, isLoadingChat, isLoadingMessages]);
+
+  useEffect(() => {
+    if (chatError || messageError) {
+      setIsChangingChat(false);
+    }
+  }, [chatError, messageError]);
 
   // Event handlers
-  const handleSelectChat = async (chatId: string) => {
+  const handleSelectChat = (chatId: string) => {
     if (chatId !== selectedChatId) {
       setIsChangingChat(true);
       setSelectedChatId(chatId);
@@ -124,15 +140,6 @@ export default function ChatInterface({
       
       // Update URL without page refresh
       router.replace(`/chat?id=${chatId}`);
-      
-      // Immediately start loading the chat
-      try {
-        await loadChat(chatId);
-      } catch (error) {
-        // console.error('Error loading chat:', error);
-        // Reset changing state on error
-        setIsChangingChat(false);
-      }
     }
     
     // Hide sidebar on mobile
@@ -189,7 +196,12 @@ export default function ChatInterface({
 
   const handleRetry = async () => {
     if (selectedChatId) {
-      await loadChat(selectedChatId);
+      setIsChangingChat(true);
+      try {
+        await loadChat(selectedChatId);
+      } finally {
+        setIsChangingChat(false);
+      }
     } else {
       await loadChats();
     }
@@ -198,6 +210,31 @@ export default function ChatInterface({
   const handleExploreContacts = () => {
     window.location.href = '/posts';
   };
+
+  const renderConversationPlaceholder = () => (
+    <div className="flex-1 flex items-center justify-center bg-gray-50">
+      <div className="text-center -mt-60 md:mt-0">
+        <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+          <MessageCircle className="h-8 w-8 text-gray-400" />
+        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {language === 'no' ? 'Velg en samtale' : 'Select a conversation'}
+        </h3>
+        <p className="text-gray-500 max-w-sm mx-auto">
+          {language === 'no' 
+            ? 'Velg en samtale fra listen for å begynne å chatte, eller utforsk innlegg for å finne nye lærere og studenter.'
+            : 'Choose a conversation from the list to start chatting, or explore posts to find new teachers and students.'
+          }
+        </p>
+        <button 
+          onClick={handleExploreContacts}
+          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        >
+          {language === 'no' ? 'Utforsk innlegg' : 'Explore Posts'}
+        </button>
+      </div>
+    </div>
+  );
 
   const handleMessageAction = (action: string, messageId: string) => {
     // console.log('Message action:', action, messageId);
@@ -464,8 +501,11 @@ export default function ChatInterface({
 
       {/* Conversation View */}
       <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} overflow-hidden ${isMobile ? 'mt-[156px]' : ''}`}>
-        {selectedChatId && chat ? (
-          <div className="flex flex-col h-full">
+        {selectedChatId ? (
+          isChatLoading ? (
+            <ChatLoadingSkeleton />
+          ) : chat ? (
+            <div className="flex flex-col h-full">
             {/* Error display */}
             {(chatError || messageError || appointmentResponseError) && (
               <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
@@ -531,30 +571,9 @@ export default function ChatInterface({
               />
             </div>
           </div>
+          ) : renderConversationPlaceholder()
         ) : (
-          /* Empty state */
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
-            <div className="text-center -mt-60 md:mt-0">
-              <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <MessageCircle className="h-8 w-8 text-gray-400" />
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {language === 'no' ? 'Velg en samtale' : 'Select a conversation'}
-              </h3>
-              <p className="text-gray-500 max-w-sm mx-auto">
-                {language === 'no' 
-                  ? 'Velg en samtale fra listen for å begynne å chatte, eller utforsk innlegg for å finne nye lærere og studenter.'
-                  : 'Choose a conversation from the list to start chatting, or explore posts to find new teachers and students.'
-                }
-              </p>
-              <button 
-                onClick={handleExploreContacts}
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                {language === 'no' ? 'Utforsk innlegg' : 'Explore Posts'}
-              </button>
-            </div>
-          </div>
+          renderConversationPlaceholder()
         )}
       </div>
 
