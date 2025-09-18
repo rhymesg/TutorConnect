@@ -109,10 +109,10 @@ export default function StatsSection() {
               <div className="text-center">
                 <Link href="/posts" className="inline-flex flex-col items-center group">
                   <span className="text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors">
-                    {stats.subjects}
+                    {stats.totalPosts}
                   </span>
                   <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
-                    {stats.subjects === 1 ? 'Fag tilgjengelig' : 'Fag tilgjengelig'}
+                    {stats.totalPosts === 1 ? 'Aktiv annonse' : 'Aktive annonser'}
                   </span>
                 </Link>
               </div>
