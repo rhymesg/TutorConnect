@@ -17,7 +17,7 @@ function ChatPageContent() {
 
   return (
     <div className="h-full flex flex-col bg-white">
-      {/* Chat Interface filling available height */}
+      {/* Chat Interface filling available height with safe area */}
       <ChatInterface 
         initialChatId={initialChatId} 
         appointmentId={appointmentId}

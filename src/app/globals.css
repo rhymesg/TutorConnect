@@ -173,6 +173,27 @@
 
 /* Component layer for reusable patterns */
 @layer components {
+  /* Mobile safe area layout */
+  .safe-area-layout {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+  
+  /* Chat specific mobile layout */
+  .chat-mobile-safe {
+    height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom)); /* Dynamic viewport height for mobile */
+  }
+  
+  /* Mobile viewport fix for older browsers */
+  @supports not (height: 100dvh) {
+    .chat-mobile-safe {
+      height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 60px); /* Account for mobile browser UI */
+    }
+  }
+
   /* Button variants */
   .btn-primary {
     display: inline-flex;
