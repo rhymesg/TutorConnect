@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 interface PlatformStats {
@@ -84,24 +85,36 @@ export default function StatsSection() {
             // Show real statistics (including 0 values)
             <>
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">{stats.teachers}</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">
-                  {stats.teachers === 1 ? 'Engasjert lærer' : 'Engasjerte lærere'}
-                </div>
+                <Link href="/posts/teachers" className="inline-flex flex-col items-center group">
+                  <span className="text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors">
+                    {stats.teachers}
+                  </span>
+                  <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
+                    {stats.teachers === 1 ? 'Engasjert lærer' : 'Engasjerte lærere'}
+                  </span>
+                </Link>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">{stats.students}</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">
-                  {stats.students === 1 ? 'Inspirert student' : 'Inspirerte studenter'}
-                </div>
+                <Link href="/posts/students" className="inline-flex flex-col items-center group">
+                  <span className="text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors">
+                    {stats.students}
+                  </span>
+                  <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
+                    {stats.students === 1 ? 'Inspirert student' : 'Inspirerte studenter'}
+                  </span>
+                </Link>
               </div>
               
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">{stats.subjects}</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">
-                  {stats.subjects === 1 ? 'Fag tilgjengelig' : 'Fag tilgjengelig'}
-                </div>
+                <Link href="/posts" className="inline-flex flex-col items-center group">
+                  <span className="text-4xl font-bold text-brand-600 group-hover:text-brand-700 transition-colors">
+                    {stats.subjects}
+                  </span>
+                  <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
+                    {stats.subjects === 1 ? 'Fag tilgjengelig' : 'Fag tilgjengelig'}
+                  </span>
+                </Link>
               </div>
             </>
           ) : (
