@@ -17,6 +17,7 @@
  */
 import nodemailer from 'nodemailer';
 import { getSubjectLabel } from '@/constants/subjects';
+import { formatOsloDate, formatOsloTime } from '@/lib/datetime';
 
 interface EmailTemplate {
   subject: string;
@@ -558,20 +559,20 @@ function createAppointmentCompletionEmailTemplate(
   chatId: string
 ): EmailTemplate {
   const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat/${chatId}/appointments`;
-  const formattedDate = appointmentDateTime.toLocaleDateString('no-NO', { 
+  const formattedDate = formatOsloDate(appointmentDateTime, 'nb-NO', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
-  const startTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+  const startTime = formatOsloTime(appointmentDateTime, 'nb-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });
   
   // Calculate end time
   const endDateTime = new Date(appointmentDateTime.getTime() + (duration * 60 * 1000));
-  const endTime = endDateTime.toLocaleTimeString('no-NO', { 
+  const endTime = formatOsloTime(endDateTime, 'nb-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });
@@ -670,20 +671,20 @@ function createAppointmentConfirmationEmailTemplate(
   const appointmentUrl = `${EMAIL_CONFIG.baseUrl}/chat/${chatId}/appointments`;
   const postUrl = postId ? `${EMAIL_CONFIG.baseUrl}/posts/${postId}` : null;
   
-  const formattedDate = appointmentDateTime.toLocaleDateString('no-NO', { 
+  const formattedDate = formatOsloDate(appointmentDateTime, 'nb-NO', { 
     weekday: 'long', 
     year: 'numeric', 
     month: 'long', 
     day: 'numeric' 
   });
-  const startTime = appointmentDateTime.toLocaleTimeString('no-NO', { 
+  const startTime = formatOsloTime(appointmentDateTime, 'nb-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });
   
   // Calculate end time
   const endDateTime = new Date(appointmentDateTime.getTime() + (duration * 60 * 1000));
-  const endTime = endDateTime.toLocaleTimeString('no-NO', { 
+  const endTime = formatOsloTime(endDateTime, 'nb-NO', { 
     hour: '2-digit', 
     minute: '2-digit' 
   });

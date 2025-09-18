@@ -2,6 +2,7 @@ import { Subject, PostType, NorwegianRegion } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { ForbiddenError, BadRequestError, NotFoundError } from './errors';
 import { validateChatParticipantCompatibility, validateChatMessageContent, CHAT_PARTICIPANT_LIMITS } from '@/schemas/chat';
+import { createOsloFormatter } from '@/lib/datetime';
 
 /**
  * Chat Room Management Utilities
@@ -728,10 +729,20 @@ export async function exportChatData(
   }
 }
 
+const osloDateFormatter = createOsloFormatter('nb-NO');
+const osloDateTimeFormatter = createOsloFormatter('nb-NO', {
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+});
+
 function convertToCSV(messages: any[]): string {
   const headers = ['Date', 'Sender', 'Type', 'Content'];
   const rows = messages.map(m => [
-    new Date(m.sentAt).toLocaleDateString('no-NO'),
+    osloDateFormatter.format(new Date(m.sentAt)),
     m.sender,
     m.type,
     `"${m.content.replace(/"/g, '""')}"` // Escape quotes
@@ -744,8 +755,8 @@ function convertToText(exportData: any): string {
   const lines: string[] = [];
   lines.push('=== CHAT EXPORT ===');
   lines.push(`Chat ID: ${exportData.chatId}`);
-  lines.push(`Opprettet: ${new Date(exportData.createdAt).toLocaleDateString('no-NO')}`);
-  lines.push(`Eksportert: ${new Date(exportData.exportedAt).toLocaleDateString('no-NO')}`);
+  lines.push(`Opprettet: ${osloDateFormatter.format(new Date(exportData.createdAt))}`);
+  lines.push(`Eksportert: ${osloDateFormatter.format(new Date(exportData.exportedAt))}`);
   
   if (exportData.relatedPost) {
     lines.push(`Relatert innlegg: ${exportData.relatedPost.title} (${exportData.relatedPost.subject})`);
@@ -758,7 +769,7 @@ function convertToText(exportData: any): string {
   
   lines.push('\n=== MELDINGER ===');
   exportData.messages.forEach((m: any) => {
-    lines.push(`${new Date(m.sentAt).toLocaleString('no-NO')} - ${m.sender}: ${m.content}`);
+    lines.push(`${osloDateTimeFormatter.format(new Date(m.sentAt))} - ${m.sender}: ${m.content}`);
   });
   
   return lines.join('\n');

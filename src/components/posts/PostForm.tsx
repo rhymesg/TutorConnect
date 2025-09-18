@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   Save, 
   AlertTriangle,
@@ -24,6 +24,7 @@ import { PostWithDetails } from '@/types/database';
 import { education, forms, actions, posts } from '@/lib/translations';
 import { usePostForm } from '@/hooks/usePostForm';
 import { getRegionLabel } from '@/constants/regions';
+import { createOsloFormatter } from '@/lib/datetime';
 
 interface PostFormProps {
   mode: 'create' | 'edit';
@@ -65,6 +66,15 @@ export default function PostForm({
     autoSave: mode === 'create', // Only auto-save for new posts
     autoSaveDelay: 3000
   });
+
+  const lastSavedFormatter = useMemo(
+    () =>
+      createOsloFormatter('nb-NO', {
+        hour: '2-digit',
+        minute: '2-digit',
+      }),
+    []
+  );
 
   const { control, register, watch, setValue, getValues, formState: { errors } } = form;
 
@@ -198,7 +208,7 @@ export default function PostForm({
                   <>
                     <CheckCircle className="w-4 h-4 text-green-600 mr-1" />
                     <span className="text-green-700">
-                      Lagret {lastSaved.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                      Lagret {lastSavedFormatter.format(lastSaved)}
                     </span>
                   </>
                 ) : isDirty ? (

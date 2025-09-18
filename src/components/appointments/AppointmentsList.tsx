@@ -9,6 +9,7 @@ import { getSubjectLabel } from '@/constants/subjects';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppointmentResponseModal from '@/components/chat/AppointmentResponseModal';
 import { Message } from '@/types/chat';
+import { createOsloFormatter } from '@/lib/datetime';
 
 interface Appointment {
   id: string;
@@ -56,6 +57,7 @@ export default function AppointmentsList({
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
   
   // Available filter options - split ALL into CURRENT and PAST
   const availableFilters = ['CURRENT', 'PAST', 'PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED'] as const;
@@ -120,6 +122,10 @@ export default function AppointmentsList({
     }
   }, [user, accessToken, chatId]);
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   const fetchAppointments = async () => {
     try {
       setIsLoading(true);
@@ -168,8 +174,7 @@ export default function AppointmentsList({
 
   const dateKeyFormatter = useMemo(
     () =>
-      new Intl.DateTimeFormat('en-CA', {
-        timeZone: 'Europe/Oslo',
+      createOsloFormatter('en-CA', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -179,8 +184,7 @@ export default function AppointmentsList({
 
   const timeFormatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: 'Europe/Oslo',
+      createOsloFormatter(locale, {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
@@ -190,8 +194,7 @@ export default function AppointmentsList({
 
   const dateFormatter = useMemo(
     () =>
-      new Intl.DateTimeFormat(locale, {
-        timeZone: 'Europe/Oslo',
+      createOsloFormatter(locale, {
         weekday: 'short',
         month: 'short',
         day: 'numeric',
@@ -446,7 +449,7 @@ export default function AppointmentsList({
     }
   })();
 
-  if (isLoading) {
+  if (!isClient || isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <LoadingSpinner size="lg" />

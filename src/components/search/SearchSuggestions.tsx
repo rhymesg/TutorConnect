@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { 
   Search, 
   Clock, 
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { SearchSuggestion, SearchHistoryItem, NORWEGIAN_SUBJECTS, AGE_GROUP_CONFIG } from '@/lib/search-utils';
 import { PostType } from '@/types/database';
+import { createOsloFormatter } from '@/lib/datetime';
 
 interface SearchSuggestionsProps {
   query: string;
@@ -162,6 +163,8 @@ export default function SearchSuggestions({
     }
   };
 
+  const recentDateFormatter = useMemo(() => createOsloFormatter('nb-NO'), []);
+
   const formatRecentSearchTime = (timestamp: number) => {
     const now = Date.now();
     const diff = now - timestamp;
@@ -173,7 +176,7 @@ export default function SearchSuggestions({
     if (minutes < 60) return `${minutes}m siden`;
     if (hours < 24) return `${hours}t siden`;
     if (days < 7) return `${days}d siden`;
-    return new Date(timestamp).toLocaleDateString('no-NO');
+    return recentDateFormatter.format(new Date(timestamp));
   };
 
   const handleQuickFilterClick = (filter: QuickFilter) => {
