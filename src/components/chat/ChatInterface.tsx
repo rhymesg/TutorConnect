@@ -37,7 +37,6 @@ export default function ChatInterface({
   const [selectedChatId, setSelectedChatId] = useState<string | null>(initialChatId || null);
   const [isMobile, setIsMobile] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-  const [showChatHeader, setShowChatHeader] = useState(true);
   const [isChangingChat, setIsChangingChat] = useState(false);
   const [showAppointmentModal, setShowAppointmentModal] = useState(false);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
@@ -75,7 +74,6 @@ export default function ChatInterface({
       const mobile = window.innerWidth < 768;
       setIsMobile(mobile);
       setShowSidebar(!mobile || !selectedChatId);
-      setShowChatHeader(!mobile); // Hide chat header on mobile by default
     };
     
     checkMobile();
@@ -500,7 +498,11 @@ export default function ChatInterface({
       </div>
 
       {/* Conversation View */}
-      <div className={`flex-1 flex flex-col ${isMobile && showSidebar ? 'hidden' : ''} overflow-hidden ${isMobile ? 'mt-[156px]' : ''}`}>
+      <div
+        className={`relative flex-1 flex flex-col ${
+          isMobile && showSidebar ? 'hidden' : ''
+        } overflow-hidden`}
+      >
         {selectedChatId ? (
           isChatLoading ? (
             <ChatLoadingSkeleton />
@@ -526,11 +528,10 @@ export default function ChatInterface({
             )}
 
             {/* Chat Header */}
-            {(!isMobile || showChatHeader) && (
+            <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
               <ChatHeader
                 chat={chats.find(c => c.id === selectedChatId) || chat}
                 language={language}
-                onBack={isMobile ? handleBackToList : undefined}
                 onShowPostDetails={() => {/* console.log('Show post details') */}}
                 onArchiveChat={() => handleArchiveChat(selectedChatId)}
                 onDeleteChat={() => handleDeleteChat(selectedChatId)}
@@ -540,7 +541,7 @@ export default function ChatInterface({
                 onScheduleAppointment={handleScheduleAppointment}
                 onViewAppointments={handleViewAppointments}
               />
-            )}
+            </div>
             
             {/* Messages - scrollable area */}
             <div className="flex-1 overflow-y-auto min-h-0">
@@ -565,9 +566,6 @@ export default function ChatInterface({
                 language={language}
                 disabled={false}
                 chatId={selectedChatId}
-                showChatHeader={showChatHeader}
-                onToggleChatHeader={() => setShowChatHeader(!showChatHeader)}
-                isMobile={isMobile}
               />
             </div>
           </div>

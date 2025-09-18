@@ -211,6 +211,11 @@ jobs:
             const messageComposer = page.locator('textarea, input[type="text"]').first();
             await expect(messageComposer).toBeVisible({ timeout: 10000 });
             console.log('✅ Message composer is visible for first chat');
+
+            // Sticky chat header should be present
+            const chatHeader = page.locator('[data-testid="chat-header"]');
+            await expect(chatHeader).toBeVisible({ timeout: 10000 });
+            console.log('✅ Chat header is visible for first chat');
             
             console.log('✅ Basic chat E2E test completed successfully');
           });
@@ -234,20 +239,12 @@ jobs:
             const originalChatUrl = page.url();
             console.log(`🔗 Original chat URL: ${originalChatUrl}`);
             
-            // Check if we're on mobile viewport (GitHub Actions uses mobile viewport)
-            const isMobile = await page.evaluate(() => window.innerWidth < 768);
-            
-            if (isMobile) {
-              // On mobile, first click Info button to show chat header
-              console.log('📱 Mobile view detected - clicking Info button to show chat header');
-              const infoButton = page.locator('button:has(svg.lucide-info)');
-              await infoButton.waitFor({ state: 'visible', timeout: 10000 });
-              await infoButton.click();
-              await page.waitForTimeout(1000);
-            }
-            
+            // Sticky chat header should be present
+            const chatHeader = page.locator('[data-testid="chat-header"]');
+            await expect(chatHeader).toBeVisible({ timeout: 10000 });
+            await chatHeader.scrollIntoViewIfNeeded();
+
             // Look for "Se timer" button in chat header
-            // Use first() to handle potential duplicate elements
             const seTimerButton = page.locator('[data-testid="chat-header-view-appointments"]:visible').first();
             await seTimerButton.waitFor({ state: 'visible', timeout: 10000 });
             console.log('✅ Found "Se timer" button in chat header');
