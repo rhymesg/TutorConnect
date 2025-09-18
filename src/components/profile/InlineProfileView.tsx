@@ -386,16 +386,16 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   };
 
   return (
-    <div className="p-6 space-y-8 relative">
+    <div className="relative space-y-8 p-6">
       {/* View Profile Button */}
       {!isPublicView && (
-        <div className="absolute top-4 right-4">
+        <div className="mb-4 flex justify-start md:absolute md:top-4 md:right-4 md:mb-0 md:justify-end">
           <button
             onClick={() => {
               const { openProfilePopup } = require('@/constants/ui');
               openProfilePopup(profile.id);
             }}
-            className="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 rounded-lg border border-gray-300 transition-colors shadow-sm"
+            className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
             <span>👁️</span>
             <span className="ml-2">Se offentlig profil</span>
