@@ -19,6 +19,7 @@ interface SidebarProps {
   isOpen: boolean;
   onClose: () => void;
   unreadMessagesCount?: number;
+  showDesktop?: boolean;
 }
 
 interface NavigationGroup {
@@ -59,7 +60,7 @@ const navigationGroupsConfig = (unreadMessagesCount: number): NavigationGroup[] 
   },
 ];
 
-export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0, showDesktop = true }: SidebarProps) {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
   const navigationGroups = navigationGroupsConfig(unreadMessagesCount);
@@ -169,11 +170,13 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0 }: Si
 
   return (
     <>
-      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex h-full flex-col overflow-hidden border-r border-neutral-200 bg-white pt-16">
-          <SidebarContent />
+      {showDesktop && (
+        <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+          <div className="flex h-full flex-col overflow-hidden border-r border-neutral-200 bg-white pt-16">
+            <SidebarContent />
+          </div>
         </div>
-      </div>
+      )}
 
       <Transition.Root show={isOpen} as={Fragment}>
         <Dialog as="div" className="relative z-50 lg:hidden" onClose={onClose}>

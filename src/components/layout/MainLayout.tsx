@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useChat } from '@/hooks/useChat';
 import Header from './Header';
-import MobileNavigation from './MobileNavigation';
 import Sidebar from './Sidebar';
 import Footer from './Footer';
 
@@ -48,9 +47,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isChatPage = pathname === '/chat';
 
   // Determine layout structure based on authentication and page type
-  const showSidebar = isAuthenticated && !isPublicPage && !isPublicProfilePage;
-  const showMobileNav = isAuthenticated && !isPublicPage && !isPublicProfilePage;
+  const showDesktopSidebar = isAuthenticated && !isPublicPage && !isPublicProfilePage;
+  // 2025-09: Mobile bottom navigation temporarily disabled per product request.
+  const showMobileNav = false;
   const showHeader = !isPublicProfilePage;
+  const showMenuButton = showHeader;
+  const shouldRenderSidebar = showDesktopSidebar || sidebarOpen;
 
 
   return (
@@ -67,18 +69,19 @@ export default function MainLayout({ children }: MainLayoutProps) {
       {showHeader && (
         <Header 
           onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-          showMenuButton={showSidebar}
+          showMenuButton={showMenuButton}
           notificationCount={totalUnreadCount}
         />
       )}
 
       <div className={`flex ${showHeader ? (isChatPage ? 'h-[calc(100vh-4rem)] pt-0' : 'h-[calc(100vh-4rem)]') : 'h-screen'} ${isChatPage ? 'overflow-hidden' : ''}`}>
         {/* Desktop Sidebar */}
-        {showSidebar && (
+        {shouldRenderSidebar && (
           <Sidebar 
             isOpen={sidebarOpen}
             onClose={() => setSidebarOpen(false)}
             unreadMessagesCount={totalUnreadCount}
+            showDesktop={showDesktopSidebar}
           />
         )}
 
@@ -87,7 +90,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           id="main-content"
           className={`
             flex-1 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
-            ${showSidebar ? 'lg:ml-64' : ''}
+            ${showDesktopSidebar ? 'lg:ml-64' : ''}
             ${showMobileNav ? 'pb-15 md:pb-0' : ''}
           `}
           role="main"
@@ -102,11 +105,10 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      {showMobileNav && <MobileNavigation unreadMessagesCount={totalUnreadCount} />}
+      {/* Mobile Bottom Navigation intentionally disabled */}
 
       {/* Mobile sidebar overlay */}
-      {showSidebar && sidebarOpen && (
+      {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
           aria-hidden="true"
