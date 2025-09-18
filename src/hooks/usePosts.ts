@@ -135,7 +135,36 @@ export function usePosts(options: UsePostsOptions = {}): UsePostsReturn {
           setPosts(data.data);
           // Smooth scroll to top when filters change
           if (typeof window !== 'undefined') {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            const smoothScrollToTop = (element: HTMLElement | null) => {
+              if (!element) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+              }
+
+              try {
+                element.scrollTo({ top: 0, behavior: 'smooth' });
+              } catch (error) {
+                const start = element.scrollTop;
+                const duration = 400;
+                const easeOutCubic = (t: number) => 1 - Math.pow(1 - t, 3);
+
+                const startTime = typeof performance !== 'undefined' ? performance.now() : Date.now();
+
+                const step = (currentTime: number) => {
+                  const elapsed = currentTime - startTime;
+                  const progress = Math.min(elapsed / duration, 1);
+                  element.scrollTop = start * (1 - easeOutCubic(progress));
+                  if (progress < 1) {
+                    requestAnimationFrame(step);
+                  }
+                };
+
+                requestAnimationFrame(step);
+              }
+            };
+
+            const scrollContainer = document.getElementById('main-content');
+            smoothScrollToTop(scrollContainer);
           }
         }
         

@@ -152,6 +152,11 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  #main-content {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Custom scrollbar for better UX */
   ::-webkit-scrollbar {
     width: 0.5rem;
