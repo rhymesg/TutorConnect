@@ -59,6 +59,16 @@ export default function Header({
     { name: 'Om oss', href: '/om-oss', current: pathname === '/om-oss' },
   ];
 
+  const searchLink = (
+    <Link
+      href="/posts"
+      className="rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+      aria-label="Søk blant annonser"
+    >
+      <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
+    </Link>
+  );
+
   if (!isMounted) {
     return (
       <header className="sticky top-0 z-50 w-full border-b border-neutral-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
@@ -136,15 +146,16 @@ export default function Header({
             ))}
           </nav>
 
-          <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
-              <>
-                <Link
-                  href="/chat"
-                  className="relative rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-                  aria-label="Vis meldinger"
-                >
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
+      <div className="flex items-center space-x-4">
+        {isAuthenticated ? (
+          <>
+            {searchLink}
+            <Link
+              href="/chat"
+              className="relative rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+              aria-label="Vis meldinger"
+            >
+              <BellIcon className="h-6 w-6" aria-hidden="true" />
                   {notificationCount > 0 && (
                     <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs font-medium text-white">
                       {notificationCount > 99 ? '99+' : notificationCount}
@@ -193,14 +204,15 @@ export default function Header({
                   )}
                 </div>
               </>
-            ) : (
-              <>
-                <Link
-                  href="/auth/login"
-                  className="text-sm font-medium text-neutral-700 transition-colors hover:text-brand-600"
-                >
-                  Logg inn
-                </Link>
+        ) : (
+          <>
+            {searchLink}
+            <Link
+              href="/auth/login"
+              className="text-sm font-medium text-neutral-700 transition-colors hover:text-brand-600"
+            >
+              Logg inn
+            </Link>
                 <Link
                   href="/auth/register"
                   className="text-sm font-medium text-neutral-700 transition-colors hover:text-brand-600"

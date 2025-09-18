@@ -51,7 +51,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // 2025-09: Mobile bottom navigation temporarily disabled per product request.
   const showMobileNav = false;
   const showHeader = !isPublicProfilePage;
-  const showMenuButton = showHeader;
+  const showMenuButton = showHeader && isAuthenticated && !isPublicProfilePage;
   const shouldRenderSidebar = showDesktopSidebar || sidebarOpen;
 
 
