@@ -69,7 +69,17 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0, show
     setIsMounted(true);
   }, []);
 
-  const isCurrentPage = (href: string) => pathname.startsWith(href);
+  const isCurrentPage = (href: string) => {
+    if (href === '/profile') {
+      return pathname === '/profile';
+    }
+
+    if (href === '/profile/posts') {
+      return pathname === '/profile/posts' || pathname.startsWith('/profile/posts/');
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   const SidebarContent = () => {
     if (!isMounted) {

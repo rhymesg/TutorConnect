@@ -388,9 +388,9 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     if (autoLoad) {
       const timeoutId = setTimeout(async () => {
         if (chatId) {
-          // Load both chat list and specific chat
-          await loadChats();
+          // Load specific chat first for faster render, then refresh list
           await loadChat(chatId);
+          await loadChats();
         } else {
           await loadChats();
         }
