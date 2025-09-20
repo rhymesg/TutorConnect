@@ -5,6 +5,8 @@
 
 import { NorwegianRegion } from '@prisma/client';
 
+const DEFAULT_LABEL = 'Unknown';
+
 export const REGION_OPTIONS: Record<NorwegianRegion, string> = {
   [NorwegianRegion.OSLO]: 'Oslo',
   [NorwegianRegion.BERGEN]: 'Bergen',
@@ -48,8 +50,12 @@ export function getRegionOptions(): Array<{ value: NorwegianRegion; label: strin
 /**
  * Get region label by enum value
  */
-export function getRegionLabel(region: NorwegianRegion): string {
-  return REGION_OPTIONS[region] || region;
+export function getRegionLabel(region: NorwegianRegion | string | null | undefined): string {
+  if (!region) {
+    return DEFAULT_LABEL;
+  }
+  const normalized = region as NorwegianRegion;
+  return REGION_OPTIONS[normalized] ?? DEFAULT_LABEL;
 }
 
 /**

@@ -1,5 +1,8 @@
 import { PostStatus } from '@/types/database';
 
+const DEFAULT_LABEL = 'Unknown';
+const DEFAULT_DESCRIPTION = 'Unknown';
+
 export const POST_STATUS_LABELS: Record<PostStatus, string> = {
   AKTIV: 'Aktiv',
   PAUSET: 'Pauset',
@@ -10,15 +13,21 @@ export const POST_STATUS_DESCRIPTIONS: Record<PostStatus, string> = {
   PAUSET: 'Midlertidig pauset',
 };
 
-export const getPostStatusLabel = (status: PostStatus): string => {
-  return POST_STATUS_LABELS[status] || status;
+export const getPostStatusLabel = (status: PostStatus | null | undefined): string => {
+  if (!status) {
+    return DEFAULT_LABEL;
+  }
+  return POST_STATUS_LABELS[status] ?? DEFAULT_LABEL;
 };
 
-export const getPostStatusDescription = (status: PostStatus): string => {
-  return POST_STATUS_DESCRIPTIONS[status] || status;
+export const getPostStatusDescription = (status: PostStatus | null | undefined): string => {
+  if (!status) {
+    return DEFAULT_DESCRIPTION;
+  }
+  return POST_STATUS_DESCRIPTIONS[status] ?? DEFAULT_DESCRIPTION;
 };
 
-export const getPostStatusColor = (status: PostStatus): string => {
+export const getPostStatusColor = (status: PostStatus | null | undefined): string => {
   switch (status) {
     case 'AKTIV':
       return 'bg-blue-100 text-blue-800';
