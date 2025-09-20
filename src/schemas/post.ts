@@ -457,7 +457,7 @@ export const PostSearchSchema = z.object({
   limit: z.coerce.number().min(1).max(100).default(20),
   
   // Sorting
-  sortBy: z.enum(['createdAt', 'updatedAt', 'hourlyRate', 'title']).default('createdAt'),
+  sortBy: z.enum(['createdAt', 'updatedAt', 'hourlyRate', 'title']).default('updatedAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
   
   // Advanced filters

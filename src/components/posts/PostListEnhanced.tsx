@@ -21,7 +21,7 @@ interface PostListEnhancedProps {
 }
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'createdAt' | 'hourlyRate' | 'rating';
+type SortOption = 'updatedAt' | 'hourlyRate' | 'rating';
 type SortOrder = 'asc' | 'desc';
 
 const POSTS_PER_PAGE = 12;
@@ -53,7 +53,7 @@ export default function PostListEnhanced({
   const [filters, setFilters] = useState<PostFilters>(initialFilters || {
     page: 1,
     limit: POSTS_PER_PAGE,
-    sortBy: 'createdAt',
+    sortBy: 'updatedAt',
     sortOrder: 'desc',
   });
 
@@ -333,7 +333,7 @@ export default function PostListEnhanced({
 
   const getSortLabel = (sortBy: SortOption) => {
     switch (sortBy) {
-      case 'createdAt': return 'Nyeste først';
+      case 'updatedAt': return 'Nyeste først';
       case 'hourlyRate': return 'Pris';
       case 'rating': return 'Vurdering';
       default: return 'Sortering';
@@ -341,7 +341,7 @@ export default function PostListEnhanced({
   };
 
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'createdAt', label: 'Dato opprettet' },
+    { value: 'updatedAt', label: 'Sist oppdatert' },
   ];
 
   return (

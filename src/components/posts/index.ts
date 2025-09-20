@@ -24,5 +24,5 @@ export {
 
 // Types
 export type ViewMode = 'grid' | 'list';
-export type SortOption = 'createdAt' | 'hourlyRate' | 'rating';
+export type SortOption = 'updatedAt' | 'hourlyRate' | 'rating';
 export type SortOrder = 'asc' | 'desc';

@@ -224,7 +224,7 @@ export default function MyPostsPageClient() {
                 <div className="flex items-center justify-between text-xs text-neutral-500">
                   <div className="flex items-center">
                     <ClockIcon className="h-4 w-4 mr-1" />
-                    <span>{formatDate(post.createdAt)}</span>
+                    <span>{formatDate(post.updatedAt || post.createdAt)}</span>
                   </div>
                   
                   <div className="flex items-center space-x-3">

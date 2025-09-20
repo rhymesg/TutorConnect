@@ -16,7 +16,7 @@ interface PostListProps {
 }
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'createdAt' | 'hourlyRate' | 'rating';
+type SortOption = 'updatedAt' | 'hourlyRate' | 'rating';
 type SortOrder = 'asc' | 'desc';
 
 const POSTS_PER_PAGE = 12;
@@ -29,7 +29,7 @@ export default function PostList({
   const [filters, setFilters] = useState<PostFilters>({
     page: 1,
     limit: POSTS_PER_PAGE,
-    sortBy: 'createdAt',
+    sortBy: 'updatedAt',
     sortOrder: 'desc',
   });
   
@@ -82,7 +82,7 @@ export default function PostList({
 
   const getSortLabel = (sortBy: SortOption) => {
     switch (sortBy) {
-      case 'createdAt': return posts.no.sorting.newest;
+      case 'updatedAt': return posts.no.sorting.newest;
       case 'hourlyRate': return posts.no.sorting.price;
       case 'rating': return posts.no.sorting.rating;
       default: return 'Sortering';
@@ -90,7 +90,7 @@ export default function PostList({
   };
 
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'createdAt', label: posts.no.sorting.created },
+    { value: 'updatedAt', label: posts.no.sorting.created },
     { value: 'hourlyRate', label: posts.no.sorting.price },
     { value: 'rating', label: posts.no.sorting.rating },
   ];

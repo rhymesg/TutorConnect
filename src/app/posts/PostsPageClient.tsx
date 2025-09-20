@@ -26,7 +26,7 @@ export default function PostsPageClient({
     const filters: PostFilters = {
       page: 1,
       limit: 12,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc',
     };
 
@@ -78,7 +78,7 @@ export default function PostsPageClient({
 
     if (searchParams.sortBy) {
       const sortBy = Array.isArray(searchParams.sortBy) ? searchParams.sortBy[0] : searchParams.sortBy;
-      if (sortBy === 'createdAt' || sortBy === 'hourlyRate' || sortBy === 'rating') {
+      if (sortBy === 'updatedAt' || sortBy === 'hourlyRate' || sortBy === 'rating') {
         filters.sortBy = sortBy;
       }
     }
@@ -100,7 +100,7 @@ export default function PostsPageClient({
     const filters: PostFilters = {
       page: 1,
       limit: 12,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc',
     };
 
@@ -137,7 +137,7 @@ export default function PostsPageClient({
     }
 
     const sortBy = urlSearchParams.get('sortBy');
-    if (sortBy === 'createdAt' || sortBy === 'hourlyRate' || sortBy === 'rating') {
+    if (sortBy === 'updatedAt' || sortBy === 'hourlyRate' || sortBy === 'rating') {
       filters.sortBy = sortBy;
     }
 
@@ -172,7 +172,7 @@ export default function PostsPageClient({
     }
 
     // Remove default sort parameters
-    if (params.get('sortBy') === 'createdAt' && params.get('sortOrder') === 'desc') {
+    if (params.get('sortBy') === 'updatedAt' && params.get('sortOrder') === 'desc') {
       params.delete('sortBy');
       params.delete('sortOrder');
     }

@@ -12,7 +12,7 @@ interface SortAndViewProps {
   className?: string;
 }
 
-type SortOption = 'createdAt' | 'hourlyRate' | 'rating';
+type SortOption = 'updatedAt' | 'hourlyRate' | 'rating';
 type SortOrder = 'asc' | 'desc';
 
 export default function SortAndView({
@@ -36,7 +36,7 @@ export default function SortAndView({
 
   const sortOptions = [
     { 
-      value: 'createdAt', 
+      value: 'updatedAt', 
       label: 'Dato',
       ascLabel: 'Eldste først',
       descLabel: 'Nyeste først'
@@ -80,7 +80,7 @@ export default function SortAndView({
           {/* Sort Dropdown */}
           <div className="relative">
             <select
-              value={`${filters.sortBy || 'createdAt'}-${filters.sortOrder || 'desc'}`}
+              value={`${filters.sortBy || 'updatedAt'}-${filters.sortOrder || 'desc'}`}
               onChange={(e) => {
                 const [sortBy, sortOrder] = e.target.value.split('-') as [SortOption, SortOrder];
                 handleSortChange(sortBy, sortOrder);
@@ -88,8 +88,8 @@ export default function SortAndView({
               className="appearance-none bg-white border border-neutral-300 rounded-lg px-3 py-2 pr-10 text-sm text-neutral-700 hover:bg-neutral-50 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-colors"
             >
               <optgroup label="Dato">
-                <option value="createdAt-desc">Nyeste først</option>
-                <option value="createdAt-asc">Eldste først</option>
+                <option value="updatedAt-desc">Nyeste først</option>
+                <option value="updatedAt-asc">Eldste først</option>
               </optgroup>
               <optgroup label="Pris">
                 <option value="hourlyRate-asc">Laveste pris</option>
@@ -149,9 +149,9 @@ export function QuickSortButtons({
   const quickSortOptions = [
     { 
       label: 'Nyeste', 
-      sortBy: 'createdAt' as const, 
+      sortBy: 'updatedAt' as const, 
       sortOrder: 'desc' as const,
-      active: filters.sortBy === 'createdAt' && filters.sortOrder === 'desc'
+      active: filters.sortBy === 'updatedAt' && filters.sortOrder === 'desc'
     },
     { 
       label: 'Laveste pris', 

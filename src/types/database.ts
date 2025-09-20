@@ -132,7 +132,7 @@ export interface PostFilters {
   minRate?: number;
   maxRate?: number;
   search?: string;
-  sortBy?: 'createdAt' | 'hourlyRate' | 'rating';
+  sortBy?: 'updatedAt' | 'hourlyRate' | 'rating';
   sortOrder?: 'asc' | 'desc';
   page?: number;
   limit?: number;

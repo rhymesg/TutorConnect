@@ -406,9 +406,6 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-sm font-medium text-neutral-600 mb-3">Annonsedetaljer</h3>
               <div className="space-y-2 text-sm text-neutral-600">
-                <p>
-                  Publisert: {formatters.date(new Date(post.createdAt))}
-                </p>
                 {post.updatedAt && post.updatedAt !== post.createdAt && (
                   <p>
                     Sist oppdatert: {formatters.date(new Date(post.updatedAt))}
