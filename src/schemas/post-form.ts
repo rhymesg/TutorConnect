@@ -31,6 +31,7 @@ export const PostStatusFormSchema = z.enum(['AKTIV', 'PAUSET'], {
 export const SubjectFormSchema = z.enum([
   'math',
   'english', 
+  'korean',
   'norwegian',
   'science',
   'programming',

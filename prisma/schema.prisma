@@ -303,6 +303,7 @@ enum PostStatus {
 enum Subject {
   math
   english
+  korean
   norwegian
   science
   programming
