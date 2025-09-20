@@ -15,7 +15,6 @@ interface PostListEnhancedProps {
   initialFilters?: PostFilters;
   onFiltersChange?: (filters: PostFilters) => void;
   className?: string;
-  onPostContact?: (postId: string) => void;
   showSearchHistory?: boolean;
   enableOfflineMode?: boolean;
 }
@@ -33,7 +32,6 @@ export default function PostListEnhanced({
   initialFilters,
   onFiltersChange: externalOnFiltersChange,
   className = '',
-  onPostContact,
   showSearchHistory = true,
   enableOfflineMode = true,
 }: PostListEnhancedProps) {
@@ -529,7 +527,6 @@ export default function PostListEnhanced({
                   >
                     <PostCard
                       post={post}
-                      onContactClick={onPostContact}
                       className={`
                         ${compactMode && viewMode === 'grid' ? 'text-xs' : ''}
                         ${viewMode === 'list' ? 'sm:flex sm:flex-row' : ''}

@@ -208,24 +208,22 @@ const PostFormFields = dynamic(() => import('./PostFormFields'), {
    - **Impact**: **CRITICAL** - Without this fix, main content discovery is broken
 
 **Required Actions**:
-- [ ] Refactor PostsPageLayout to server component
-- [ ] Implement SSR for PostListEnhanced with initial data
-- [ ] Ensure post cards render server-side
+- [x] Refactor PostsPageLayout to server component
+- [x] Implement SSR for PostListEnhanced with initial data
+- [x] Ensure post cards render server-side
 - [ ] Test that post content appears in "View Source"
 - [ ] Verify search engine can crawl post listings
 
 ### 2025-02 Follow-up Notes
-- `/posts/students` and `/posts/teachers` currently ship empty HTML because `PostsPageLayout` and `PostListEnhanced` are client components; crawlers miss all primary keywords.
-- `PostCard` is also client-only, so there is no SSR-friendly card markup for listings.
-- `fetchInitialPosts` in `src/app/posts/page.tsx` returns `null`, leaving the posts index without SSR data and only rendering selection cards.
-- The `/posts` root needs crawlable copy covering shared interest keywords in addition to the parameter-driven metadata.
+- `/posts/students` and `/posts/teachers` now receive SSR data via `fetchPostsForFilters` and include fallback `PostCardStatic` markup for bots.
+- Client-side enhancements remain, but crawlers get complete listings before hydration.
+- `/posts` root intentionally stays a directory hub (selection cards + descriptive copy); still needs richer keyword-oriented content rather than SSR listings.
+- View-source verification and crawl tests remain pending after deployment.
 
 **Step-by-step plan**
-1. Refactor `PostsPageLayout` to a server component and move interactive controls into a dedicated client wrapper.
-2. Introduce a server-rendered version of `PostCard` that outputs core details (title, subject, region, rate) while delegating enhancements to nested client components.
-3. Hydrate initial listing data via SSR (Supabase/Prisma or internal API) for `/posts`, `/posts/students`, and `/posts/teachers`, and configure `revalidate` as needed.
-4. Apply server-side filtering with `searchParams` so headline, metadata, and rendered results align for subject/location queries.
-5. Enrich the `/posts` landing page with static keyword-rich sections plus a small set of SSR post teasers to rank for common discovery terms.
+1. Verify production HTML (view-source / fetch) for `/posts/students` and `/posts/teachers`, then document crawl results.
+2. Add keyword-rich static sections to `/posts` covering high-volume generic tutoring queries (no SSR cards needed).
+3. Coordinate sitemap/search-console refresh once crawlable content is confirmed.
 
 ### Medium Priority (Optional Optimizations)
 1. **PostForm SSR Enhancement**:
