@@ -70,7 +70,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
             {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
           </span>
           <span className="text-sm text-neutral-500">
-            {formatters.date(new Date(post.createdAt))}
+            {formatters.date(new Date(post.updatedAt ?? post.createdAt))}
           </span>
         </div>
       </div>

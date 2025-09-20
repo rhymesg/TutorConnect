@@ -26,7 +26,7 @@ export default function PostsPageLayout({
   const initialFilters = {
     page: 1,
     limit: 12,
-    sortBy: 'createdAt' as const,
+    sortBy: 'updatedAt' as const,
     sortOrder: 'desc' as const,
     type: type,
     includePaused: false,

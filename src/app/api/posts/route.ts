@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const params = {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '12'),
-      sortBy: searchParams.get('sortBy') || 'createdAt',
+      sortBy: searchParams.get('sortBy') || 'updatedAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
       type: searchParams.get('type'),
       subject: searchParams.get('subject'),

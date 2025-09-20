@@ -131,7 +131,7 @@ export default function ActiveFiltersEnhanced({
     onFiltersChange({
       page: 1,
       limit: filters.limit,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc',
       type: filters.type, // Keep the type filter
     });

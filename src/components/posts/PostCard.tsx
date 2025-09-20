@@ -111,7 +111,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
             )}
           </div>
           <span className="text-sm text-neutral-500">
-            {formatters.date(new Date(post.createdAt))}
+            {formatters.date(new Date(post.updatedAt ?? post.createdAt))}
           </span>
         </div>
       </div>

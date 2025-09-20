@@ -92,7 +92,7 @@ export default function SearchAndFiltersEnhanced({
     onFiltersChange({
       page: 1,
       limit: filters.limit,
-      sortBy: 'createdAt',
+      sortBy: 'updatedAt',
       sortOrder: 'desc',
       includePaused: false,
     });

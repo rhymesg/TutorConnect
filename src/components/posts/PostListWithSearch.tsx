@@ -17,7 +17,7 @@ interface PostListWithSearchProps {
 }
 
 type ViewMode = 'grid' | 'list';
-type SortOption = 'createdAt' | 'hourlyRate' | 'rating';
+type SortOption = 'updatedAt' | 'hourlyRate' | 'rating';
 type SortOrder = 'asc' | 'desc';
 
 export default function PostListWithSearch({ 
@@ -73,7 +73,7 @@ export default function PostListWithSearch({
 
   const getSortLabel = (sortBy: SortOption) => {
     switch (sortBy) {
-      case 'createdAt': return posts.no.sorting.newest;
+      case 'updatedAt': return posts.no.sorting.newest;
       case 'hourlyRate': return posts.no.sorting.price;
       case 'rating': return posts.no.sorting.rating;
       default: return 'Sortering';
@@ -81,7 +81,7 @@ export default function PostListWithSearch({
   };
 
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'createdAt', label: posts.no.sorting.created },
+    { value: 'updatedAt', label: posts.no.sorting.created },
     { value: 'hourlyRate', label: posts.no.sorting.price },
     { value: 'rating', label: posts.no.sorting.rating },
   ];
@@ -204,7 +204,7 @@ export default function PostListWithSearch({
               {/* Sort dropdown */}
               <div className="relative">
                 <select
-                  value={`${filters.sortBy || 'createdAt'}-${filters.sortOrder || 'desc'}`}
+                  value={`${filters.sortBy || 'updatedAt'}-${filters.sortOrder || 'desc'}`}
                   onChange={(e) => {
                     const [sortBy, sortOrder] = e.target.value.split('-') as [SortOption, SortOrder];
                     handleSortChange(sortBy, sortOrder);
