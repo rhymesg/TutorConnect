@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
+import { NorwegianRegion, PostType, Subject } from '@prisma/client';
 import PostsPageLayout from '@/components/posts/PostsPageLayout';
-import Breadcrumbs from '@/components/common/Breadcrumbs';
 import { generateBreadcrumbs } from '@/lib/breadcrumbs';
+import { fetchPostsForFilters } from '@/lib/actions/posts';
 
 interface TeachersPageProps {
   searchParams: Promise<{
@@ -85,6 +86,18 @@ export const metadata: Metadata = {
 
 export default async function TeachersPage({ searchParams }: TeachersPageProps) {
   const params = await searchParams;
+  const subjectFilter = resolveEnumValue(params.subject, Subject);
+  const locationFilter = resolveEnumValue(params.location, NorwegianRegion);
+  const initialPosts = await fetchPostsForFilters({
+    type: PostType.TEACHER,
+    subject: subjectFilter,
+    location: locationFilter,
+    page: 1,
+    limit: 12,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+    includePaused: false,
+  });
   const breadcrumbItems = generateBreadcrumbs('/posts/teachers', params);
   // JSON-LD structured data for teachers directory
   const jsonLd = {
@@ -181,7 +194,18 @@ export default async function TeachersPage({ searchParams }: TeachersPageProps) 
         }
         subtitle="Fra matematikk til musikk, barn til voksne - finn den perfekte matchen for dine behov."
         breadcrumbs={breadcrumbItems}
+        initialPosts={initialPosts}
+        filterOverrides={{
+          subject: subjectFilter,
+          location: locationFilter,
+        }}
       />
     </>
   );
+}
+
+function resolveEnumValue<T extends string>(value: string | undefined, enumObject: Record<string, T>): T | undefined {
+  if (!value) return undefined;
+  const normalized = value.replace(/-/g, '_').replace(/\s+/g, '_').toUpperCase();
+  return (Object.values(enumObject) as string[]).find((item) => item.toUpperCase() === normalized) as T | undefined;
 }

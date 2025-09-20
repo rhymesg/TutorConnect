@@ -188,30 +188,11 @@ export default function PostsPageClient({
     updateURL(newFilters);
   };
 
-  // Handle post contact (navigate to chat or show modal)
-  const handlePostContact = async (postId: string) => {
-    try {
-      // In a real app, this would:
-      // 1. Check if user is authenticated
-      // 2. Create a chat if it doesn't exist
-      // 3. Navigate to chat or show contact modal
-      
-      console.log('Contact post:', postId);
-      
-      // For now, just navigate to a placeholder
-      router.push(`/chat?post=${postId}`);
-    } catch (error) {
-      console.error('Error contacting post:', error);
-      // Show error toast or modal
-    }
-  };
-
   return (
     <PostListEnhanced
       initialPosts={initialPosts}
       initialFilters={filters}
       onFiltersChange={handleFiltersChange}
-      onPostContact={handlePostContact}
       showSearchHistory={true}
       enableOfflineMode={true}
       className="min-h-screen"

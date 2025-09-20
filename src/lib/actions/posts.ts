@@ -5,7 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { CreatePostFormSchema, UpdatePostFormSchema } from '@/schemas/post-form';
-import { PostWithDetails } from '@/types/database';
+import { PostFilters, PaginatedPosts, PostWithDetails } from '@/types/database';
 import { verifyAccessToken } from '@/lib/jwt';
 
 export type PostFormState = {
@@ -88,6 +88,120 @@ export async function getPostById(postId: string): Promise<PostWithDetails | nul
   } catch (error) {
     console.error('Error fetching post:', error);
     return null;
+  }
+}
+
+/**
+ * Server utility to fetch posts with basic filtering for SSR use cases
+ */
+export async function fetchPostsForFilters(filters: PostFilters = {}): Promise<PaginatedPosts> {
+  const page = filters.page && filters.page > 0 ? filters.page : 1;
+  const limit = filters.limit && filters.limit > 0 ? filters.limit : 12;
+
+  const where: any = {
+    isActive: true,
+  };
+
+  if (!filters.includePaused) {
+    where.status = 'AKTIV';
+  }
+
+  if (filters.type) {
+    where.type = filters.type;
+  }
+
+  if (filters.subject) {
+    where.subject = filters.subject;
+  }
+
+  if (filters.location) {
+    where.location = filters.location;
+  }
+
+  if (filters.ageGroups && filters.ageGroups.length > 0) {
+    where.ageGroups = {
+      hasSome: filters.ageGroups,
+    };
+  }
+
+  if (filters.search) {
+    const searchValue = filters.search;
+    where.OR = [
+      { title: { contains: searchValue, mode: 'insensitive' } },
+      { description: { contains: searchValue, mode: 'insensitive' } },
+      { user: { name: { contains: searchValue, mode: 'insensitive' } } },
+    ];
+  }
+
+  const skip = (page - 1) * limit;
+
+  try {
+    const [posts, totalCount] = await Promise.all([
+      prisma.post.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          [filters.sortBy ?? 'createdAt']: filters.sortOrder ?? 'desc',
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              profileImage: true,
+              isActive: true,
+              lastActive: true,
+              region: true,
+              teacherSessions: true,
+              teacherStudents: true,
+              studentSessions: true,
+              studentTeachers: true,
+            },
+          },
+          _count: {
+            select: {
+              chats: true,
+            },
+          },
+        },
+      }),
+      prisma.post.count({ where }),
+    ]);
+
+    const serialized = posts.map((post) => ({
+      ...post,
+      hourlyRate: post.hourlyRate ? Number(post.hourlyRate) : null,
+      hourlyRateMin: post.hourlyRateMin ? Number(post.hourlyRateMin) : null,
+      hourlyRateMax: post.hourlyRateMax ? Number(post.hourlyRateMax) : null,
+    })) as PostWithDetails[];
+
+    const totalPages = totalCount === 0 ? 0 : Math.ceil(totalCount / limit);
+
+    return {
+      data: serialized,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    };
+  } catch (error) {
+    console.error('Error fetching posts for SSR:', error);
+    return {
+      data: [],
+      pagination: {
+        page,
+        limit,
+        total: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: page > 1,
+      },
+    };
   }
 }
 

@@ -12,7 +12,6 @@ interface PostListWithSearchProps {
   initialPosts?: PaginatedPosts;
   initialFilters?: PostFilters;
   className?: string;
-  onPostContact?: (postId: string) => void;
   showUrlSync?: boolean;
 }
 
@@ -24,7 +23,6 @@ export default function PostListWithSearch({
   initialPosts,
   initialFilters,
   className = '',
-  onPostContact,
   showUrlSync = true
 }: PostListWithSearchProps) {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
@@ -292,7 +290,6 @@ export default function PostListWithSearch({
               >
                 <PostCard
                   post={post}
-                  onContactClick={onPostContact}
                   className={viewMode === 'list' ? 'flex-row' : ''}
                 />
               </div>

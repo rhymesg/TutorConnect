@@ -1,7 +1,4 @@
 import { Metadata } from 'next';
-import { Suspense } from 'react';
-import PostsPageClient from './PostsPageClient';
-import { PostListLoading } from '@/components/posts/LoadingStates';
 import Breadcrumbs from '@/components/common/Breadcrumbs';
 import { generateBreadcrumbs } from '@/lib/breadcrumbs';
 import PostsSelectionCards from '@/components/posts/PostsSelectionCards';
@@ -99,18 +96,6 @@ export async function generateMetadata({ searchParams }: PostsPageProps): Promis
   };
 }
 
-
-// Server-side data fetching
-async function fetchInitialPosts() {
-  try {
-    // In a real app, this would fetch from your API
-    // For now, return empty data to let the client handle loading
-    return null;
-  } catch (error) {
-    console.error('Error fetching initial posts:', error);
-    return null;
-  }
-}
 
 export default async function PostsPage({ searchParams }: PostsPageProps) {
   const params = await searchParams;

@@ -12,7 +12,6 @@ import { usePosts } from '@/hooks/usePosts';
 interface PostListProps {
   initialPosts?: PaginatedPosts;
   className?: string;
-  onPostContact?: (postId: string) => void;
 }
 
 type ViewMode = 'grid' | 'list';
@@ -23,8 +22,7 @@ const POSTS_PER_PAGE = 12;
 
 export default function PostList({ 
   initialPosts,
-  className = '',
-  onPostContact 
+  className = ''
 }: PostListProps) {
   const [filters, setFilters] = useState<PostFilters>({
     page: 1,
@@ -239,7 +237,6 @@ export default function PostList({
               >
                 <PostCard
                   post={post}
-                  onContactClick={onPostContact}
                   className={viewMode === 'list' ? 'flex-row' : ''}
                 />
               </div>
