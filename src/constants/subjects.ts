@@ -1,5 +1,7 @@
 import { Subject } from '@prisma/client';
 
+const DEFAULT_LABEL = 'Unknown';
+
 // Subject enum values from Prisma schema
 export const SUBJECT_OPTIONS: Record<Subject, string> = {
   [Subject.math]: 'Matematikk',
@@ -16,12 +18,11 @@ export const SUBJECT_OPTIONS: Record<Subject, string> = {
 };
 
 // Convert to array format for dropdowns
-export const getSubjectOptions = () => {
-  return Object.entries(SUBJECT_OPTIONS).map(([value, label]) => ({
+export const getSubjectOptions = () =>
+  Object.entries(SUBJECT_OPTIONS).map(([value, label]) => ({
     value,
     label,
   }));
-};
 
 // English subject labels for breadcrumbs and international users
 export const SUBJECT_OPTIONS_EN: Record<Subject, string> = {
@@ -39,8 +40,11 @@ export const SUBJECT_OPTIONS_EN: Record<Subject, string> = {
 };
 
 // Get label for a subject value (Norwegian)
-export const getSubjectLabel = (subject: string | Subject): string => {
-  return SUBJECT_OPTIONS[subject as Subject] || subject;
+export const getSubjectLabel = (subject: string | Subject | null | undefined): string => {
+  if (!subject) {
+    return DEFAULT_LABEL;
+  }
+  return SUBJECT_OPTIONS[subject as Subject] ?? DEFAULT_LABEL;
 };
 
 // String to Subject enum mapping (for URL parameters)
@@ -72,22 +76,22 @@ const STRING_TO_SUBJECT_MAP: Record<string, Subject> = {
 };
 
 // Get English label for a subject value (used in breadcrumbs)
-export const getSubjectLabelEN = (subject: string | Subject): string => {
-  // If it's already a Subject enum, use it directly
+export const getSubjectLabelEN = (subject: string | Subject | null | undefined): string => {
+  if (!subject) {
+    return DEFAULT_LABEL;
+  }
+
   if (Object.values(Subject).includes(subject as Subject)) {
-    return SUBJECT_OPTIONS_EN[subject as Subject] || subject;
+    return SUBJECT_OPTIONS_EN[subject as Subject] ?? DEFAULT_LABEL;
   }
-  
-  // If it's a string, map it to Subject enum first
-  const mappedSubject = STRING_TO_SUBJECT_MAP[subject.toLowerCase()];
+
+  const normalized = subject.toLowerCase();
+  const mappedSubject = STRING_TO_SUBJECT_MAP[normalized];
   if (mappedSubject) {
-    // Special cases for specific strings
-    if (subject.toLowerCase() === 'tennis') return 'Tennis';
-    if (subject.toLowerCase() === 'ski') return 'Skiing';
-    
-    return SUBJECT_OPTIONS_EN[mappedSubject];
+    if (normalized === 'tennis') return 'Tennis';
+    if (normalized === 'ski') return 'Skiing';
+    return SUBJECT_OPTIONS_EN[mappedSubject] ?? DEFAULT_LABEL;
   }
-  
-  // Fallback to original string with proper capitalization
-  return subject.charAt(0).toUpperCase() + subject.slice(1).toLowerCase();
+
+  return DEFAULT_LABEL;
 };

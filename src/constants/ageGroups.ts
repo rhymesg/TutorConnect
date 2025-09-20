@@ -1,5 +1,7 @@
 import { AgeGroup } from '@prisma/client';
 
+const DEFAULT_LABEL = 'Unknown';
+
 // AgeGroup enum values from Prisma schema
 export const AGE_GROUP_OPTIONS: Record<AgeGroup, string> = {
   [AgeGroup.PRESCHOOL]: '0-5 år',
@@ -11,19 +13,27 @@ export const AGE_GROUP_OPTIONS: Record<AgeGroup, string> = {
 };
 
 // Convert to array format for dropdowns
-export const getAgeGroupOptions = () => {
-  return Object.entries(AGE_GROUP_OPTIONS).map(([value, label]) => ({
+export const getAgeGroupOptions = () =>
+  Object.entries(AGE_GROUP_OPTIONS).map(([value, label]) => ({
     value,
     label,
   }));
-};
 
 // Get label for an age group value
-export const getAgeGroupLabel = (ageGroup: string | AgeGroup): string => {
-  return AGE_GROUP_OPTIONS[ageGroup as AgeGroup] || ageGroup;
+export const getAgeGroupLabel = (ageGroup: string | AgeGroup | null | undefined): string => {
+  if (!ageGroup) {
+    return DEFAULT_LABEL;
+  }
+  return AGE_GROUP_OPTIONS[ageGroup as AgeGroup] ?? DEFAULT_LABEL;
 };
 
 // Get labels for multiple age groups
-export const getAgeGroupLabels = (ageGroups: string[]): string => {
-  return ageGroups.map(group => getAgeGroupLabel(group)).join(', ');
+export const getAgeGroupLabels = (ageGroups: (string | AgeGroup)[] = []): string => {
+  if (!ageGroups.length) {
+    return DEFAULT_LABEL;
+  }
+  const labels = ageGroups
+    .map(group => getAgeGroupLabel(group))
+    .filter(Boolean);
+  return labels.length ? labels.join(', ') : DEFAULT_LABEL;
 };
