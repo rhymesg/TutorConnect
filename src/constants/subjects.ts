@@ -4,6 +4,7 @@ import { Subject } from '@prisma/client';
 export const SUBJECT_OPTIONS: Record<Subject, string> = {
   [Subject.math]: 'Matematikk',
   [Subject.english]: 'Engelsk',
+  [Subject.korean]: 'Koreansk',
   [Subject.norwegian]: 'Norsk',
   [Subject.science]: 'Naturfag',
   [Subject.programming]: 'Programmering',
@@ -26,6 +27,7 @@ export const getSubjectOptions = () => {
 export const SUBJECT_OPTIONS_EN: Record<Subject, string> = {
   [Subject.math]: 'Math',
   [Subject.english]: 'English',
+  [Subject.korean]: 'Korean',
   [Subject.norwegian]: 'Norwegian',
   [Subject.science]: 'Science',
   [Subject.programming]: 'Programming',
@@ -47,6 +49,8 @@ const STRING_TO_SUBJECT_MAP: Record<string, Subject> = {
   'matematikk': Subject.math,
   'english': Subject.english,
   'engelsk': Subject.english,
+  'korean': Subject.korean,
+  'koreansk': Subject.korean,
   'norwegian': Subject.norwegian,
   'norsk': Subject.norwegian,
   'science': Subject.science,
