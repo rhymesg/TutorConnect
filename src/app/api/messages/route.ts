@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { verifyJWT } from '@/lib/jwt';
 import { APIError } from '@/lib/errors';
-import type { CreateMessageData, MessageWithSender } from "@prisma/client";
+import type { CreateMessageData } from '@prisma/client';
+import { sendNewChatEmail } from '@/lib/email';
 
 
 export async function GET(request: NextRequest) {
@@ -204,11 +205,25 @@ export async function POST(request: NextRequest) {
         appointment: true,
       },
     });
-
-    // Update chat's last message timestamp
-    await prisma.chat.update({
+    
+    // Update chat's last message timestamp and get related data for notifications
+    const chat = await prisma.chat.update({
       where: { id: chatId },
       data: { lastMessageAt: new Date() },
+      include: {
+        relatedPost: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                emailNewChat: true,
+              },
+            },
+          },
+        },
+      },
     });
 
     // Update unread count for other participants
@@ -240,6 +255,45 @@ export async function POST(request: NextRequest) {
       where: { id: userId },
       data: { lastActive: new Date() },
     });
+
+    // Send first-contact notification to post owner if applicable
+    let shouldMarkNotificationDone = false;
+    try {
+      const postOwner = chat.relatedPost?.user;
+      if (
+        postOwner &&
+        postOwner.id !== userId &&
+        !chat.newChatNotificationDone
+      ) {
+        shouldMarkNotificationDone = true;
+        const wantsEmail = postOwner.emailNewChat ?? true;
+
+        if (wantsEmail && postOwner.email) {
+          const receiverName = postOwner.name || 'TutorConnect-bruker';
+          const senderName = message.sender?.name || 'en TutorConnect-bruker';
+
+          await sendNewChatEmail(
+            postOwner.email,
+            receiverName,
+            senderName,
+            chat.relatedPost?.title
+          );
+        }
+      }
+    } catch (notificationError) {
+      console.error('Failed to handle new chat notification email:', notificationError);
+    } finally {
+      if (shouldMarkNotificationDone) {
+        try {
+          await prisma.chat.update({
+            where: { id: chatId },
+            data: { newChatNotificationDone: true },
+          });
+        } catch (flagError) {
+          console.error('Failed to mark new chat notification as done:', flagError);
+        }
+      }
+    }
 
     return NextResponse.json(message, { status: 201 });
   } catch (error) {

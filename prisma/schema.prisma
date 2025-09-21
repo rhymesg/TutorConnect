@@ -110,6 +110,7 @@ model Chat {
   teacherId     String?           @map("teacher_id")
   studentId     String?           @map("student_id")
   isActive      Boolean           @default(true)
+  newChatNotificationDone Boolean @default(false) @map("new_chat_notification_done")
   lastMessageAt DateTime?
   createdAt     DateTime          @default(now())
   updatedAt     DateTime          @updatedAt

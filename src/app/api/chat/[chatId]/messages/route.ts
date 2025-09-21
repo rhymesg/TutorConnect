@@ -5,7 +5,6 @@ import { authMiddleware, getAuthenticatedUser } from '@/middleware/auth';
 import { NotFoundError, ForbiddenError, BadRequestError } from '@/lib/errors';
 import { updateExpiredAppointments } from '@/lib/appointment-utils';
 import { sendNewChatEmail } from '@/lib/email';
-import { isUserOnline } from '@/lib/user-utils';
 import { z } from 'zod';
 
 // Send message schema
@@ -547,103 +546,64 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
     return message;
   });
 
-  // Check if this is the first message in the chat and send email notification
-  try {
-    const messageCount = await prisma.message.count({
-      where: { chatId },
-    });
-
-    // console.log(`🔔 [EMAIL DEBUG] Chat ${chatId} - Message count: ${messageCount}`);
-
-    // Send email only for the first message in the chat
-    if (messageCount === 1) {
-      console.log(`[DEBUG] Processing email notification for chat ${chatId} (first message)`);
-      
-      // Get other participants
-      const otherParticipants = await prisma.chatParticipant.findMany({
-        where: {
-          chatId,
-          userId: { not: user.id },
-          isActive: true,
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              email: true,
-              name: true,
-              emailNewChat: true,
-              isActive: true,
-              lastActive: true,
-            },
-          },
-        },
-      });
-
-      console.log(`[DEBUG] Found ${otherParticipants.length} other participants`);
-
-      // Get chat info including related post if exists
-      const chatInfo = await prisma.chat.findUnique({
-        where: { id: chatId },
-        select: {
-          id: true,
-          relatedPost: {
-            select: {
-              id: true,
-              title: true,
-            },
-          },
-        },
-      });
-
-      console.log(`[DEBUG] Chat info:`, { 
-        chatId: chatInfo?.id, 
-        hasRelatedPost: !!chatInfo?.relatedPost,
-        postTitle: chatInfo?.relatedPost?.title 
-      });
-
-      // Send email to each participant who has email notifications enabled and is not active
-      for (const participant of otherParticipants) {
-        const receiver = participant.user;
-        
-        const userIsOnline = isUserOnline(receiver.lastActive);
-        
-        console.log(`[DEBUG] Checking participant ${receiver.name}:`, {
-          email: receiver.email,
-          isOnline: userIsOnline,
-          emailNewChat: receiver.emailNewChat,
-          willSendEmail: !userIsOnline && receiver.emailNewChat
-        });
-        
-        // Check conditions: not online, email notifications enabled
-        if (!userIsOnline && receiver.emailNewChat) {
-          console.log(`🔔 [EMAIL DEBUG] Sending new chat email to ${receiver.email}`);
-          try {
-            await sendNewChatEmail(
-              receiver.email,
-              receiver.name,
-              user.name || 'En TutorConnect bruker',
-              chatInfo?.relatedPost?.title
-            );
-            console.log(`✅ [EMAIL DEBUG] Successfully sent new chat email to ${receiver.email}`);
-          } catch (emailError) {
-            // Log email error but don't fail message sending (same as registration)
-            console.error('Failed to send new chat email:', emailError);
-          }
-        } else {
-          console.log(`[DEBUG] Skipping email for ${receiver.email} - conditions not met (isOnline: ${userIsOnline}, emailNewChat: ${receiver.emailNewChat})`);
-        }
-      }
-    } else {
-      console.log(`[DEBUG] Skipping email notification - message count is ${messageCount}`);
-    }
-  } catch (error) {
-    console.error('Error checking/sending new chat email:', error);
-    // Don't throw error - email failure shouldn't prevent message sending
-  }
-
   // Trigger real-time notification (handled by Supabase realtime)
   // This would be where you'd emit to the real-time channel
+
+  let shouldMarkNotificationDone = false;
+  try {
+    const chatInfo = await prisma.chat.findUnique({
+      where: { id: chatId },
+      select: {
+        newChatNotificationDone: true,
+        relatedPost: {
+          select: {
+            title: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                emailNewChat: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (
+      chatInfo &&
+      !chatInfo.newChatNotificationDone &&
+      chatInfo.relatedPost?.user &&
+      chatInfo.relatedPost.user.id !== user.id
+    ) {
+      shouldMarkNotificationDone = true;
+      const postOwner = chatInfo.relatedPost.user;
+      const wantsEmail = postOwner.emailNewChat ?? true;
+
+      if (wantsEmail && postOwner.email) {
+        await sendNewChatEmail(
+          postOwner.email,
+          postOwner.name || 'TutorConnect-bruker',
+          newMessage.sender?.name || 'en TutorConnect-bruker',
+          chatInfo.relatedPost?.title
+        );
+      }
+    }
+  } catch (notificationError) {
+    console.error('Failed to handle new chat notification email:', notificationError);
+  } finally {
+    if (shouldMarkNotificationDone) {
+      try {
+        await prisma.chat.update({
+          where: { id: chatId },
+          data: { newChatNotificationDone: true },
+        });
+      } catch (flagError) {
+        console.error('Failed to mark new chat notification as done:', flagError);
+      }
+    }
+  }
 
   return NextResponse.json({
     success: true,
