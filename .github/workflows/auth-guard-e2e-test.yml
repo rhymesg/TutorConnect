@@ -3,7 +3,7 @@
 # This workflow tests authentication guards for protected pages:
 # - Tests redirect to login page when accessing protected pages without authentication
 # - Tests proper redirect back to intended page after login
-# - Covers protected pages: profile, profile/posts, chat, appointments
+# - Covers protected pages: profile, profile/posts, chat, appointments, settings, posts/new
 # - Uses test user account from environment variables for login testing
 # - Ensures logout between tests to maintain clean state
 
@@ -98,7 +98,9 @@ jobs:
           { path: '/profile', name: 'Profile' },
           { path: '/profile/posts', name: 'Profile Posts' },
           { path: '/chat', name: 'Chat' },
-          { path: '/appointments', name: 'Appointments' }
+          { path: '/appointments', name: 'Appointments' },
+          { path: '/settings', name: 'Settings' },
+          { path: '/posts/new', name: 'Create Post' }
         ];
 
         test.describe('Auth Guard Tests', () => {
@@ -220,6 +222,10 @@ jobs:
                 await expect(page.locator('h2')).toContainText('Samtaler', { timeout: 10000 });
               } else if (protectedPage.path === '/appointments') {
                 await expect(page.locator('h1, h2')).toContainText('Mine timer', { timeout: 10000 });
+              } else if (protectedPage.path === '/settings') {
+                await expect(page.locator('h1')).toContainText('Innstillinger', { timeout: 10000 });
+              } else if (protectedPage.path === '/posts/new') {
+                await expect(page.locator('h1')).toContainText('Opprett ny annonse', { timeout: 10000 });
               }
               
               console.log(`✅ ${protectedPage.name}: Successfully redirected to intended page after login`);
