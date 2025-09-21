@@ -210,9 +210,12 @@ export async function POST(request: NextRequest) {
     const chat = await prisma.chat.update({
       where: { id: chatId },
       data: { lastMessageAt: new Date() },
-      include: {
+      select: {
+        newChatNotificationDone: true,
         relatedPost: {
-          include: {
+          select: {
+            id: true,
+            title: true,
             user: {
               select: {
                 id: true,
@@ -276,7 +279,8 @@ export async function POST(request: NextRequest) {
             postOwner.email,
             receiverName,
             senderName,
-            chat.relatedPost?.title
+            chat.relatedPost?.title,
+            chat.relatedPost?.id
           );
         }
       }

@@ -132,20 +132,21 @@ export async function GET(request: NextRequest) {
           const otherUser = chat.teacher?.id === user.id ? chat.student : chat.teacher;
           const lastMessage = chat.messages[0];
           
-          return {
-            chatId: chat.id,
-            otherUserName: otherUser?.name || 'Ukjent bruker',
-            unreadCount: participant.unreadCount,
-            lastMessage: lastMessage ? {
-              content: lastMessage.content.length > 100 
-                ? lastMessage.content.substring(0, 100) + '...' 
-                : lastMessage.content,
-              senderName: lastMessage.sender.name,
-              sentAt: lastMessage.sentAt
-            } : undefined,
-            postTitle: chat.relatedPost?.title
-          };
-        });
+        return {
+          chatId: chat.id,
+          otherUserName: otherUser?.name || 'Ukjent bruker',
+          unreadCount: participant.unreadCount,
+          lastMessage: lastMessage ? {
+            content: lastMessage.content.length > 100 
+              ? lastMessage.content.substring(0, 100) + '...' 
+              : lastMessage.content,
+            senderName: lastMessage.sender.name,
+            sentAt: lastMessage.sentAt
+          } : undefined,
+          postTitle: chat.relatedPost?.title,
+          postId: chat.relatedPost?.id
+        };
+      });
 
         const totalUnreadCount = user.chatParticipants.reduce((sum, p) => sum + p.unreadCount, 0);
 
@@ -190,4 +191,3 @@ export async function GET(request: NextRequest) {
     );
   }
 }
-
