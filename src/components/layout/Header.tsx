@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Bars3Icon,
@@ -33,6 +33,7 @@ export default function Header({
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, logout } = useAuth();
   const userMenuRef = useRef<HTMLDivElement>(null);
 
@@ -59,15 +60,15 @@ export default function Header({
     { name: 'Om oss', href: '/om-oss', current: pathname === '/om-oss' },
   ];
 
-  const searchLink = (
-    <Link
-      href="/posts"
-      className="rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
-      aria-label="Søk blant annonser"
-    >
-      <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
-    </Link>
-  );
+  const handleCreateClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!isAuthenticated) {
+      event.preventDefault();
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('redirectAfterLogin', '/posts/new');
+      }
+      router.push('/auth/login');
+    }
+  };
 
   if (!isMounted) {
     return (
@@ -117,15 +118,14 @@ export default function Header({
           </div>
 
           <nav className="hidden items-center space-x-6 md:flex" aria-label="Hovednavigasjon">
-            {isAuthenticated && (
-              <Link
-                href="/posts/new"
-                className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-brand-600"
-              >
-                <PlusCircleIcon className="mr-1.5 h-5 w-5" aria-hidden="true" />
-                Opprett annonse
-              </Link>
-            )}
+            <Link
+              href="/posts/new"
+              onClick={handleCreateClick}
+              className="flex items-center rounded-md px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50 hover:text-brand-600"
+            >
+              <PlusCircleIcon className="mr-1.5 h-5 w-5" aria-hidden="true" />
+              Opprett annonse
+            </Link>
 
             {publicNavigation.map((item) => (
               <Link
@@ -147,9 +147,23 @@ export default function Header({
           </nav>
 
       <div className="flex items-center space-x-4">
+        <Link
+          href="/posts/new"
+          onClick={handleCreateClick}
+          className="md:hidden flex h-10 w-10 items-center justify-center text-neutral-600 transition-colors hover:text-neutral-800"
+          aria-label="Opprett annonse"
+        >
+          <PlusCircleIcon className="h-6 w-6" aria-hidden="true" />
+        </Link>
+        <Link
+          href="/posts"
+          className="md:hidden flex h-10 w-10 items-center justify-center text-neutral-600 transition-colors hover:text-neutral-800"
+          aria-label="Søk blant annonser"
+        >
+          <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
+        </Link>
         {isAuthenticated ? (
           <>
-            {searchLink}
             <Link
               href="/chat"
               className="relative rounded-md p-2 text-neutral-700 hover:bg-neutral-100 hover:text-neutral-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
@@ -206,7 +220,6 @@ export default function Header({
               </>
         ) : (
           <>
-            {searchLink}
             <Link
               href="/auth/login"
               className="text-sm font-medium text-neutral-700 transition-colors hover:text-brand-600"
