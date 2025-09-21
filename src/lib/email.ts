@@ -394,68 +394,90 @@ export interface UnreadChatInfo {
     sentAt: Date;
   };
   postTitle?: string;
+  postId?: string;
 }
 
 function createMessageDigestEmailTemplate(name: string, unreadChats: UnreadChatInfo[], totalUnreadCount: number): EmailTemplate {
   const chatListHtml = unreadChats.map(chat => {
-    const lastMessageInfo = chat.lastMessage 
-      ? `<p style="color: #6b7280; font-size: 14px; margin: 5px 0 0 0; font-style: italic;">
-           Siste melding fra ${chat.lastMessage.senderName}: "${chat.lastMessage.content}"
+    const lastMessageInfo = chat.lastMessage
+      ? `<div style="margin-top: 18px; padding: 16px; background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); border-radius: 12px; border: 1px solid #cbd5e1;">
+           <p style="margin: 0; color: #0f172a; font-size: 14px; line-height: 1.6;">
+             <strong style="color: #1e293b;">${chat.lastMessage.senderName}:</strong> "${chat.lastMessage.content}"
+           </p>
+         </div>`
+      : '';
+
+    const postInfo = chat.postTitle
+      ? `<p style="margin: 4px 0 0 0; color: #475569; font-size: 14px;">
+           📌 Relatert annonse: ${chat.postId
+             ? `<a href="${EMAIL_CONFIG.baseUrl}/posts/${chat.postId}" style="color: #1d4ed8; font-weight: 600; text-decoration: none;">"${chat.postTitle}" ↗</a>`
+             : `"${chat.postTitle}"`
+           }
          </p>`
       : '';
-    
-    const postInfo = chat.postTitle 
-      ? `<p style="color: #6b7280; font-size: 12px; margin: 5px 0 0 0;">
-           Relatert til: ${chat.postTitle}
-         </p>`
-      : '';
-    
+
     return `
-      <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin-bottom: 16px; background-color: #f9fafb;">
-        <table style="width: 100%; border-collapse: collapse;">
-          <tr>
-            <td style="vertical-align: middle;">
-              <h4 style="margin: 0; color: #1f2937; font-size: 16px;">💬 ${chat.otherUserName}</h4>
-            </td>
-            <td style="text-align: right; vertical-align: middle;">
-              <span style="background-color: #dc2626; color: white; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap;">
-                ${chat.unreadCount} ${chat.unreadCount === 1 ? 'ny melding' : 'nye meldinger'}
-              </span>
-            </td>
-          </tr>
-        </table>
+      <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin-bottom: 18px; box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);">
+        <div style="display: flex; justify-content: space-between; align-items: center; gap: 16px;">
+          <div>
+            <p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 600;">${chat.otherUserName}</p>
+            ${postInfo}
+          </div>
+          <span style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 8px 16px; border-radius: 9999px; font-size: 12px; font-weight: 600;">
+            ${chat.unreadCount} ${chat.unreadCount === 1 ? 'ny melding' : 'nye meldinger'}
+          </span>
+        </div>
         ${lastMessageInfo}
-        ${postInfo}
-        <div style="margin-top: 12px;">
-          <a href="${EMAIL_CONFIG.baseUrl}/chat?id=${chat.chatId}" 
-             style="color: #2563eb; text-decoration: none; font-size: 14px; font-weight: 500;">
-            → Se meldinger
+        <div style="margin-top: 24px; text-align: right;">
+          <a href="${EMAIL_CONFIG.baseUrl}/chat?id=${chat.chatId}"
+             style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 12px 24px; text-decoration: none; border-radius: 12px; display: inline-block; font-size: 14px; font-weight: 600;">
+            Svar nå
           </a>
         </div>
       </div>
     `;
   }).join('');
 
-  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${name}! 👋</h2>`;
-  
-  const mainContent = `
-    <p style="color: #374151; line-height: 1.6;">
-      Du har <strong>${totalUnreadCount} ${totalUnreadCount === 1 ? 'ny melding' : 'nye meldinger'}</strong> 
-      som venter på deg på TutorConnect.
-    </p>
-    
-    <div style="margin: 24px 0;">
-      ${chatListHtml}
-    </div>
-    
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="${EMAIL_CONFIG.baseUrl}/chat" 
-         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
-        Se alle meldinger
-      </a>
+  const chatListSection = chatListHtml || `
+    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; text-align: center; color: #475569; font-size: 15px;">
+      Du har ingen uleste meldinger akkurat nå.
     </div>
   `;
-  
+
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${name}! 📫</h2>`;
+
+  const mainContent = `
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); border: 1px solid #f59e0b; padding: 24px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #92400e; font-weight: 600; font-size: 18px;">
+        🔔 Påminnelse: Du har ${totalUnreadCount} ${totalUnreadCount === 1 ? 'ulest melding' : 'uleste meldinger'} på TutorConnect
+      </p>
+      <p style="margin: 12px 0 0 0; color: #78350f; font-size: 15px; line-height: 1.6;">
+        Logg inn for å holde samtalene i gang og svare når det passer deg.
+      </p>
+    </div>
+
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      Her er en oversikt over de nyeste meldingene dine:
+    </p>
+
+    <div style="margin: 24px 0;">
+      ${chatListSection}
+    </div>
+
+    <div style="text-align: center; margin: 36px 0;">
+      <a href="${EMAIL_CONFIG.baseUrl}/chat"
+         style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); transition: all 0.2s; font-size: 15px;">
+        Åpne innboksen
+      </a>
+    </div>
+
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #86efac;">
+      <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">
+        💡 <strong>Tips:</strong> Et kjapt svar gjør det enklere å avtale neste steg og holder dialogen varm.
+      </p>
+    </div>
+  `;
+
   const baseTemplate = createBaseEmailTemplate({
     greeting,
     mainContent,
@@ -486,47 +508,63 @@ export async function sendMessageDigestEmail(
 /**
  * New chat notification email template
  */
-function createNewChatEmailTemplate(receiverName: string, senderName: string, postTitle?: string): EmailTemplate {
+function createNewChatEmailTemplate(receiverName: string, senderName: string, postTitle?: string, postId?: string): EmailTemplate {
   const chatUrl = `${EMAIL_CONFIG.baseUrl}/chat`;
-  
-  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${receiverName}! 👋</h2>`;
-  
+  const postUrl = postId ? `${EMAIL_CONFIG.baseUrl}/posts/${postId}` : null;
+
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${receiverName}! 💬</h2>`;
+
   const mainContent = `
-    <div style="background-color: #dbeafe; border-left: 4px solid #2563eb; padding: 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
-      <p style="margin: 0; color: #1e40af; font-weight: 500;">
-        💬 <strong>${senderName}</strong> har startet en ny samtale med deg!
+    <div style="background: linear-gradient(135deg, #e0f2fe 0%, #bfdbfe 100%); border: 1px solid #93c5fd; padding: 24px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #1d4ed8; font-weight: 600; font-size: 18px;">
+        🔔 Ny samtale: ${senderName} har tatt kontakt med deg
+      </p>
+      <p style="margin: 12px 0 0 0; color: #0f172a; font-size: 15px; line-height: 1.6;">
+        Logg inn på TutorConnect for å lese meldingen og svare når det passer deg.
       </p>
     </div>
-    
+
     ${postTitle ? `
-    <p style="color: #374151; line-height: 1.6;">
-      Samtalen er relatert til innlegget: <strong>"${postTitle}"</strong>
-    </p>
+    <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #cbd5e1;">
+      <p style="margin: 0 0 8px 0; color: #1e293b; font-weight: 600; font-size: 15px;">
+        Samtalen gjelder:
+      </p>
+      <p style="margin: 0; color: #1e293b; font-size: 15px; line-height: 1.6;">
+        ${postUrl
+          ? `<a href="${postUrl}" style="color: #1d4ed8; font-weight: 600; text-decoration: none;">"${postTitle}" ↗</a>`
+          : `"${postTitle}"`
+        }
+      </p>
+    </div>
     ` : `
-    <p style="color: #374151; line-height: 1.6;">
-      En ny person ønsker å komme i kontakt med deg på TutorConnect.
-    </p>
+    <div style="background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #cbd5e1;">
+      <p style="margin: 0; color: #1e293b; font-size: 15px; line-height: 1.6;">
+        Meldingen er sendt uten en tilknyttet annonse. Logg inn for å se hva det gjelder.
+      </p>
+    </div>
     `}
-    
-    <p style="color: #374151; line-height: 1.6;">
-      Logg inn for å se meldingen og svare.
-    </p>
-    
-    <div style="text-align: center; margin: 32px 0;">
-      <a href="${chatUrl}" 
-         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
-        Se samtalen
+
+    <div style="text-align: center; margin: 36px 0;">
+      <a href="${chatUrl}"
+         style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3); transition: all 0.2s; font-size: 15px;">
+        Åpne samtalen
       </a>
     </div>
+
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #86efac;">
+      <p style="margin: 0; color: #166534; font-size: 14px; line-height: 1.6;">
+        💡 <strong>Tips:</strong> Rask respons øker sjansen for god dialog og planlagte avtaler. Du kan alltid fortsette samtalen fra innboksen din.
+      </p>
+    </div>
   `;
-  
+
   const baseTemplate = createBaseEmailTemplate({
     greeting,
     mainContent,
     settingsUrl: `${EMAIL_CONFIG.baseUrl}/settings`,
     footerText: undefined
   });
-  
+
   return {
     subject: `${senderName} har startet en ny samtale med deg`,
     html: baseTemplate.html,
@@ -541,9 +579,10 @@ export async function sendNewChatEmail(
   receiverEmail: string,
   receiverName: string,
   senderName: string,
-  postTitle?: string
+  postTitle?: string,
+  postId?: string
 ): Promise<void> {
-  const template = createNewChatEmailTemplate(receiverName, senderName, postTitle);
+  const template = createNewChatEmailTemplate(receiverName, senderName, postTitle, postId);
   await sendEmail(receiverEmail, template);
 }
 

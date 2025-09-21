@@ -557,6 +557,7 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
         newChatNotificationDone: true,
         relatedPost: {
           select: {
+            id: true,
             title: true,
             user: {
               select: {
@@ -586,7 +587,8 @@ async function handlePOST(request: NextRequest, { params }: { params: Promise<Ro
           postOwner.email,
           postOwner.name || 'TutorConnect-bruker',
           newMessage.sender?.name || 'en TutorConnect-bruker',
-          chatInfo.relatedPost?.title
+          chatInfo.relatedPost?.title,
+          chatInfo.relatedPost?.id
         );
       }
     }
