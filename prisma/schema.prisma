@@ -183,6 +183,7 @@ model Appointment {
   teacherReady       Boolean           @default(false)
   studentReady       Boolean           @default(false)
   bothCompleted      Boolean           @default(false)
+  completionEmailSent Boolean          @default(false)
   reminderTime       Int?
   notes              String?
   cancellationReason String?

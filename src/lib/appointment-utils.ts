@@ -73,25 +73,34 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
       status: 'WAITING_TO_COMPLETE',
       teacherReady: false,
       studentReady: false,
-      bothCompleted: false
+      bothCompleted: false,
+      completionEmailSent: false
     }
   });
 
   // Send appointment completion reminder emails (only for newly expired appointments)
   for (const appointment of expiredAppointments) {
     const { teacher, student } = appointment.chat;
-    
-    // Check if completion emails were already sent (simple check using notes field)
-    const emailAlreadySent = appointment.notes?.includes('COMPLETION_EMAIL_SENT');
-    
-    if (emailAlreadySent) {
-      console.log(`⏭️ Completion emails already sent for appointment ${appointment.id}, skipping`);
+
+    // Acquire a simple lock using the completionEmailSent flag to prevent duplicates
+    const lockResult = await prisma.appointment.updateMany({
+      where: {
+        id: appointment.id,
+        completionEmailSent: false
+      },
+      data: {
+        completionEmailSent: true
+      }
+    });
+
+    if (lockResult.count === 0) {
+      console.log(`⏭️ Completion emails already processing or sent for appointment ${appointment.id}, skipping`);
       continue;
     }
-    
+
     try {
       let emailsSent = false;
-      
+
       // Send email to teacher if they have appointment completion notifications enabled
       if (teacher?.emailAppointmentComplete && teacher.email) {
         await sendAppointmentCompletionEmail(
@@ -121,18 +130,26 @@ export async function updateExpiredAppointments(chatId?: string): Promise<number
         console.log(`✅ Sent appointment completion email to student: ${student.email}`);
         emailsSent = true;
       }
-      
-      // Mark that completion emails have been sent
-      if (emailsSent) {
+
+      if (!emailsSent) {
+        // No emails were sent; revert flag so future attempts can try again
         await prisma.appointment.update({
           where: { id: appointment.id },
           data: {
-            notes: `${appointment.notes || ''}\n\n[SYSTEM] COMPLETION_EMAIL_SENT at ${new Date().toISOString()}`.trim()
+            completionEmailSent: false
           }
         });
       }
     } catch (error) {
       console.error(`❌ Failed to send appointment completion emails for appointment ${appointment.id}:`, error);
+
+      // Release lock so a future attempt can retry
+      await prisma.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          completionEmailSent: false
+        }
+      });
     }
   }
 
