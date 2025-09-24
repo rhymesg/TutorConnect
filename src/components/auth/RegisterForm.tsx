@@ -14,7 +14,7 @@ interface RegisterFormProps {
   className?: string;
 }
 
-export default function RegisterForm19({ 
+export default function RegisterForm({ 
   onSuccess,
   className 
 }: RegisterFormProps) {

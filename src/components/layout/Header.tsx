@@ -247,11 +247,11 @@ export default function Header({
               </>
             )}
 
-            <div className="hidden rounded-lg bg-neutral-100 px-1.5 py-0.5 text-[11px] font-medium md:flex md:flex-col md:items-center md:space-y-1">
+            <div className="hidden rounded-lg bg-neutral-100 px-1 py-0.5 text-[10px] font-medium md:flex md:flex-col md:items-center md:space-y-1">
               <button
                 type="button"
                 onClick={() => setLanguage('no')}
-                className={`w-full rounded-md px-2 py-0.5 text-center transition-colors ${
+                className={`w-full rounded-md px-1.5 py-0.5 text-center transition-colors ${
                   language === 'no'
                     ? 'bg-white text-neutral-900 shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-700'
@@ -264,7 +264,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`w-full rounded-md px-2 py-0.5 text-center transition-colors ${
+                className={`w-full rounded-md px-1.5 py-0.5 text-center transition-colors ${
                   language === 'en'
                     ? 'bg-white text-neutral-900 shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-700'
@@ -276,11 +276,11 @@ export default function Header({
               </button>
             </div>
 
-            <div className="flex flex-col items-center rounded-lg bg-neutral-100 px-1.5 py-0.5 text-[10px] font-medium md:hidden md:space-y-1">
+            <div className="flex flex-col items-center rounded-lg bg-neutral-100 px-1 py-0.5 text-[9px] font-medium md:hidden md:space-y-1">
               <button
                 type="button"
                 onClick={() => setLanguage('no')}
-                className={`w-full rounded-md px-1.5 py-0.5 text-center transition-colors ${
+                className={`w-full rounded-md px-1.25 py-0.5 text-center transition-colors ${
                   language === 'no'
                     ? 'bg-white text-neutral-900 shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-700'
@@ -293,7 +293,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={() => setLanguage('en')}
-                className={`w-full rounded-md px-1.5 py-0.5 text-center transition-colors ${
+                className={`w-full rounded-md px-1.25 py-0.5 text-center transition-colors ${
                   language === 'en'
                     ? 'bg-white text-neutral-900 shadow-sm'
                     : 'text-neutral-500 hover:text-neutral-700'
