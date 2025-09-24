@@ -247,7 +247,7 @@ export default function Header({
               </>
             )}
 
-            <div className="hidden rounded-lg bg-neutral-100 px-1 py-0.5 text-[10px] font-medium md:flex md:flex-col md:items-center md:space-y-1">
+            <div className="hidden rounded-lg bg-neutral-100 px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide md:flex md:flex-col md:items-center md:space-y-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setLanguage('no')}
@@ -276,7 +276,7 @@ export default function Header({
               </button>
             </div>
 
-            <div className="flex flex-col items-center rounded-lg bg-neutral-100 px-1 py-0.5 text-[9px] font-medium md:hidden md:space-y-1">
+            <div className="flex flex-col items-center rounded-lg bg-neutral-100 px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide md:hidden md:space-y-1 shadow-sm">
               <button
                 type="button"
                 onClick={() => setLanguage('no')}
