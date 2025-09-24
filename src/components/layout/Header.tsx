@@ -156,65 +156,7 @@ export default function Header({
             ))}
           </nav>
 
-          <div className="flex items-center space-x-4">
-            <div className="hidden items-center rounded-full bg-neutral-100 p-1 text-xs font-medium md:flex">
-              <button
-                type="button"
-                onClick={() => setLanguage('no')}
-                className={`rounded-full px-3 py-1 transition-colors ${
-                  language === 'no'
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-                aria-pressed={language === 'no'}
-                aria-label="Set language to Norwegian"
-              >
-                NO
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('en')}
-                className={`rounded-full px-3 py-1 transition-colors ${
-                  language === 'en'
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-                aria-pressed={language === 'en'}
-                aria-label="Set language to English"
-              >
-                EN
-              </button>
-            </div>
-
-            <div className="flex items-center rounded-full bg-neutral-100 p-1 text-[10px] font-medium md:hidden">
-              <button
-                type="button"
-                onClick={() => setLanguage('no')}
-                className={`rounded-full px-2 py-1 transition-colors ${
-                  language === 'no'
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-                aria-pressed={language === 'no'}
-                aria-label="Set language to Norwegian"
-              >
-                NO
-              </button>
-              <button
-                type="button"
-                onClick={() => setLanguage('en')}
-                className={`rounded-full px-2 py-1 transition-colors ${
-                  language === 'en'
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-500 hover:text-neutral-700'
-                }`}
-                aria-pressed={language === 'en'}
-                aria-label="Set language to English"
-              >
-                EN
-              </button>
-            </div>
-
+          <div className="flex items-center space-x-3">
             <Link
               href="/posts/new"
               onClick={handleCreateClick}
@@ -230,6 +172,7 @@ export default function Header({
             >
               <MagnifyingGlassIcon className="h-6 w-6" aria-hidden="true" />
             </Link>
+
             {isAuthenticated ? (
               <>
                 <Link
@@ -303,6 +246,64 @@ export default function Header({
                 </Link>
               </>
             )}
+
+            <div className="hidden rounded-lg bg-neutral-100 px-1.5 py-1 text-xs font-medium md:flex md:flex-col md:items-center md:space-y-1">
+              <button
+                type="button"
+                onClick={() => setLanguage('no')}
+                className={`w-full rounded-md px-2.5 py-1 text-center transition-colors ${
+                  language === 'no'
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+                aria-pressed={language === 'no'}
+                aria-label="Set language to Norwegian"
+              >
+                NO
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`w-full rounded-md px-2.5 py-1 text-center transition-colors ${
+                  language === 'en'
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+                aria-pressed={language === 'en'}
+                aria-label="Set language to English"
+              >
+                EN
+              </button>
+            </div>
+
+            <div className="flex flex-col items-center rounded-lg bg-neutral-100 px-1.5 py-1 text-[10px] font-medium md:hidden md:space-y-1">
+              <button
+                type="button"
+                onClick={() => setLanguage('no')}
+                className={`w-full rounded-md px-1.5 py-1 text-center transition-colors ${
+                  language === 'no'
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+                aria-pressed={language === 'no'}
+                aria-label="Set language to Norwegian"
+              >
+                NO
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`w-full rounded-md px-1.5 py-1 text-center transition-colors ${
+                  language === 'en'
+                    ? 'bg-white text-neutral-900 shadow-sm'
+                    : 'text-neutral-500 hover:text-neutral-700'
+                }`}
+                aria-pressed={language === 'en'}
+                aria-label="Set language to English"
+              >
+                EN
+              </button>
+            </div>
           </div>
         </div>
       </div>
