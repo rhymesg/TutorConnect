@@ -9,7 +9,7 @@ export { default as RegionSelector } from './RegionSelector';
 
 // Authentication forms
 export { default as LoginForm } from './LoginForm';
-export { default as RegisterForm } from './RegisterForm';
+export { default as RegisterForm } from './RegisterForm19';
 export { default as ForgotPasswordForm } from './ForgotPasswordForm';
 export { default as ResetPasswordForm } from './ResetPasswordForm';
 export { default as EmailVerificationForm } from './EmailVerificationForm';

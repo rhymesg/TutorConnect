@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDownIcon, CheckIcon } from '@heroicons/react/24/outline';
 import { NorwegianRegion } from '@prisma/client';
+import { useLanguageText } from '@/contexts/LanguageContext';
 
 interface RegionOption {
   value: NorwegianRegion;
@@ -61,7 +62,7 @@ export function RegionSelector({
   required = false,
   disabled = false,
   error,
-  placeholder = 'Velg region...',
+  placeholder,
   onChange,
   onBlur,
   className = '',
@@ -72,6 +73,7 @@ export function RegionSelector({
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  const t = useLanguageText();
 
   const selectedOption = regionOptions.find(option => option.value === value);
 
@@ -191,6 +193,9 @@ export function RegionSelector({
     }
   `.trim();
 
+  const placeholderText = placeholder || t('Velg region...', 'Choose a region...');
+  const noResultsText = t('Ingen regioner funnet', 'No regions found');
+
   return (
     <div className="space-y-1">
       {/* Label */}
@@ -206,7 +211,7 @@ export function RegionSelector({
             id={name || 'region-selector'}
             type="text"
             value={isOpen ? searchTerm : selectedOption?.label || ''}
-            placeholder={placeholder}
+            placeholder={placeholderText}
             required={required}
             disabled={disabled}
             className={inputClasses}
@@ -276,7 +281,7 @@ export function RegionSelector({
                 ))
               ) : (
                 <li className="px-4 py-2 text-sm text-neutral-500 text-center">
-                  Ingen regioner funnet
+                  {noResultsText}
                 </li>
               )}
             </ul>
