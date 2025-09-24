@@ -6,7 +6,7 @@ import AuthForm from './AuthForm19';
 import FormField from './FormField';
 import FormError from './FormError';
 import { RegionSelector } from './RegionSelector';
-import { navigation, forms } from '@/lib/translations';
+import { useLanguageText } from '@/contexts/LanguageContext';
 import { NorwegianRegion } from '@prisma/client';
 
 interface RegisterFormProps {
@@ -26,15 +26,16 @@ export default function RegisterForm19({
   
   // Local state for region selection
   const [selectedRegion, setSelectedRegion] = useState<NorwegianRegion | undefined>();
+  const t = useLanguageText();
 
   return (
     <AuthForm
-      title="Opprett konto"
-      subtitle="Bli med i TutorConnect i dag"
+      title={t('Opprett konto', 'Create your account')}
+      subtitle={t('Bli med i TutorConnect i dag', 'Join TutorConnect today')}
       action={submitAction}
       isSubmitting={isPending}
-      submitButtonText="Opprett konto"
-      submitButtonLoadingText="Oppretter konto..."
+      submitButtonText={t('Opprett konto', 'Create account')}
+      submitButtonLoadingText={t('Oppretter konto...', 'Creating account...')}
       className={className}
       footer={
         <div className="space-y-4">
@@ -43,17 +44,17 @@ export default function RegisterForm19({
               <div className="w-full border-t border-neutral-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-neutral-500">eller</span>
+              <span className="px-2 bg-white text-neutral-500">{t('eller', 'or')}</span>
             </div>
           </div>
           
           <p className="text-sm text-neutral-600">
-            Har du allerede en konto?{' '}
+            {t('Har du allerede en konto?', 'Already have an account?')}{' '}
             <a
               href="/auth/login"
               className="font-medium text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
             >
-              Logg inn her
+              {t('Logg inn her', 'Log in here')}
             </a>
           </p>
         </div>
@@ -69,10 +70,10 @@ export default function RegisterForm19({
 
       {/* Username field */}
       <FormField
-        label="Brukernavn"
+        label={t('Brukernavn', 'Username')}
         name="name"
         type="text"
-        placeholder="Velg et unikt brukernavn"
+        placeholder={t('Velg et unikt brukernavn', 'Choose a unique username')}
         required
         autoComplete="username"
         autoFocus
@@ -81,10 +82,10 @@ export default function RegisterForm19({
 
       {/* Email field */}
       <FormField
-        label={forms.no.email}
+        label={t('E-post', 'Email')}
         name="email"
         type="email"
-        placeholder={forms.no.enterEmail}
+        placeholder={t('Skriv inn e-postadressen din', 'Enter your email address')}
         required
         autoComplete="email"
         error={state?.fieldErrors?.email}
@@ -93,11 +94,12 @@ export default function RegisterForm19({
       {/* Region selector */}
       <div>
         <RegionSelector
-          label="Region"
+          label={t('Region', 'Region')}
           value={selectedRegion}
           onChange={setSelectedRegion}
           required
           error={state?.fieldErrors?.region}
+          placeholder={t('Velg region...', 'Choose a region...')}
         />
         {/* Hidden input for form submission */}
         <input
@@ -109,22 +111,22 @@ export default function RegisterForm19({
 
       {/* Password field */}
       <FormField
-        label={forms.no.password}
+        label={t('Passord', 'Password')}
         name="password"
         type="password"
-        placeholder="Opprett et sterkt passord"
+        placeholder={t('Opprett et sterkt passord', 'Create a strong password')}
         required
         autoComplete="new-password"
         error={state?.fieldErrors?.password}
-        helpText="Passordet må være minst 8 tegn langt"
+        helpText={t('Passordet må være minst 8 tegn langt', 'Password must be at least 8 characters long')}
       />
 
       {/* Confirm Password field */}
       <FormField
-        label="Bekreft passord"
+        label={t('Bekreft passord', 'Confirm password')}
         name="confirmPassword"
         type="password"
-        placeholder="Skriv inn passordet på nytt"
+        placeholder={t('Skriv inn passordet på nytt', 'Re-enter your password')}
         required
         autoComplete="new-password"
         error={state?.fieldErrors?.confirmPassword}
@@ -133,14 +135,14 @@ export default function RegisterForm19({
       {/* Terms and Privacy */}
       <div className="text-xs text-neutral-600">
         <p>
-          Ved å opprette en konto godtar du våre{' '}
+          {t('Ved å opprette en konto godtar du våre', 'By creating an account, you agree to our')}{' '}
           <a
             href="/terms"
             className="text-brand-600 hover:text-brand-500 underline"
             target="_blank"
             rel="noopener noreferrer"
           >
-            vilkår for bruk
+            {t('vilkår for bruk', 'Terms of Use')}
           </a>
           {' '}og{' '}
           <a
@@ -149,7 +151,7 @@ export default function RegisterForm19({
             target="_blank"
             rel="noopener noreferrer"
           >
-            personvernpolicy
+            {t('personvernpolicy', 'Privacy Policy')}
           </a>
           .
         </p>
@@ -161,7 +163,7 @@ export default function RegisterForm19({
           <svg className="h-4 w-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
           </svg>
-          Din informasjon er beskyttet med sikker kryptering
+          {t('Din informasjon er beskyttet med sikker kryptering', 'Your information is protected with secure encryption')}
         </p>
       </div>
     </AuthForm>
