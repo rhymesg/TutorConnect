@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface PlatformStats {
   teachers: number;
@@ -13,6 +14,8 @@ interface PlatformStats {
 export default function StatsSection() {
   const [stats, setStats] = useState<PlatformStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const { language } = useLanguage();
+  const t = useLanguageText();
 
   useEffect(() => {
     async function fetchStats() {
@@ -52,7 +55,7 @@ export default function StatsSection() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-              Del av et voksende læringsfellesskap
+              {t('Del av et voksende læringsfellesskap', 'Part of a growing learning community')}
             </h2>
           </div>
           <div className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -76,7 +79,9 @@ export default function StatsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="text-center">
           <h2 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
-            {stats ? "Del av et voksende læringsfellesskap" : "Hvorfor TutorConnect?"}
+            {stats
+              ? t('Del av et voksende læringsfellesskap', 'Part of a growing learning community')
+              : t('Hvorfor TutorConnect?', 'Why TutorConnect?')}
           </h2>
         </div>
         
@@ -90,7 +95,13 @@ export default function StatsSection() {
                     {stats.teachers}
                   </span>
                   <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
-                    {stats.teachers === 1 ? 'Engasjert lærer' : 'Engasjerte lærere'}
+                    {language === 'no'
+                      ? stats.teachers === 1
+                        ? 'Engasjert lærer'
+                        : 'Engasjerte lærere'
+                      : stats.teachers === 1
+                        ? 'Engaged tutor'
+                        : 'Engaged tutors'}
                   </span>
                 </Link>
               </div>
@@ -101,7 +112,13 @@ export default function StatsSection() {
                     {stats.students}
                   </span>
                   <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
-                    {stats.students === 1 ? 'Inspirert student' : 'Inspirerte studenter'}
+                    {language === 'no'
+                      ? stats.students === 1
+                        ? 'Inspirert student'
+                        : 'Inspirerte studenter'
+                      : stats.students === 1
+                        ? 'Inspired student'
+                        : 'Inspired students'}
                   </span>
                 </Link>
               </div>
@@ -112,7 +129,13 @@ export default function StatsSection() {
                     {stats.totalPosts}
                   </span>
                   <span className="mt-2 text-sm font-medium text-neutral-600 group-hover:text-brand-700 transition-colors">
-                    {stats.totalPosts === 1 ? 'Aktiv annonse' : 'Aktive annonser'}
+                    {language === 'no'
+                      ? stats.totalPosts === 1
+                        ? 'Aktiv annonse'
+                        : 'Aktive annonser'
+                      : stats.totalPosts === 1
+                        ? 'Active listing'
+                        : 'Active listings'}
                   </span>
                 </Link>
               </div>
@@ -121,16 +144,22 @@ export default function StatsSection() {
             // Show platform benefits only when API fails
             <>
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">Gratis</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">Ingen skjulte kostnader</div>
+                <div className="text-4xl font-bold text-brand-600">{t('Gratis', 'Free')}</div>
+                <div className="mt-2 text-sm font-medium text-neutral-600">
+                  {t('Ingen skjulte kostnader', 'No hidden costs')}
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">Direkte</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">Kontakt lærere uten mellomledd</div>
+                <div className="text-4xl font-bold text-brand-600">{t('Direkte', 'Direct')}</div>
+                <div className="mt-2 text-sm font-medium text-neutral-600">
+                  {t('Kontakt lærere uten mellomledd', 'Reach tutors without middlemen')}
+                </div>
               </div>
               <div className="text-center">
-                <div className="text-4xl font-bold text-brand-600">Fleksibelt</div>
-                <div className="mt-2 text-sm font-medium text-neutral-600">Avtale tid og sted som passer</div>
+                <div className="text-4xl font-bold text-brand-600">{t('Fleksibelt', 'Flexible')}</div>
+                <div className="mt-2 text-sm font-medium text-neutral-600">
+                  {t('Avtal tid og sted som passer', 'Schedule a time and place that suits you')}
+                </div>
               </div>
             </>
           )}
