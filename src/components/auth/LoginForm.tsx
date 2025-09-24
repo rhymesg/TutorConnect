@@ -6,7 +6,7 @@ import AuthForm from './AuthForm';
 import FormField from './FormField';
 import FormError from './FormError';
 import { LoginUserInput, loginUserSchema } from '@/schemas/auth';
-import { navigation, forms, actions, messages } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface FormErrors {
   [key: string]: string;
@@ -24,6 +24,8 @@ export default function LoginForm({
   className 
 }: LoginFormProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = useLanguageText();
   
   // Form state
   const [formData, setFormData] = useState<Partial<LoginUserInput>>({
@@ -106,11 +108,23 @@ export default function LoginForm({
       if (!response.ok) {
         // Handle different error scenarios
         if (response.status === 429) {
-          setGeneralError('For mange innloggingsforsøk. Prøv igjen senere.');
+          setGeneralError(
+            language === 'no'
+              ? 'For mange innloggingsforsøk. Prøv igjen senere.'
+              : 'Too many login attempts. Please try again later.'
+          );
         } else if (response.status === 401) {
-          setGeneralError('Ugyldig e-postadresse eller passord.');
+          setGeneralError(
+            language === 'no'
+              ? 'Ugyldig e-postadresse eller passord.'
+              : 'Invalid email or password.'
+          );
         } else if (response.status === 423) {
-          setGeneralError('Kontoen din er midlertidig låst. Kontakt support for hjelp.');
+          setGeneralError(
+            language === 'no'
+              ? 'Kontoen din er midlertidig låst. Kontakt support for hjelp.'
+              : 'Your account is temporarily locked. Contact support for assistance.'
+          );
         } else if (data.errors) {
           // Handle field-specific errors
           const formErrors: FormErrors = {};
@@ -121,7 +135,12 @@ export default function LoginForm({
           });
           setErrors(formErrors);
         } else {
-          setGeneralError(data.message || 'Det oppstod en feil ved innlogging.');
+          setGeneralError(
+            data.message ||
+              (language === 'no'
+                ? 'Det oppstod en feil ved innlogging.'
+                : 'An error occurred while logging in.')
+          );
         }
         return;
       }
@@ -152,7 +171,11 @@ export default function LoginForm({
 
     } catch (error) {
       console.error('Login error:', error);
-      setGeneralError('Det oppstod en nettverksfeil. Prøv igjen senere.');
+      setGeneralError(
+        language === 'no'
+          ? 'Det oppstod en nettverksfeil. Prøv igjen senere.'
+          : 'A network error occurred. Please try again later.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -160,12 +183,12 @@ export default function LoginForm({
 
   return (
     <AuthForm
-      title="Logg inn"
-      subtitle="Velkommen tilbake til TutorConnect"
+      title={t('Logg inn', 'Log in')}
+      subtitle={t('Velkommen tilbake til TutorConnect', 'Welcome back to TutorConnect')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
-      submitButtonText={navigation.no.login}
-      submitButtonLoadingText="Logger inn..."
+      submitButtonText={t('Logg inn', 'Log in')}
+      submitButtonLoadingText={t('Logger inn...', 'Signing you in...')}
       className={className}
       footer={
         <div className="space-y-4">
@@ -174,17 +197,17 @@ export default function LoginForm({
               <div className="w-full border-t border-neutral-300" />
             </div>
             <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-neutral-500">eller</span>
+              <span className="px-2 bg-white text-neutral-500">{t('eller', 'or')}</span>
             </div>
           </div>
           
           <p className="text-sm text-neutral-600">
-            Har du ikke en konto enda?{' '}
+            {t('Har du ikke en konto enda?', "Don't have an account yet?")}{' '}
             <a
               href="/auth/register"
               className="font-medium text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
             >
-              Registrer deg her
+              {t('Registrer deg her', 'Sign up here')}
             </a>
           </p>
         </div>
@@ -201,11 +224,11 @@ export default function LoginForm({
 
       {/* Email field */}
       <FormField
-        label={forms.no.email}
+        label={t('E-post', 'Email')}
         name="email"
         type="email"
         value={formData.email}
-        placeholder={forms.no.enterEmail}
+        placeholder={t('Skriv inn e-postadressen din', 'Enter your email address')}
         required
         autoComplete="email"
         autoFocus
@@ -215,11 +238,11 @@ export default function LoginForm({
 
       {/* Password field */}
       <FormField
-        label={forms.no.password}
+        label={t('Passord', 'Password')}
         name="password"
         type="password"
         value={formData.password}
-        placeholder={forms.no.enterPassword}
+        placeholder={t('Skriv inn passordet ditt', 'Enter your password')}
         required
         autoComplete="current-password"
         error={errors.password}
@@ -237,7 +260,7 @@ export default function LoginForm({
             className="h-4 w-4 text-brand-600 border-neutral-300 rounded focus:ring-brand-500 focus:ring-offset-0"
           />
           <span className="text-sm text-neutral-700">
-            Husk meg
+            {t('Husk meg', 'Remember me')}
           </span>
         </label>
 
@@ -246,7 +269,7 @@ export default function LoginForm({
           onClick={() => setShowForgotPassword(true)}
           className="text-sm text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
         >
-          Glemt passord?
+          {t('Glemt passord?', 'Forgot password?')}
         </button>
       </div>
 
@@ -270,17 +293,18 @@ export default function LoginForm({
             </div>
             <div className="ml-3 flex-1">
               <p className="text-sm text-blue-700">
-                <strong>Glemt passordet ditt?</strong>
+                <strong>{t('Glemt passordet ditt?', 'Forgot your password?')}</strong>
               </p>
               <p className="text-sm text-blue-600 mt-1">
-                Ikke bekymre deg! Du kan tilbakestille passordet ditt ved å klikke på lenken under.
+                {t('Ikke bekymre deg! Du kan tilbakestille passordet ditt ved å klikke på lenken under.',
+                   "No worries! You can reset it by following the link below.")}
               </p>
               <div className="mt-3">
                 <a
                   href="/auth/forgot-password"
                   className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                 >
-                  Tilbakestill passord
+                  {t('Tilbakestill passord', 'Reset password')}
                 </a>
               </div>
             </div>
@@ -289,7 +313,7 @@ export default function LoginForm({
                 type="button"
                 onClick={() => setShowForgotPassword(false)}
                 className="inline-flex text-blue-400 hover:text-blue-600 focus:outline-none"
-                aria-label="Lukk"
+                aria-label={t('Lukk', 'Close')}
               >
                 <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   <path
@@ -310,7 +334,7 @@ export default function LoginForm({
           <svg className="h-4 w-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
           </svg>
-          Din pålogging er beskyttet med sikker kryptering
+          {t('Din pålogging er beskyttet med sikker kryptering', 'Your sign-in is protected with secure encryption')}
         </p>
       </div>
     </AuthForm>

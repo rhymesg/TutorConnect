@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import FormField from './FormField';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 export default function SimpleLoginForm() {
   const [email, setEmail] = useState('');
@@ -12,6 +13,8 @@ export default function SimpleLoginForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
   const { login } = useAuth();
+  const { language } = useLanguage();
+  const t = useLanguageText();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,11 +37,18 @@ export default function SimpleLoginForm() {
           router.push('/profile');
         }
       } else {
-        setError(result.error || 'Login failed');
+        setError(
+          result.error ||
+            (language === 'no' ? 'Innlogging mislyktes' : 'Login failed')
+        );
       }
     } catch (error) {
       console.error('Login error:', error);
-      setError('An unexpected error occurred');
+      setError(
+        language === 'no'
+          ? 'Det oppstod en uventet feil'
+          : 'An unexpected error occurred'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -48,10 +58,10 @@ export default function SimpleLoginForm() {
     <>
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-          Logg inn
+          {t('Logg inn', 'Log in')}
         </h2>
         <p className="text-neutral-600">
-          Velkommen tilbake til TutorConnect
+          {t('Velkommen tilbake til TutorConnect', 'Welcome back to TutorConnect')}
         </p>
       </div>
 
@@ -77,10 +87,10 @@ export default function SimpleLoginForm() {
         )}
 
         <FormField
-          label="E-postadresse"
+          label={t('E-postadresse', 'Email address')}
           name="email"
           type="email"
-          placeholder="din@epost.no"
+          placeholder={t('din@epost.no', 'you@example.com')}
           autoComplete="email"
           autoFocus
           value={email}
@@ -90,20 +100,20 @@ export default function SimpleLoginForm() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <label htmlFor="password" className="block text-sm font-medium text-neutral-700">
-              Passord
+              {t('Passord', 'Password')}
             </label>
             <a
               href="/auth/forgot-password"
               className="text-sm font-medium text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
             >
-              Glemt passord?
+              {t('Glemt passord?', 'Forgot password?')}
             </a>
           </div>
           <FormField
             label=""
             name="password"
             type="password"
-            placeholder="Skriv inn passordet ditt"
+            placeholder={t('Skriv inn passordet ditt', 'Enter your password')}
             autoComplete="current-password"
             value={password}
             onChange={setPassword}
@@ -116,7 +126,7 @@ export default function SimpleLoginForm() {
           disabled={isSubmitting}
           className="w-full rounded-lg bg-brand-600 px-4 py-3 text-sm font-medium text-white hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
         >
-          {isSubmitting ? 'Logger inn...' : 'Logg inn'}
+          {isSubmitting ? t('Logger inn...', 'Signing you in...') : t('Logg inn', 'Log in')}
         </button>
       </form>
 
@@ -126,17 +136,17 @@ export default function SimpleLoginForm() {
             <div className="w-full border-t border-neutral-300" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-white text-neutral-500">eller</span>
+            <span className="px-2 bg-white text-neutral-500">{t('eller', 'or')}</span>
           </div>
         </div>
         
         <p className="text-sm text-neutral-600">
-          Har du ikke en konto enda?{' '}
+          {t('Har du ikke en konto enda?', "Don't have an account yet?")}{' '}
           <a
             href="/auth/register"
             className="font-medium text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
           >
-            Registrer deg her
+            {t('Registrer deg her', 'Sign up here')}
           </a>
         </p>
       </div>
@@ -147,7 +157,7 @@ export default function SimpleLoginForm() {
           <svg className="h-4 w-4 mr-2 text-green-500" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
           </svg>
-          Din pålogging er beskyttet med sikker kryptering
+          {t('Din pålogging er beskyttet med sikker kryptering', 'Your sign-in is protected with secure encryption')}
         </p>
       </div>
     </>

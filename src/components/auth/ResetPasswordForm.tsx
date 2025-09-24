@@ -6,7 +6,7 @@ import AuthForm from './AuthForm';
 import FormField from './FormField';
 import FormError from './FormError';
 import { PasswordResetConfirmInput, passwordResetConfirmSchema } from '@/schemas/auth';
-import { forms, actions } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { CheckCircleIcon } from '@heroicons/react/24/outline';
 
 interface FormErrors {
@@ -27,6 +27,8 @@ function ResetPasswordFormInner({
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = propToken || searchParams.get('token') || '';
+  const { language } = useLanguage();
+  const t = useLanguageText();
 
   // Form state
   const [formData, setFormData] = useState<Partial<PasswordResetConfirmInput>>({
@@ -40,12 +42,15 @@ function ResetPasswordFormInner({
   const [generalError, setGeneralError] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
-  const [tokenError, setTokenError] = useState<string>('');
+  const [tokenError, setTokenError] = useState<{ no: string; en: string } | null>(null);
 
   // Validate token on mount
   useEffect(() => {
     if (!token) {
-      setTokenError('Ugyldig eller manglende tilbakestillingstoken.');
+      setTokenError({
+        no: 'Ugyldig eller manglende tilbakestillingstoken.',
+        en: 'Invalid or missing reset token.',
+      });
     } else {
       // Update form data with token
       setFormData(prev => ({ ...prev, token }));
@@ -119,9 +124,16 @@ function ResetPasswordFormInner({
 
       if (!response.ok) {
         if (response.status === 400 && data.message?.includes('token')) {
-          setTokenError('Ugyldig eller utløpt tilbakestillingstoken. Be om en ny lenke.');
+          setTokenError({
+            no: 'Ugyldig eller utløpt tilbakestillingstoken. Be om en ny lenke.',
+            en: 'Invalid or expired reset token. Please request a new link.',
+          });
         } else if (response.status === 429) {
-          setGeneralError('For mange forsøk. Prøv igjen senere.');
+          setGeneralError(
+            language === 'no'
+              ? 'For mange forsøk. Prøv igjen senere.'
+              : 'Too many attempts. Please try again later.'
+          );
         } else if (data.errors) {
           // Handle field-specific errors
           const formErrors: FormErrors = {};
@@ -132,7 +144,12 @@ function ResetPasswordFormInner({
           });
           setErrors(formErrors);
         } else {
-          setGeneralError(data.message || 'Det oppstod en feil. Prøv igjen.');
+          setGeneralError(
+            data.message ||
+              (language === 'no'
+                ? 'Det oppstod en feil. Prøv igjen.'
+                : 'Something went wrong. Please try again.')
+          );
         }
         return;
       }
@@ -151,7 +168,11 @@ function ResetPasswordFormInner({
 
     } catch (error) {
       console.error('Password reset error:', error);
-      setGeneralError('Det oppstod en nettverksfeil. Prøv igjen senere.');
+      setGeneralError(
+        language === 'no'
+          ? 'Det oppstod en nettverksfeil. Prøv igjen senere.'
+          : 'A network error occurred. Please try again later.'
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -168,10 +189,10 @@ function ResetPasswordFormInner({
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-            Ugyldig lenke
+            {t('Ugyldig lenke', 'Invalid link')}
           </h1>
           <p className="text-sm text-neutral-600 mb-6">
-            {tokenError}
+            {language === 'no' ? tokenError.no : tokenError.en}
           </p>
         </div>
 
@@ -180,7 +201,7 @@ function ResetPasswordFormInner({
             href="/auth/forgot-password"
             className="w-full flex justify-center items-center px-4 py-3 text-sm font-medium text-white bg-brand-600 border border-transparent rounded-lg hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500 transition-colors duration-200"
           >
-            Be om ny tilbakestillingslenke
+            {t('Be om ny tilbakestillingslenke', 'Request a new reset link')}
           </a>
 
           <div className="text-center">
@@ -188,7 +209,7 @@ function ResetPasswordFormInner({
               href="/auth/login"
               className="text-sm text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
             >
-              Tilbake til innlogging
+              {t('Tilbake til innlogging', 'Back to login')}
             </a>
           </div>
         </div>
@@ -205,16 +226,18 @@ function ResetPasswordFormInner({
             <CheckCircleIcon className="h-6 w-6 text-green-600" aria-hidden="true" />
           </div>
           <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-            Passord tilbakestilt!
+            {t('Passord tilbakestilt!', 'Password reset!')}
           </h1>
           <p className="text-sm text-neutral-600">
-            Passordet ditt har blitt oppdatert. Du blir automatisk videresendt til innloggingssiden.
+            {t('Passordet ditt har blitt oppdatert. Du blir automatisk videresendt til innloggingssiden.',
+               'Your password has been updated. You will be redirected to the login page automatically.')}
           </p>
         </div>
 
         <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
           <p className="text-sm text-green-800">
-            Du kan nå logge inn med ditt nye passord. Siden oppdateres automatisk om noen sekunder.
+            {t('Du kan nå logge inn med ditt nye passord. Siden oppdateres automatisk om noen sekunder.',
+               'You can now log in with your new password. The page will refresh automatically in a few seconds.')}
           </p>
         </div>
 
@@ -223,7 +246,7 @@ function ResetPasswordFormInner({
             href="/auth/login"
             className="inline-flex items-center px-4 py-2 text-sm font-medium text-brand-600 hover:text-brand-500 focus:outline-none focus:underline"
           >
-            Gå til innlogging nå
+            {t('Gå til innlogging nå', 'Go to login now')}
           </a>
         </div>
       </div>
@@ -233,12 +256,12 @@ function ResetPasswordFormInner({
   // Form state
   return (
     <AuthForm
-      title="Lag nytt passord"
-      subtitle="Skriv inn ditt nye passord nedenfor"
+      title={t('Lag nytt passord', 'Create a new password')}
+      subtitle={t('Skriv inn ditt nye passord nedenfor', 'Enter your new password below')}
       onSubmit={handleSubmit}
       isSubmitting={isSubmitting}
-      submitButtonText="Oppdater passord"
-      submitButtonLoadingText="Oppdaterer passord..."
+      submitButtonText={t('Oppdater passord', 'Update password')}
+      submitButtonLoadingText={t('Oppdaterer passord...', 'Updating password...')}
       className={className}
       footer={
         <div className="text-center">
@@ -246,7 +269,7 @@ function ResetPasswordFormInner({
             href="/auth/login"
             className="text-sm text-neutral-600 hover:text-neutral-900 focus:outline-none focus:underline"
           >
-            Tilbake til innlogging
+            {t('Tilbake til innlogging', 'Back to login')}
           </a>
         </div>
       }
@@ -262,26 +285,29 @@ function ResetPasswordFormInner({
 
       {/* Password field */}
       <FormField
-        label="Nytt passord"
+        label={t('Nytt passord', 'New password')}
         name="password"
         type="password"
         value={formData.password}
-        placeholder="Skriv inn nytt passord"
+        placeholder={t('Skriv inn nytt passord', 'Enter a new password')}
         required
         autoComplete="new-password"
         autoFocus
         error={errors.password}
-        helperText="Minimum 8 tegn med store og små bokstaver, tall og spesialtegn"
+        helperText={t(
+          'Minimum 8 tegn med store og små bokstaver, tall og spesialtegn',
+          'At least 8 characters with uppercase, lowercase, numbers, and symbols'
+        )}
         onChange={(value) => updateField('password', value)}
       />
 
       {/* Confirm password field */}
       <FormField
-        label="Bekreft nytt passord"
+        label={t('Bekreft nytt passord', 'Confirm new password')}
         name="confirmPassword"
         type="password"
         value={formData.confirmPassword}
-        placeholder="Gjenta det nye passordet"
+        placeholder={t('Gjenta det nye passordet', 'Repeat the new password')}
         required
         autoComplete="new-password"
         error={errors.confirmPassword}
@@ -291,14 +317,14 @@ function ResetPasswordFormInner({
       {/* Security info */}
       <div className="text-xs text-neutral-500 bg-neutral-50 p-3 rounded-lg">
         <p className="mb-2">
-          <strong>Tips for et sikkert passord:</strong>
+          <strong>{t('Tips for et sikkert passord:', 'Tips for a secure password:')}</strong>
         </p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>Bruk minst 8 tegn</li>
-          <li>Kombiner store og små bokstaver</li>
-          <li>Inkluder tall og spesialtegn</li>
-          <li>Unngå lett gjenkjennelig informasjon</li>
-          <li>Bruk ikke samme passord på andre nettsteder</li>
+          <li>{t('Bruk minst 8 tegn', 'Use at least 8 characters')}</li>
+          <li>{t('Kombiner store og små bokstaver', 'Mix uppercase and lowercase letters')}</li>
+          <li>{t('Inkluder tall og spesialtegn', 'Include numbers and symbols')}</li>
+          <li>{t('Unngå lett gjenkjennelig informasjon', 'Avoid easy-to-guess information')}</li>
+          <li>{t('Bruk ikke samme passord på andre nettsteder', 'Use different passwords on other sites')}</li>
         </ul>
       </div>
     </AuthForm>
