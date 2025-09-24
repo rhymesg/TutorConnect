@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import MainLayout from '@/components/layout/MainLayout';
 import ErrorBoundary from '@/components/ErrorBoundary';
 import { Analytics } from '@vercel/analytics/next';
+import { LanguageProvider } from '@/contexts/LanguageContext';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -129,11 +130,13 @@ export default function RootLayout({
       </head>
       <body className="bg-neutral-50 font-sans antialiased" suppressHydrationWarning>
         <ErrorBoundary>
-          <AuthProvider>
-            <MainLayout>
-              {children}
-            </MainLayout>
-          </AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>
+              <MainLayout>
+                {children}
+              </MainLayout>
+            </AuthProvider>
+          </LanguageProvider>
         </ErrorBoundary>
         <Analytics />
         
