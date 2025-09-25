@@ -17,13 +17,13 @@ import {
   RotateCcw
 } from 'lucide-react';
 import { PostFilters, PostType, Subject, AgeGroup, NorwegianRegion } from '@/types/database';
-import { 
-  NORWEGIAN_SUBJECTS, 
-  AGE_GROUP_CONFIG, 
-  NORWEGIAN_REGIONS_CONFIG, 
-  PRICE_RANGES 
+import {
+  NORWEGIAN_SUBJECTS,
+  AGE_GROUP_CONFIG,
+  NORWEGIAN_REGIONS_CONFIG,
+  PRICE_RANGES
 } from '@/lib/search-utils';
-import { education, regions, forms, actions } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface FilterPanelProps {
   filters: PostFilters;
@@ -57,6 +57,123 @@ export default function FilterPanel({
     price: false,
     availability: false,
   });
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const subjectLabelsEn: Record<string, string> = {
+    MATHEMATICS: 'Mathematics',
+    NORWEGIAN: 'Norwegian',
+    ENGLISH: 'English',
+    SCIENCE: 'Science',
+    HISTORY: 'History',
+    MUSIC: 'Music',
+    ART: 'Art',
+    PROGRAMMING: 'Programming',
+    PHYSICS: 'Physics',
+    CHEMISTRY: 'Chemistry',
+    BIOLOGY: 'Biology',
+    GEOGRAPHY: 'Geography',
+    ECONOMICS: 'Economics',
+    PSYCHOLOGY: 'Psychology',
+    LANGUAGES: 'Languages',
+  };
+
+  const ageGroupLabelsEn: Record<string, string> = {
+    PRESCHOOL: '0-5 yrs',
+    PRIMARY_LOWER: '6-9 yrs',
+    PRIMARY_UPPER: '10-12 yrs',
+    MIDDLE: '13-15 yrs',
+    SECONDARY: '16-18 yrs',
+    ADULTS: '19+ yrs',
+  };
+
+  const getSubjectLabel = (key: string) => {
+    const config = NORWEGIAN_SUBJECTS[key as keyof typeof NORWEGIAN_SUBJECTS];
+    if (!config) return key;
+    return language === 'no'
+      ? config.no
+      : subjectLabelsEn[key] || config.no;
+  };
+
+  const getAgeGroupLabel = (key: string) => {
+    const config = AGE_GROUP_CONFIG[key as keyof typeof AGE_GROUP_CONFIG];
+    if (!config) return key;
+    return language === 'no'
+      ? config.no
+      : ageGroupLabelsEn[key] || config.no;
+  };
+
+  const formatPriceBadge = (min?: number, max?: number) => {
+    if (min && max) {
+      return language === 'no' ? `${min}-${max} kr` : `${min}-${max} NOK`;
+    }
+    if (min) {
+      return language === 'no' ? `Fra ${min} kr` : `From ${min} NOK`;
+    }
+    if (max) {
+      return language === 'no' ? `Opptil ${max} kr` : `Up to ${max} NOK`;
+    }
+    return '';
+  };
+
+  const formatResultSummary = (count: number) => {
+    if (count === 0) {
+      return t('Ingen resultater funnet', 'No results found');
+    }
+    const noun = language === 'no'
+      ? count === 1 ? 'resultat' : 'resultater'
+      : count === 1 ? 'result' : 'results';
+    return language === 'no'
+      ? `${count} ${noun} funnet`
+      : `${count} ${noun}`;
+  };
+
+  const formatResultCountHeader = (count: number) => {
+    const noun = language === 'no'
+      ? count === 1 ? 'resultat' : 'resultater'
+      : count === 1 ? 'result' : 'results';
+    return `${count} ${noun}`;
+  };
+
+  const formatPriceRangeLabel = (min?: number | null, max?: number | null, defaultLabel?: string) => {
+    if (language === 'no') {
+      return defaultLabel || formatPriceBadge(min ?? undefined, max ?? undefined);
+    }
+    if (min && max) {
+      return `${min}-${max} NOK`;
+    }
+    if (min && !max) {
+      return `Over ${min} NOK`;
+    }
+    if (!min && max) {
+      return `Under ${max} NOK`;
+    }
+    return defaultLabel || 'Any price';
+  };
+
+  const labels = {
+    toggle: t('Filtrer', 'Filter'),
+    panelTitle: t('Filtrer søket', 'Refine search'),
+    typeTitle: t('Type annonse', 'Listing type'),
+    selected: t('Valgt', 'Selected'),
+    teacherTitle: t('Tilbyr undervisning', 'Offers tutoring'),
+    teacherDesc: t('Lærere som tilbyr timer', 'Tutors offering lessons'),
+    studentTitle: t('Søker lærer', 'Seeking tutor'),
+    studentDesc: t('Studenter som søker hjelp', 'Students looking for help'),
+    subjectsTitle: t('Fag', 'Subjects'),
+    ageGroupsTitle: t('Aldersgrupper', 'Age groups'),
+    locationTitle: t('Område', 'Location'),
+    priceTitle: t('Prisområde', 'Price range'),
+    customPrice: t('Egendefinert område', 'Custom range'),
+    priceFrom: t('Fra (kr/time)', 'From (NOK/hour)'),
+    priceTo: t('Til (kr/time)', 'To (NOK/hour)'),
+    fromLabel: t('Fra', 'From'),
+    upToLabel: t('Opptil', 'Up to'),
+    reset: t('Nullstill', 'Reset'),
+    resetAll: t('Nullstill alle', 'Reset all'),
+    closeFilters: t('Lukk filtere', 'Close filters'),
+    badgeSelectedCount: t('valgt', 'selected'),
+  };
 
   // Track active filter count
   const getActiveFilterCount = () => {
@@ -99,31 +216,31 @@ export default function FilterPanel({
   const filterSections: FilterSection[] = [
     {
       id: 'type',
-      title: 'Type annonse',
+      title: labels.typeTitle,
       icon: <Zap className="w-4 h-4" />,
       isExpanded: expandedSections.type
     },
     {
       id: 'subject',
-      title: 'Fag',
+      title: labels.subjectsTitle,
       icon: <BookOpen className="w-4 h-4" />,
       isExpanded: expandedSections.subject
     },
     {
       id: 'ageGroups',
-      title: 'Aldersgrupper',
+      title: labels.ageGroupsTitle,
       icon: <Users className="w-4 h-4" />,
       isExpanded: expandedSections.ageGroups
     },
     {
       id: 'location',
-      title: 'Område',
+      title: labels.locationTitle,
       icon: <MapPin className="w-4 h-4" />,
       isExpanded: expandedSections.location
     },
     {
       id: 'price',
-      title: 'Prisområde',
+      title: labels.priceTitle,
       icon: <Banknote className="w-4 h-4" />,
       isExpanded: expandedSections.price
     },
@@ -141,7 +258,7 @@ export default function FilterPanel({
         }`}
       >
         <Filter className="w-4 h-4 mr-2" />
-        Filtrer
+        {labels.toggle}
         {hasActiveFilters && (
           <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-brand-500 rounded-full">
             {getActiveFilterCount()}
@@ -161,10 +278,10 @@ export default function FilterPanel({
           <div className="flex items-center justify-between p-4 border-b border-neutral-200">
             <div className="flex items-center">
               <Filter className="w-5 h-5 text-neutral-600 mr-2" />
-              <h3 className="text-lg font-semibold text-neutral-900">Filtrer søket</h3>
+              <h3 className="text-lg font-semibold text-neutral-900">{labels.panelTitle}</h3>
               {resultCount !== undefined && (
                 <span className="ml-3 text-sm text-neutral-500">
-                  {resultCount} resultater
+                  {formatResultCountHeader(resultCount)}
                 </span>
               )}
             </div>
@@ -175,7 +292,7 @@ export default function FilterPanel({
                   className="inline-flex items-center px-3 py-1 text-sm text-neutral-600 hover:text-neutral-800 transition-colors"
                 >
                   <RotateCcw className="w-4 h-4 mr-1" />
-                  Nullstill
+                  {labels.reset}
                 </button>
               )}
               <button
@@ -197,10 +314,10 @@ export default function FilterPanel({
               >
                 <div className="flex items-center">
                   <Zap className="w-4 h-4 text-neutral-500 mr-2" />
-                  <span className="font-medium text-neutral-900">Type annonse</span>
+                  <span className="font-medium text-neutral-900">{labels.typeTitle}</span>
                   {filters.type && (
                     <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
-                      Valgt
+                      {labels.selected}
                     </span>
                   )}
                 </div>
@@ -223,8 +340,8 @@ export default function FilterPanel({
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">Tilbyr undervisning</div>
-                        <div className="text-sm text-neutral-500 mt-1">Lærere som tilbyr timer</div>
+                        <div className="font-medium">{labels.teacherTitle}</div>
+                        <div className="text-sm text-neutral-500 mt-1">{labels.teacherDesc}</div>
                       </div>
                       {filters.type === 'TEACHER' && (
                         <Check className="w-5 h-5 text-brand-600" />
@@ -241,8 +358,8 @@ export default function FilterPanel({
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="font-medium">Søker lærer</div>
-                        <div className="text-sm text-neutral-500 mt-1">Studenter som søker hjelp</div>
+                        <div className="font-medium">{labels.studentTitle}</div>
+                        <div className="text-sm text-neutral-500 mt-1">{labels.studentDesc}</div>
                       </div>
                       {filters.type === 'STUDENT' && (
                         <Check className="w-5 h-5 text-brand-600" />
@@ -261,10 +378,10 @@ export default function FilterPanel({
               >
                 <div className="flex items-center">
                   <BookOpen className="w-4 h-4 text-neutral-500 mr-2" />
-                  <span className="font-medium text-neutral-900">Fag</span>
+                  <span className="font-medium text-neutral-900">{labels.subjectsTitle}</span>
                   {filters.subject && (
                     <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
-                      {NORWEGIAN_SUBJECTS[filters.subject as keyof typeof NORWEGIAN_SUBJECTS]?.no || filters.subject}
+                      {getSubjectLabel(filters.subject)}
                     </span>
                   )}
                 </div>
@@ -289,7 +406,7 @@ export default function FilterPanel({
                         }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="font-medium">{config.no}</span>
+                          <span className="font-medium">{getSubjectLabel(key)}</span>
                           {filters.subject === key && (
                             <Check className="w-4 h-4 text-brand-600" />
                           )}
@@ -309,10 +426,10 @@ export default function FilterPanel({
               >
                 <div className="flex items-center">
                   <Users className="w-4 h-4 text-neutral-500 mr-2" />
-                  <span className="font-medium text-neutral-900">Aldersgrupper</span>
+                  <span className="font-medium text-neutral-900">{labels.ageGroupsTitle}</span>
                   {filters.ageGroups?.length && (
                     <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
-                      {filters.ageGroups.length} valgt
+                      {filters.ageGroups.length} {labels.badgeSelectedCount}
                     </span>
                   )}
                 </div>
@@ -345,8 +462,10 @@ export default function FilterPanel({
                       >
                         <div className="flex items-center justify-between">
                           <div>
-                            <div className="font-medium">{config.no}</div>
-                            <div className="text-sm text-neutral-500">{config.ageRange} år</div>
+                            <div className="font-medium">{getAgeGroupLabel(key)}</div>
+                            <div className="text-sm text-neutral-500">
+                              {language === 'no' ? `${config.ageRange} år` : `${config.ageRange} yrs`}
+                            </div>
                           </div>
                           {isSelected && (
                             <Check className="w-4 h-4 text-brand-600" />
@@ -367,7 +486,7 @@ export default function FilterPanel({
               >
                 <div className="flex items-center">
                   <MapPin className="w-4 h-4 text-neutral-500 mr-2" />
-                  <span className="font-medium text-neutral-900">Område</span>
+                  <span className="font-medium text-neutral-900">{labels.locationTitle}</span>
                   {filters.location && (
                     <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
                       {filters.location}
@@ -418,15 +537,10 @@ export default function FilterPanel({
               >
                 <div className="flex items-center">
                   <Banknote className="w-4 h-4 text-neutral-500 mr-2" />
-                  <span className="font-medium text-neutral-900">Prisområde</span>
+                  <span className="font-medium text-neutral-900">{labels.priceTitle}</span>
                   {(filters.minRate || filters.maxRate) && (
                     <span className="ml-2 inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-100 text-brand-700">
-                      {filters.minRate && filters.maxRate 
-                        ? `${filters.minRate}-${filters.maxRate} kr`
-                        : filters.minRate 
-                          ? `Fra ${filters.minRate} kr`
-                          : `Opptil ${filters.maxRate} kr`
-                      }
+                      {formatPriceBadge(filters.minRate, filters.maxRate)}
                     </span>
                   )}
                 </div>
@@ -444,6 +558,7 @@ export default function FilterPanel({
                     {PRICE_RANGES.map((range, index) => {
                       const isSelected = filters.minRate === range.min && 
                         (range.max === null ? !filters.maxRate : filters.maxRate === range.max);
+                      const displayLabel = formatPriceRangeLabel(range.min, range.max, range.label);
                       return (
                         <button
                           key={index}
@@ -463,7 +578,7 @@ export default function FilterPanel({
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="font-medium">{range.label}</span>
+                            <span className="font-medium">{displayLabel}</span>
                             {isSelected && (
                               <Check className="w-4 h-4 text-brand-600" />
                             )}
@@ -475,10 +590,10 @@ export default function FilterPanel({
 
                   {/* Custom price range inputs */}
                   <div className="border-t border-neutral-200 pt-4">
-                    <div className="text-sm font-medium text-neutral-700 mb-3">Egendefinert område</div>
+                    <div className="text-sm font-medium text-neutral-700 mb-3">{labels.customPrice}</div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="block text-xs text-neutral-500 mb-1">Fra (kr/time)</label>
+                        <label className="block text-xs text-neutral-500 mb-1">{labels.priceFrom}</label>
                         <input
                           type="number"
                           placeholder="0"
@@ -490,7 +605,7 @@ export default function FilterPanel({
                         />
                       </div>
                       <div>
-                        <label className="block text-xs text-neutral-500 mb-1">Til (kr/time)</label>
+                        <label className="block text-xs text-neutral-500 mb-1">{labels.priceTo}</label>
                         <input
                           type="number"
                           placeholder="∞"
@@ -513,12 +628,7 @@ export default function FilterPanel({
             <div className="flex items-center justify-between">
               <div className="text-sm text-neutral-600">
                 {resultCount !== undefined && (
-                  <span>
-                    {resultCount === 0 
-                      ? 'Ingen resultater funnet'
-                      : `${resultCount} ${resultCount === 1 ? 'resultat' : 'resultater'} funnet`
-                    }
-                  </span>
+                  <span>{formatResultSummary(resultCount)}</span>
                 )}
               </div>
               <div className="flex items-center space-x-3">
@@ -527,14 +637,14 @@ export default function FilterPanel({
                     onClick={clearAllFilters}
                     className="px-4 py-2 text-sm text-neutral-600 hover:text-neutral-800 transition-colors"
                   >
-                    Nullstill alle
+                    {labels.resetAll}
                   </button>
                 )}
                 <button
                   onClick={onToggle}
                   className="px-4 py-2 bg-brand-600 text-white text-sm font-medium rounded-lg hover:bg-brand-700 transition-colors"
                 >
-                  Lukk filtere
+                  {labels.closeFilters}
                 </button>
               </div>
             </div>

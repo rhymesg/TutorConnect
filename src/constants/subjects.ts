@@ -1,4 +1,5 @@
 import { Subject } from '@prisma/client';
+import type { Language } from '@/contexts/LanguageContext';
 
 const DEFAULT_LABEL = 'Unknown';
 
@@ -46,6 +47,13 @@ export const getSubjectLabel = (subject: string | Subject | null | undefined): s
   }
   return SUBJECT_OPTIONS[subject as Subject] ?? DEFAULT_LABEL;
 };
+
+export const getSubjectLabelByLanguage = (
+  language: Language,
+  subject: string | Subject | null | undefined,
+): string => (
+  language === 'no' ? getSubjectLabel(subject) : getSubjectLabelEN(subject)
+);
 
 // String to Subject enum mapping (for URL parameters)
 const STRING_TO_SUBJECT_MAP: Record<string, Subject> = {
