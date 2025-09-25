@@ -3,45 +3,44 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { 
-  MapPin, 
-  Clock, 
-  Calendar, 
-  DollarSign, 
-  User, 
-  MessageCircle, 
+import {
+  MapPin,
+  Clock,
+  Calendar,
+  DollarSign,
+  User,
+  MessageCircle,
   BookOpen,
   ChevronLeft,
   ExternalLink,
-  Star,
-  Shield,
-  Award,
   PencilIcon
 } from 'lucide-react';
 import { PostWithDetails } from '@/types/database';
-import { formatters } from '@/lib/translations';
 import { isUserOnline } from '@/lib/user-utils';
-import { getSubjectLabel } from '@/constants/subjects';
-import { getAgeGroupLabels } from '@/constants/ageGroups';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupLabelsByLanguage } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 import { useAuth } from '@/contexts/AuthContext';
-import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
+import { getPostStatusLabelByLanguage, getPostStatusColor } from '@/constants/postStatus';
 
 interface PostDetailClientProps {
   post: PostWithDetails;
 }
 
 export default function PostDetailClient({ post }: PostDetailClientProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isCreatingChat, setIsCreatingChat] = useState(false);
   const { user, accessToken } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [backUrl, setBackUrl] = useState('/posts');
-  
+
   const isTutorPost = post.type === 'TEACHER';
-  const subjectName = getSubjectLabel(post.subject);
+  const subjectName = getSubjectLabelByLanguage(language, post.subject);
 
   // Check if user came from a chat and set appropriate back URL
   useEffect(() => {
@@ -50,6 +49,31 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
       setBackUrl(`/chat?id=${chatId}`);
     }
   }, [searchParams]);
+
+  const formatDate = (value: string | Date) => {
+    const date = value instanceof Date ? value : new Date(value);
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) {
+      return '';
+    }
+
+    return new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      style: 'currency',
+      currency: 'NOK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatNegotiable = () => t('Pris etter avtale', 'Price negotiable');
 
   const handleStartChat = async () => {
     if (isOwner || !user || post.status === 'PAUSET' || isCreatingChat) {
@@ -80,50 +104,63 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
       window.location.href = `/chat?id=${data.chatId || data.chat.id}`;
     } catch (error) {
       console.error('Error creating chat:', error);
-      alert('Kunne ikke opprette samtale. Prøv igjen.');
+      alert(t('Kunne ikke opprette samtale. Prøv igjen.', 'Could not start the conversation. Please try again.'));
     } finally {
       setIsCreatingChat(false);
     }
   };
-  const ageGroupText = getAgeGroupLabels(post.ageGroups);
+  const ageGroupText = getAgeGroupLabelsByLanguage(language, post.ageGroups);
   const isOwner = user?.id === post.userId;
   const postStatus = post.status || 'AKTIV'; // Fallback for existing posts
-  
-  // Debug log to check post status
-  console.log('Post status:', post.status, 'Fallback status:', postStatus);
-  
+
   // Format available days
   const formatAvailableDays = (days: string[]) => {
-    const dayNames = {
-      'MONDAY': 'Mandag', 'monday': 'Mandag',
-      'TUESDAY': 'Tirsdag', 'tuesday': 'Tirsdag',
-      'WEDNESDAY': 'Onsdag', 'wednesday': 'Onsdag',
-      'THURSDAY': 'Torsdag', 'thursday': 'Torsdag',
-      'FRIDAY': 'Fredag', 'friday': 'Fredag',
-      'SATURDAY': 'Lørdag', 'saturday': 'Lørdag',
-      'SUNDAY': 'Søndag', 'sunday': 'Søndag'
-    };
-    return days.map(day => dayNames[day as keyof typeof dayNames] || day).join(', ');
+    const dayNames = language === 'no'
+      ? {
+          MONDAY: 'Mandag',
+          TUESDAY: 'Tirsdag',
+          WEDNESDAY: 'Onsdag',
+          THURSDAY: 'Torsdag',
+          FRIDAY: 'Fredag',
+          SATURDAY: 'Lørdag',
+          SUNDAY: 'Søndag',
+        }
+      : {
+          MONDAY: 'Monday',
+          TUESDAY: 'Tuesday',
+          WEDNESDAY: 'Wednesday',
+          THURSDAY: 'Thursday',
+          FRIDAY: 'Friday',
+          SATURDAY: 'Saturday',
+          SUNDAY: 'Sunday',
+        };
+
+    return days
+      .map((day) => dayNames[day.toUpperCase() as keyof typeof dayNames] || day)
+      .join(', ');
   };
 
   // Format rate display - different logic for TEACHER vs STUDENT
   const formatRate = () => {
     if (post.type === 'TEACHER') {
       // Teachers use hourlyRate (fixed rate they charge)
-      if (post.hourlyRate) {
-        return `${post.hourlyRate} kr/time`;
+      if (post.hourlyRate !== null && post.hourlyRate !== undefined) {
+        return `${formatCurrency(post.hourlyRate)} ${t('per time', 'per hour')}`;
       }
-      return 'Pris etter avtale';
+      return formatNegotiable();
     } else {
       // Students use hourlyRateMin/Max (budget range they can pay)
-      if (post.hourlyRateMin && post.hourlyRateMax) {
-        return `${post.hourlyRateMin} - ${post.hourlyRateMax} kr/time`;
-      } else if (post.hourlyRateMin) {
-        return `Fra ${post.hourlyRateMin} kr/time`;
-      } else if (post.hourlyRateMax) {
-        return `Opptil ${post.hourlyRateMax} kr/time`;
+      if (
+        post.hourlyRateMin !== null && post.hourlyRateMin !== undefined &&
+        post.hourlyRateMax !== null && post.hourlyRateMax !== undefined
+      ) {
+        return `${formatCurrency(post.hourlyRateMin)} - ${formatCurrency(post.hourlyRateMax)} ${t('per time', 'per hour')}`;
+      } else if (post.hourlyRateMin !== null && post.hourlyRateMin !== undefined) {
+        return `${t('Fra', 'From')} ${formatCurrency(post.hourlyRateMin)} ${t('per time', 'per hour')}`;
+      } else if (post.hourlyRateMax !== null && post.hourlyRateMax !== undefined) {
+        return `${t('Opptil', 'Up to')} ${formatCurrency(post.hourlyRateMax)} ${t('per time', 'per hour')}`;
       }
-      return 'Pris etter avtale';
+      return formatNegotiable();
     }
   };
 
@@ -132,6 +169,59 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
     const { openProfilePopup } = require('@/constants/ui');
     openProfilePopup(post.userId);
   };
+
+  const backToLabel = backUrl.includes('/chat')
+    ? t('Tilbake til chat', 'Back to chat')
+    : t('Tilbake til annonser', 'Back to listings');
+
+  const availabilityTitle = t('Tilgjengelighet', 'Availability');
+  const availableDaysLabel = t('Tilgjengelige dager', 'Available days');
+  const flexibleDaysLabel = t('Fleksible dager', 'Flexible days');
+  const availableTimesLabel = t('Tilgjengelige tider', 'Available times');
+  const fromLabel = t('Fra', 'From');
+  const toLabel = t('Til', 'To');
+  const preferredScheduleLabel = t('Ønsket timeplan', 'Preferred schedule');
+  const locationTitle = t('Lokasjon', 'Location');
+  const priceTitle = t('Pris', 'Price');
+  const priceNoteLineOne = t('Vi tar ingen gebyrer', 'We charge no fees');
+  const priceNoteLineTwo = t('- Betaling skjer direkte mellom dere', '- Payment happens directly between you');
+  const profileTitle = isTutorPost ? t('Lærer', 'Teacher') : t('Student', 'Student');
+  const editLabel = t('Rediger', 'Edit');
+  const descriptionLabel = t('Beskrivelse', 'Description');
+  const flexibleTimeLabel = t('Fleksibel tid', 'Flexible time');
+  const postPausedLabel = t('Denne annonsen er satt på pause', 'This listing is paused');
+  const loginRequiredLabel = t('Du må være innlogget for å starte en samtale', 'You must be logged in to start a conversation');
+  const selfChatLabel = t('Du kan ikke starte en samtale med deg selv', 'You cannot start a conversation with yourself');
+  const startConversationLabel = t('Klikk for å starte en samtale', 'Click to start a conversation');
+  const creatingChatLabel = t('Oppretter samtale...', 'Creating conversation...');
+  const startChatLabel = t('Start samtale', 'Start conversation');
+  const buttonDisabledText = {
+    owner: selfChatLabel,
+    noUser: loginRequiredLabel,
+    paused: postPausedLabel,
+    default: startConversationLabel,
+  };
+  const listingDetailsTitle = t('Annonsedetaljer', 'Listing details');
+  const lastUpdatedLabel = t('Sist oppdatert', 'Last updated');
+  const inquiriesLabel = t('Henvendelser', 'Messages received');
+  const postalCodeLabel = t('Postnummer', 'Postal code');
+
+  const badgeRoleLabel = isTutorPost ? t('Lærer', 'Teacher') : t('Student', 'Student');
+  const badgeInfoLabel = t('Klikk for mer info', 'Click for more info');
+  const statusLabel = getPostStatusLabelByLanguage(language, postStatus as any);
+  const postTypeLabel = isTutorPost
+    ? t('Tilbyr undervisning', 'Offers tutoring')
+    : t('Søker lærer', 'Seeking tutor');
+  const descriptionContent = post.description || t('Ingen beskrivelse tilgjengelig.', 'No description provided.');
+  const isOnline = isUserOnline(post.user.lastActive);
+
+  const disabledReason = isOwner
+    ? 'owner'
+    : !user
+      ? 'noUser'
+      : post.status === 'PAUSET'
+        ? 'paused'
+        : 'default';
 
   return (
     <div className="min-h-screen bg-neutral-50">
@@ -144,7 +234,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               className="inline-flex items-center text-neutral-600 hover:text-neutral-900"
             >
               <ChevronLeft className="w-5 h-5 mr-1" />
-              {backUrl.includes('/chat') ? 'Tilbake til chat' : 'Tilbake til annonser'}
+              {backToLabel}
             </button>
             
             {/* Status and Type Badges */}
@@ -154,7 +244,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                 inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                 ${getPostStatusColor(postStatus as any)}
               `}>
-                {getPostStatusLabel(postStatus as any)}
+                {statusLabel}
               </span>
               
               {/* Post Type Badge */}
@@ -165,7 +255,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                   : 'bg-blue-100 text-blue-800'
                 }
               `}>
-                {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+                {postTypeLabel}
               </span>
             </div>
           </div>
@@ -188,7 +278,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                     className="inline-flex items-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
                   >
                     <PencilIcon className="h-4 w-4 mr-2" />
-                    Rediger
+                    {editLabel}
                   </Link>
                 )}
               </div>
@@ -205,8 +295,8 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
 
               {/* Description */}
               <div className="prose prose-neutral max-w-none">
-                <h3 className="text-lg font-semibold text-neutral-900 mb-3">Beskrivelse</h3>
-                <p className="text-neutral-700 whitespace-pre-wrap">{post.description}</p>
+                <h3 className="text-lg font-semibold text-neutral-900 mb-3">{descriptionLabel}</h3>
+                <p className="text-neutral-700 whitespace-pre-wrap">{descriptionContent}</p>
               </div>
             </div>
 
@@ -214,29 +304,29 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
                 <Calendar className="w-5 h-5 mr-2" />
-                Tilgjengelighet
+                {availabilityTitle}
               </h3>
               
               <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-neutral-600 mb-2">Tilgjengelige dager</p>
+                  <p className="text-sm font-medium text-neutral-600 mb-2">{availableDaysLabel}</p>
                   <p className="text-neutral-900">
                     {post.availableDays?.length > 0 
                       ? formatAvailableDays(post.availableDays)
-                      : 'Fleksible dager'}
+                      : flexibleDaysLabel}
                   </p>
                 </div>
                 
                 {(post.startTime || post.endTime) && (
                   <div>
-                    <p className="text-sm font-medium text-neutral-600 mb-2">Tilgjengelige tider</p>
+                    <p className="text-sm font-medium text-neutral-600 mb-2">{availableTimesLabel}</p>
                     <div className="inline-flex items-center px-3 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm">
                       <Clock className="w-3.5 h-3.5 mr-1.5" />
                       {post.startTime && post.endTime 
                         ? `${post.startTime} - ${post.endTime}`
                         : post.startTime 
-                          ? `Fra ${post.startTime}`
-                          : `Til ${post.endTime}`
+                          ? `${fromLabel} ${post.startTime}`
+                          : `${toLabel} ${post.endTime}`
                       }
                     </div>
                   </div>
@@ -244,7 +334,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                 
                 {post.preferredSchedule && (
                   <div>
-                    <p className="text-sm font-medium text-neutral-600 mb-2">Ønsket timeplan</p>
+                    <p className="text-sm font-medium text-neutral-600 mb-2">{preferredScheduleLabel}</p>
                     <p className="text-neutral-700">{post.preferredSchedule}</p>
                   </div>
                 )}
@@ -255,7 +345,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
                 <MapPin className="w-5 h-5 mr-2" />
-                Lokasjon
+                {locationTitle}
               </h3>
               
               <div className="space-y-3">
@@ -269,7 +359,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                 )}
                 {post.postnummer && (
                   <p className="text-sm text-neutral-600">
-                    Postnummer: {post.postnummer}
+                    {postalCodeLabel}: {post.postnummer}
                   </p>
                 )}
               </div>
@@ -282,21 +372,21 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
                 <DollarSign className="w-5 h-5 mr-2" />
-                Pris
+                {priceTitle}
               </h3>
               <p className="text-2xl font-bold text-neutral-900">
                 {formatRate()}
               </p>
               <p className="text-xs text-neutral-500 mt-2 leading-relaxed">
-                Vi tar ingen gebyrer<br />
-                - Betaling skjer direkte mellom dere
+                {priceNoteLineOne}<br />
+                {priceNoteLineTwo}
               </p>
             </div>
 
             {/* User Info */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4">
-                {isTutorPost ? 'Lærer' : 'Student'}
+                {profileTitle}
               </h3>
               
               <div className="space-y-4">
@@ -321,10 +411,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                       <div className="absolute inset-0 w-full h-full rounded-full bg-neutral-200 animate-pulse" />
                     )}
                     <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${
-                      (() => {
-                        console.log('PostDetailClient - user lastActive:', post.user.lastActive, 'isOnline:', isUserOnline(post.user.lastActive));
-                        return isUserOnline(post.user.lastActive) ? 'bg-green-400' : 'bg-gray-400';
-                      })()
+                      isOnline ? 'bg-green-400' : 'bg-gray-400'
                     }`} />
                   </div>
                   
@@ -346,7 +433,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                           if (!badge) return null;
                           
                           const typeIcon = isTutorPost ? '👨‍🏫' : '🎓';
-                          const title = `${isTutorPost ? 'Lærer' : 'Student'} ${badge.level} - Klikk for mer info`;
+                          const title = `${badgeRoleLabel} ${badge.level} - ${badgeInfoLabel}`;
                           
                           return (
                             <button 
@@ -388,31 +475,24 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                 }`}
               >
                 <MessageCircle className="w-5 h-5 mr-2" />
-                {isCreatingChat ? 'Oppretter samtale...' : 'Start samtale'}
+                {isCreatingChat ? creatingChatLabel : startChatLabel}
               </button>
               <p className="text-xs text-neutral-500 text-center mt-3">
-                {isOwner 
-                  ? 'Du kan ikke starte en samtale med deg selv'
-                  : !user 
-                    ? 'Du må være innlogget for å starte en samtale'
-                    : post.status === 'PAUSET'
-                      ? 'Denne annonsen er satt på pause'
-                      : 'Klikk for å starte en samtale'
-                }
+                {buttonDisabledText[disabledReason as keyof typeof buttonDisabledText]}
               </p>
             </div>
 
             {/* Post Meta */}
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <h3 className="text-sm font-medium text-neutral-600 mb-3">Annonsedetaljer</h3>
+              <h3 className="text-sm font-medium text-neutral-600 mb-3">{listingDetailsTitle}</h3>
               <div className="space-y-2 text-sm text-neutral-600">
                 {post.updatedAt && post.updatedAt !== post.createdAt && (
                   <p>
-                    Sist oppdatert: {formatters.date(new Date(post.updatedAt))}
+                    {lastUpdatedLabel}: {formatDate(post.updatedAt)}
                   </p>
                 )}
                 <p>
-                  Henvendelser: {post._count.chats}
+                  {inquiriesLabel}: {post._count.chats}
                 </p>
               </div>
             </div>
