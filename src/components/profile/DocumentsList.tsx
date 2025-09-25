@@ -1,13 +1,13 @@
 'use client';
 
-import { 
-  DocumentTextIcon, 
-  CheckCircleIcon, 
-  ClockIcon, 
+import {
+  DocumentTextIcon,
+  CheckCircleIcon,
+  ClockIcon,
   XCircleIcon,
-  ArrowDownTrayIcon 
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
-import { formatters } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface Document {
   id: string;
@@ -23,6 +23,19 @@ interface Props {
 }
 
 export function DocumentsList({ documents, allowDownload = false }: Props) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const formatDate = (value: string | Date) => {
+    const date = value instanceof Date ? value : new Date(value);
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'VERIFIED':
@@ -39,25 +52,34 @@ export function DocumentsList({ documents, allowDownload = false }: Props) {
   const getStatusText = (status: string) => {
     switch (status) {
       case 'VERIFIED':
-        return 'Verifisert';
+        return t('Verifisert', 'Verified');
       case 'PENDING':
-        return 'Venter på godkjenning';
+        return t('Venter på godkjenning', 'Pending review');
       case 'REJECTED':
-        return 'Avvist';
+        return t('Avvist', 'Rejected');
       default:
-        return 'Ukjent status';
+        return t('Ukjent status', 'Unknown status');
     }
   };
 
   const getDocumentTypeText = (type: string) => {
-    const typeMap = {
-      EDUCATION_CERTIFICATE: 'Utdanningsbevis',
-      ID_DOCUMENT: 'Legitimasjon',
-      TEACHING_CERTIFICATE: 'Undervisningssertifikat',
-      PROFESSIONAL_REFERENCE: 'Faglig referanse',
-      BACKGROUND_CHECK: 'Politiattest',
-      OTHER: 'Annet dokument'
-    };
+    const typeMap = language === 'no'
+      ? {
+          EDUCATION_CERTIFICATE: 'Utdanningsbevis',
+          ID_DOCUMENT: 'Legitimasjon',
+          TEACHING_CERTIFICATE: 'Undervisningssertifikat',
+          PROFESSIONAL_REFERENCE: 'Faglig referanse',
+          BACKGROUND_CHECK: 'Politiattest',
+          OTHER: 'Annet dokument'
+        }
+      : {
+          EDUCATION_CERTIFICATE: 'Education certificate',
+          ID_DOCUMENT: 'Identification document',
+          TEACHING_CERTIFICATE: 'Teaching certificate',
+          PROFESSIONAL_REFERENCE: 'Professional reference',
+          BACKGROUND_CHECK: 'Background check',
+          OTHER: 'Other document'
+        };
     return typeMap[type as keyof typeof typeMap] || type;
   };
 
@@ -71,10 +93,10 @@ export function DocumentsList({ documents, allowDownload = false }: Props) {
       <div className="text-center py-8">
         <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">
-          Ingen dokumenter lastet opp
+          {t('Ingen dokumenter lastet opp', 'No documents uploaded')}
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Dokumenter du laster opp vil vises her.
+          {t('Dokumenter du laster opp vil vises her.', 'Documents you upload will appear here.')}
         </p>
       </div>
     );
@@ -98,7 +120,7 @@ export function DocumentsList({ documents, allowDownload = false }: Props) {
                   {document.fileName}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
-                  Lastet opp: {formatters.date(new Date(document.uploadedAt))}
+                  {t('Lastet opp:', 'Uploaded:')} {formatDate(document.uploadedAt)}
                 </p>
               </div>
             </div>
@@ -121,7 +143,7 @@ export function DocumentsList({ documents, allowDownload = false }: Props) {
                 <button
                   onClick={() => handleDownload(document)}
                   className="p-1 text-gray-400 hover:text-gray-600"
-                  title="Last ned dokument"
+                  title={t('Last ned dokument', 'Download document')}
                 >
                   <ArrowDownTrayIcon className="h-4 w-4" />
                 </button>
