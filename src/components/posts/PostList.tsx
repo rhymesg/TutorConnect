@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Grid, List, ArrowUpDown, AlertCircle } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import PostCard, { PostCardSkeleton } from './PostCard';
 import SearchAndFilters, { ActiveFilters } from './SearchAndFilters';
 import { PostWithDetails, PostFilters, PaginatedPosts } from '@/types/database';
-import { actions, messages, posts } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { usePosts } from '@/hooks/usePosts';
 
 interface PostListProps {
@@ -32,6 +32,51 @@ export default function PostList({
   });
   
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const sortOptionMeta: Record<SortOption, { option: [string, string] }> = {
+    updatedAt: { option: ['Dato opprettet', 'Date created'] },
+    hourlyRate: { option: ['Pris', 'Price'] },
+    rating: { option: ['Vurdering', 'Rating'] },
+  };
+
+  const sortOrderOptions: SortOption[] = ['updatedAt', 'hourlyRate', 'rating'];
+
+  const sortOptions = sortOrderOptions.map((value) => ({
+    value,
+    label: t(sortOptionMeta[value].option[0], sortOptionMeta[value].option[1]),
+  }));
+
+  const highestFirstLabel = t('høyest først', 'highest first');
+  const lowestFirstLabel = t('lavest først', 'lowest first');
+  const loadingLabel = t('Laster...', 'Loading...');
+  const retryLabel = t('Prøv igjen', 'Try again');
+  const noResultsLabel = t('Ingen resultater funnet', 'No results found');
+  const adjustFiltersLabel = t(
+    'Prøv å justere søkekriteriene eller fjerne noen filtre.',
+    'Try adjusting your search criteria or removing some filters.',
+  );
+  const errorStatusLabel = t('Feil ved lasting', 'Error loading');
+  const errorHeading = t('Feil ved lasting av annonser', 'Error loading posts');
+  const errorBody = t('Kunne ikke laste inn annonser. Prøv igjen senere.', 'Could not load posts. Please try again later.');
+  const loadingMoreLabel = t('Laster flere annonser...', 'Loading more posts...');
+  const loadMoreLabel = t('Last flere', 'Load more');
+  const gridViewLabel = t('Rutenettvisning', 'Grid view');
+  const listViewLabel = t('Listevisning', 'List view');
+  const sortLabel = t('Sortering', 'Sorting');
+
+  const formatResultsCount = (count: number) => {
+    if (language === 'no') {
+      return `${count} ${count === 1 ? 'resultat' : 'resultater'} funnet`;
+    }
+    return `${count} ${count === 1 ? 'result found' : 'results found'}`;
+  };
+
+  const sortSelectOptions = sortOptions.flatMap(({ value, label }) => ([
+    { key: `${value}-desc`, value: `${value}-desc`, label: `${label} (${highestFirstLabel})` },
+    { key: `${value}-asc`, value: `${value}-asc`, label: `${label} (${lowestFirstLabel})` },
+  ]));
 
   // Use the new usePosts hook
   const {
@@ -40,7 +85,7 @@ export default function PostList({
     isLoading,
     isLoadingMore,
     hasError,
-    errorMessage,
+    errorMessage: _errorMessage,
     fetchPosts,
     loadMorePosts,
     retry,
@@ -51,6 +96,8 @@ export default function PostList({
     enableRetry: true,
     cacheKey: 'postList',
   });
+
+  void _errorMessage;
 
   // Initialize with filters if not already loaded
   useEffect(() => {
@@ -78,21 +125,6 @@ export default function PostList({
     fetchPosts(newFilters);
   };
 
-  const getSortLabel = (sortBy: SortOption) => {
-    switch (sortBy) {
-      case 'updatedAt': return posts.no.sorting.newest;
-      case 'hourlyRate': return posts.no.sorting.price;
-      case 'rating': return posts.no.sorting.rating;
-      default: return 'Sortering';
-    }
-  };
-
-  const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'updatedAt', label: posts.no.sorting.created },
-    { value: 'hourlyRate', label: posts.no.sorting.price },
-    { value: 'rating', label: posts.no.sorting.rating },
-  ];
-
   return (
     <div className={`bg-neutral-50 min-h-screen ${className}`}>
       {/* Search and Filters */}
@@ -115,24 +147,24 @@ export default function PostList({
             {isLoading ? (
               <div className="flex items-center">
                 <LoadingSpinner size="sm" className="mr-2" />
-                {messages.no.loading}
+                {loadingLabel}
               </div>
             ) : hasError ? (
               <div className="flex items-center text-red-600">
                 <AlertCircle className="w-4 h-4 mr-2" />
-                {posts.no.status.errorLoading}
+                {errorStatusLabel}
                 <button
                   onClick={retry}
                   className="ml-2 text-brand-600 hover:text-brand-700 underline text-sm"
                 >
-                  {actions.no.retry}
+                  {retryLabel}
                 </button>
               </div>
             ) : (
               <span>
                 {pagination.total > 0 
-                  ? posts.no.results.found.replace('{count}', pagination.total.toString())
-                  : messages.no.noResults
+                  ? formatResultsCount(pagination.total)
+                  : noResultsLabel
                 }
               </span>
             )}
@@ -148,16 +180,14 @@ export default function PostList({
                   const [sortBy, sortOrder] = e.target.value.split('-') as [SortOption, SortOrder];
                   handleSortChange(sortBy, sortOrder);
                 }}
+                aria-label={sortLabel}
                 className="appearance-none bg-white border border-neutral-300 rounded-lg px-3 py-2 pr-8 text-sm text-neutral-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
               >
-                {sortOptions.map(option => [
-                  <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                    {option.label} ({posts.no.sorting.highest})
-                  </option>,
-                  <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                    {option.label} ({posts.no.sorting.lowest})
+                {sortSelectOptions.map((option) => (
+                  <option key={option.key} value={option.value}>
+                    {option.label}
                   </option>
-                ])}
+                ))}
               </select>
               <ArrowUpDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
             </div>
@@ -170,7 +200,7 @@ export default function PostList({
                   ? 'bg-brand-100 text-brand-600' 
                   : 'bg-white text-neutral-600 hover:bg-neutral-50'
                 }`}
-                title={posts.no.viewModes.grid}
+                title={gridViewLabel}
               >
                 <Grid className="w-4 h-4" />
               </button>
@@ -180,7 +210,7 @@ export default function PostList({
                   ? 'bg-brand-100 text-brand-600' 
                   : 'bg-white text-neutral-600 hover:bg-neutral-50'
                 }`}
-                title={posts.no.viewModes.list}
+                title={listViewLabel}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -196,16 +226,16 @@ export default function PostList({
           <div className="text-center py-12">
             <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              {posts.no.errors.loadingFailed}
+              {errorHeading}
             </h3>
             <p className="text-neutral-600 mb-4">
-              {posts.no.errors.loadingMessage}
+              {errorBody}
             </p>
             <button
               onClick={retry}
               className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
             >
-              {posts.no.errors.retryButton}
+              {retryLabel}
             </button>
           </div>
         ) : posts.length === 0 && !isLoading ? (
@@ -215,10 +245,10 @@ export default function PostList({
               <Grid className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              {messages.no.noResults}
+              {noResultsLabel}
             </h3>
             <p className="text-neutral-600">
-              {posts.no.results.adjustFilters}
+              {adjustFiltersLabel}
             </p>
           </div>
         ) : (
@@ -247,7 +277,7 @@ export default function PostList({
               <div className="col-span-full flex justify-center items-center py-8">
                 <div className="flex items-center text-neutral-600">
                   <LoadingSpinner size="sm" className="mr-2" />
-                  {posts.no.status.loadingMore}
+                  {loadingMoreLabel}
                 </div>
               </div>
             )}
@@ -278,7 +308,7 @@ export default function PostList({
               onClick={loadMorePosts}
               className="inline-flex items-center px-6 py-3 border border-neutral-300 rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
             >
-              {actions.no.loadMore}
+              {loadMoreLabel}
             </button>
           </div>
         )}

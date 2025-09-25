@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, X, Clock, TrendingUp, MapPin, BookOpen, Filter, Share } from 'lucide-react';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { SearchSuggestion, SearchHistoryItem } from '@/lib/search-utils';
-import { forms, actions } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface SearchBarProps {
   query: string;
@@ -40,7 +40,7 @@ export default function SearchBar({
   onSearch,
   onFilterToggle,
   onShare,
-  placeholder = 'Søk etter lærere eller fag...',
+  placeholder,
   showFilters = true,
   activeFilterCount = 0,
   className = '',
@@ -49,6 +49,25 @@ export default function SearchBar({
   const [showDropdown, setShowDropdown] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const resolvedPlaceholder = placeholder || t('Søk etter lærere eller fag...', 'Search tutors or subjects...');
+  const clearLabel = t('Tøm søk', 'Clear search');
+  const shareTitle = t('Del søk', 'Share search');
+  const filterTitle = t('Filtrer', 'Filter');
+  const recentSearchesLabel = t('Nylige søk', 'Recent searches');
+  const suggestionsLabel = t('Forslag', 'Suggestions');
+  const suggestionActionLabel = t('Søk', 'Search');
+  const emptyStateText = t('Begynn å skrive for å se forslag', 'Start typing to see suggestions');
+  const shortcutSearchText = t('for å søke', 'to search');
+  const shortcutCloseText = t('for å lukke', 'to close');
+  const clearHistoryText = t('Tøm historikk', 'Clear history');
+
+  const formatResultCount = (count: number) =>
+    language === 'no'
+      ? `${count} ${count === 1 ? 'resultat' : 'resultater'}`
+      : `${count} ${count === 1 ? 'result' : 'results'}`;
 
   // Handle outside clicks to close dropdown
   useEffect(() => {
@@ -153,7 +172,7 @@ export default function SearchBar({
             onChange={handleInputChange}
             onFocus={handleInputFocus}
             onKeyDown={handleInputKeyDown}
-            placeholder={placeholder}
+            placeholder={resolvedPlaceholder}
             className="flex-1 py-3 px-2 text-neutral-900 placeholder-neutral-500 bg-transparent border-none outline-none text-sm sm:text-base"
             autoComplete="off"
             spellCheck="false"
@@ -172,7 +191,7 @@ export default function SearchBar({
               onClick={handleClear}
               className="p-2 text-neutral-400 hover:text-neutral-600 transition-colors"
               type="button"
-              aria-label="Tøm søk"
+              aria-label={clearLabel}
             >
               <X className="w-4 h-4" />
             </button>
@@ -186,7 +205,7 @@ export default function SearchBar({
                 onClick={onShare}
                 className="p-2 text-neutral-400 hover:text-neutral-600 transition-colors"
                 type="button"
-                title="Del søk"
+                title={shareTitle}
               >
                 <Share className="w-4 h-4" />
               </button>
@@ -202,7 +221,7 @@ export default function SearchBar({
                     : 'text-neutral-400 hover:text-neutral-600'
                 }`}
                 type="button"
-                title="Filtrer"
+                title={filterTitle}
               >
                 <Filter className="w-4 h-4" />
                 {activeFilterCount > 0 && (
@@ -227,7 +246,7 @@ export default function SearchBar({
             {recentSearches.length > 0 && (
               <div className="border-b border-neutral-100">
                 <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide">
-                  Nylige søk
+                  {recentSearchesLabel}
                 </div>
                 {recentSearches.slice(0, 3).map((search) => (
                   <button
@@ -242,7 +261,7 @@ export default function SearchBar({
                       </div>
                       {search.resultCount !== undefined && (
                         <div className="text-xs text-neutral-500">
-                          {search.resultCount} resultater
+                          {formatResultCount(search.resultCount)}
                         </div>
                       )}
                     </div>
@@ -255,7 +274,7 @@ export default function SearchBar({
             {suggestions.length > 0 && (
               <div>
                 <div className="px-4 py-3 text-xs font-medium text-neutral-500 uppercase tracking-wide">
-                  Forslag
+                  {suggestionsLabel}
                 </div>
                 {suggestions.map((suggestion) => (
                   <button
@@ -277,7 +296,7 @@ export default function SearchBar({
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <div className="text-xs text-neutral-400 flex items-center">
                         <Search className="w-3 h-3 mr-1" />
-                        Søk
+                        {suggestionActionLabel}
                       </div>
                     </div>
                   </button>
@@ -289,7 +308,7 @@ export default function SearchBar({
             {suggestions.length === 0 && recentSearches.length === 0 && (
               <div className="px-4 py-8 text-center text-neutral-500">
                 <Search className="w-8 h-8 mx-auto mb-2 text-neutral-300" />
-                <div className="text-sm">Begynn å skrive for å se forslag</div>
+                <div className="text-sm">{emptyStateText}</div>
               </div>
             )}
 
@@ -301,18 +320,18 @@ export default function SearchBar({
                     <kbd className="px-2 py-1 bg-white border border-neutral-200 rounded text-xs font-mono">
                       Enter
                     </kbd>
-                    <span className="ml-1">for å søke</span>
+                    <span className="ml-1">{shortcutSearchText}</span>
                   </div>
                   <div className="flex items-center">
                     <kbd className="px-2 py-1 bg-white border border-neutral-200 rounded text-xs font-mono">
                       Esc
                     </kbd>
-                    <span className="ml-1">for å lukke</span>
+                    <span className="ml-1">{shortcutCloseText}</span>
                   </div>
                 </div>
                 {recentSearches.length > 0 && (
                   <button className="text-neutral-400 hover:text-neutral-600 transition-colors">
-                    Tøm historikk
+                    {clearHistoryText}
                   </button>
                 )}
               </div>

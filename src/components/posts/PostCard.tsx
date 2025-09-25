@@ -2,15 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, MapPin, User, Star, MessageCircle, Calendar, GraduationCap, BookOpen } from 'lucide-react';
-import { PostWithDetails, PostType } from '@/types/database';
-import { formatters, education, common } from '@/lib/translations';
-import { getSubjectLabel } from '@/constants/subjects';
-import { getAgeGroupLabels } from '@/constants/ageGroups';
+import { MapPin, User, MessageCircle, Calendar } from 'lucide-react';
+import { PostWithDetails } from '@/types/database';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupLabelsByLanguage } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 import { isUserOnline } from '@/lib/user-utils';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
-import { getPostStatusLabel, getPostStatusColor } from '@/constants/postStatus';
+import { getPostStatusLabelByLanguage, getPostStatusColor } from '@/constants/postStatus';
 
 interface PostCardProps {
   post: PostWithDetails;
@@ -18,65 +18,108 @@ interface PostCardProps {
   onContactClick?: (postId: string) => void;
 }
 
-export default function PostCard({ post, className = '', onContactClick }: PostCardProps) {
+export default function PostCard({ post, className = '', onContactClick: _onContactClick }: PostCardProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [imageLoaded, setImageLoaded] = useState(false);
 
+  void _onContactClick;
+
   const isTutorPost = post.type === 'TEACHER';
-  
-  // Get subject name from centralized constants
-  const subjectName = getSubjectLabel(post.subject);
-  
-  // Get age group labels from centralized constants
-  const ageGroupText = getAgeGroupLabels(post.ageGroups);
-  
-  // Format rate display
+
+  const subjectName = getSubjectLabelByLanguage(language, post.subject);
+  const ageGroupText = getAgeGroupLabelsByLanguage(language, post.ageGroups);
+
+  const formatDate = (value: string | Date) => {
+    const date = value instanceof Date ? value : new Date(value);
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
+  const formatCurrency = (amount: number | null | undefined) => {
+    if (amount === null || amount === undefined) {
+      return '';
+    }
+
+    return new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      style: 'currency',
+      currency: 'NOK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
   const rateDisplay = () => {
-    if (post.type === 'TEACHER') {
-      // Teachers have a fixed hourly rate
-      if (post.hourlyRate) {
-        return `${post.hourlyRate} kr`;
+    const placeholder = language === 'no' ? '••• kr' : '••• NOK';
+
+    if (isTutorPost) {
+      if (post.hourlyRate !== null && post.hourlyRate !== undefined) {
+        return formatCurrency(post.hourlyRate);
       }
     } else {
-      // Students have a price range
-      if (post.hourlyRateMin && post.hourlyRateMax) {
-        return `${post.hourlyRateMin} - ${post.hourlyRateMax} kr`;
-      } else if (post.hourlyRateMin) {
-        return `Fra ${post.hourlyRateMin} kr`;
-      } else if (post.hourlyRateMax) {
-        return `Opp til ${post.hourlyRateMax} kr`;
+      if (post.hourlyRateMin !== null && post.hourlyRateMin !== undefined && post.hourlyRateMax !== null && post.hourlyRateMax !== undefined) {
+        return `${formatCurrency(post.hourlyRateMin)} - ${formatCurrency(post.hourlyRateMax)}`;
+      }
+      if (post.hourlyRateMin !== null && post.hourlyRateMin !== undefined) {
+        return `${t('Fra', 'From')} ${formatCurrency(post.hourlyRateMin)}`;
+      }
+      if (post.hourlyRateMax !== null && post.hourlyRateMax !== undefined) {
+        return `${t('Opptil', 'Up to')} ${formatCurrency(post.hourlyRateMax)}`;
       }
     }
-    return '••• kr';
+
+    return placeholder;
   };
 
-  // Format available days and times
   const formatAvailableDays = (days: string[]) => {
-    // Use shortened versions of Norwegian day names (handle both cases)
-    const dayNames = {
-      'MONDAY': 'Man', 'monday': 'Man',
-      'TUESDAY': 'Tir', 'tuesday': 'Tir',
-      'WEDNESDAY': 'Ons', 'wednesday': 'Ons',
-      'THURSDAY': 'Tor', 'thursday': 'Tor',
-      'FRIDAY': 'Fre', 'friday': 'Fre',
-      'SATURDAY': 'Lør', 'saturday': 'Lør',
-      'SUNDAY': 'Søn', 'sunday': 'Søn'
-    };
-    return days.map(day => dayNames[day as keyof typeof dayNames] || day).join(', ');
+    const dayNames = language === 'no'
+      ? {
+          MONDAY: 'Man',
+          TUESDAY: 'Tir',
+          WEDNESDAY: 'Ons',
+          THURSDAY: 'Tor',
+          FRIDAY: 'Fre',
+          SATURDAY: 'Lør',
+          SUNDAY: 'Søn',
+        }
+      : {
+          MONDAY: 'Mon',
+          TUESDAY: 'Tue',
+          WEDNESDAY: 'Wed',
+          THURSDAY: 'Thu',
+          FRIDAY: 'Fri',
+          SATURDAY: 'Sat',
+          SUNDAY: 'Sun',
+        };
+
+    return days
+      .map((day) => {
+        const normalized = day.toUpperCase();
+        return dayNames[normalized as keyof typeof dayNames] ?? day;
+      })
+      .join(', ');
   };
 
-  const availableDaysText = post.availableDays?.length > 0 
+  const availableDaysText = post.availableDays?.length
     ? formatAvailableDays(post.availableDays)
-    : 'Fleksible dager';
+    : t('Fleksible dager', 'Flexible days');
 
-  const availableTimesText = post.availableTimes?.length > 0 
-    ? post.availableTimes.slice(0, 2).join(', ') + (post.availableTimes.length > 2 ? '...' : '')
-    : 'Fleksibel tid';
+  const availableTimesText = post.availableTimes?.length
+    ? `${post.availableTimes.slice(0, 2).join(', ')}${post.availableTimes.length > 2 ? '...' : ''}`
+    : t('Fleksibel tid', 'Flexible time');
 
-  const handleContactClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    onContactClick?.(post.id);
-  };
+  const postTypeLabel = isTutorPost
+    ? t('Tilbyr undervisning', 'Offers tutoring')
+    : t('Søker lærer', 'Seeking tutor');
+
+  const pausedLabel = getPostStatusLabelByLanguage(language, 'PAUSET');
+  const perHourLabel = t('per time', 'per hour');
+  const badgeRoleLabel = isTutorPost ? t('Lærer', 'Teacher') : t('Student', 'Student');
+  const badgeInfoLabel = t('Klikk for mer info', 'Click for more info');
 
   return (
     <div className={`
@@ -96,7 +139,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
                 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
                 ${getPostStatusColor('PAUSET')}
               `}>
-                {getPostStatusLabel('PAUSET')}
+                {pausedLabel}
               </span>
             ) : (
               <span className={`
@@ -106,12 +149,12 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
                   : 'bg-blue-100 text-blue-800'
                 }
               `}>
-                {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+                {postTypeLabel}
               </span>
             )}
           </div>
           <span className="text-sm text-neutral-500">
-            {formatters.date(new Date(post.updatedAt ?? post.createdAt))}
+            {formatDate(post.updatedAt ?? post.createdAt)}
           </span>
         </div>
       </div>
@@ -174,7 +217,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
                   if (!badge) return null;
                   
                   const typeIcon = isTutorPost ? '👨‍🏫' : '🎓';
-                  const title = `${isTutorPost ? 'Lærer' : 'Student'} ${badge.level} - Klikk for mer info`;
+                  const title = `${badgeRoleLabel} ${badge.level} - ${badgeInfoLabel}`;
                   
                   return (
                     <button 
@@ -215,7 +258,7 @@ export default function PostCard({ post, className = '', onContactClick }: PostC
               <span className="text-sm text-neutral-600 font-medium">
                 {rateDisplay()}
               </span>
-              <span className="text-xs text-neutral-500">per time</span>
+              <span className="text-xs text-neutral-500">{perHourLabel}</span>
             </div>
             
             <div className="flex items-center text-sm text-neutral-500">
