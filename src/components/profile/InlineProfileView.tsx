@@ -16,7 +16,7 @@ import {
   EyeSlashIcon,
   DocumentArrowUpIcon
 } from '@heroicons/react/24/outline';
-import { formatters } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { isUserOnline } from '@/lib/user-utils';
 import { ProfileImage } from './ProfileImage';
 import { DocumentsList } from './DocumentsList';
@@ -67,6 +67,8 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   const [tempValues, setTempValues] = useState<Record<string, any>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [hasMounted, setHasMounted] = useState(false);
+  const { language } = useLanguage();
+  const t = useLanguageText();
 
   useEffect(() => {
     setHasMounted(true);
@@ -77,18 +79,95 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   const formatAge = (birthYear: number | null) => {
     if (!birthYear) return null;
     const currentYear = new Date().getFullYear();
-    return `${currentYear - birthYear} år`;
+    const age = currentYear - birthYear;
+    return language === 'no' ? `${age} år` : `${age} years`;
   };
 
   const formatGender = (gender: string | null) => {
     if (!gender) return null;
-    const genderMap = {
-      MALE: 'Mann',
-      FEMALE: 'Kvinne',
-      OTHER: 'Annet'
-    };
+    const genderMap = language === 'no'
+      ? {
+          MALE: 'Mann',
+          FEMALE: 'Kvinne',
+          OTHER: 'Annet'
+        }
+      : {
+          MALE: 'Male',
+          FEMALE: 'Female',
+          OTHER: 'Other'
+        };
     return genderMap[gender as keyof typeof genderMap] || gender;
   };
+
+  const formatDate = (value: Date | string | null) => {
+    if (!value) {
+      return '';
+    }
+
+    const date = value instanceof Date ? value : new Date(value);
+
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
+  const noValueLabel = t('Ikke oppgitt', 'Not provided');
+  const selectOptionLabel = t('Velg alternativ', 'Select option');
+  const makePrivateLabel = t('Klikk for å gjøre privat', 'Click to make private');
+  const makePublicLabel = t('Klikk for å gjøre offentlig', 'Click to make public');
+  const publicLabel = t('Offentlig', 'Public');
+  const privateLabel = t('Privat', 'Private');
+  const onlineLabel = t('Online', 'Online');
+  const offlineLabel = t('Offline', 'Offline');
+  const verifiedEmailLabel = t('Verifisert e-post', 'Verified email');
+  const viewPublicProfileLabel = t('Se offentlig profil', 'View public profile');
+  const nameFallback = t('Navn ikke oppgitt', 'Name not provided');
+  const personalInfoTitle = t('Personlige opplysninger', 'Personal details');
+  const emailLabel = t('E-post', 'Email');
+  const genderLabel = t('Kjønn', 'Gender');
+  const birthYearLabel = t('Fødselsår', 'Birth year');
+  const regionLabel = t('Region', 'Region');
+  const postalCodeLabel = t('Postnummer', 'Postal code');
+  const memberSinceLabel = t('Medlem siden', 'Member since');
+  const lastActiveLabel = t('Sist aktiv', 'Last active');
+  const educationTitle = t('Utdanning', 'Education');
+  const certificationsLabel = t('Sertifiseringer', 'Certifications');
+  const supportingMaterialsLabel = t('Tilleggsmateriale', 'Supporting materials');
+  const noFilesLabel = t('Ingen filer tilgjengelig', 'No files available');
+  const uploadSupportingLabel = t('Last opp tilleggsmateriale', 'Upload supporting material');
+  const supportingDescription = t(
+    'CV, portefølje, vitnemål, sertifikater, prosjekteksempler',
+    'CV, portfolio, diplomas, certificates, project examples',
+  );
+  const supportingFormats = t(
+    'PDF, DOC, DOCX, JPG, PNG • Maks 10MB per fil',
+    'PDF, DOC, DOCX, JPG, PNG • Max 10MB per file',
+  );
+  const aboutTitle = t('Om meg', 'About me');
+  const bioPlaceholder = t('Fortell litt om deg selv...', 'Share a bit about yourself...');
+  const saveLabel = t('Lagre', 'Save');
+  const cancelLabel = t('Avbryt', 'Cancel');
+  const bioCounterSuffix = t('tegn', 'characters');
+  const noBioLabel = t('Ingen biografi lagt til enda.', 'No biography added yet.');
+  const addBioLabel = t('Legg til biografi', 'Add biography');
+  const documentsTitle = t('Dokumenter', 'Documents');
+  const teacherLabel = t('Lærer', 'Teacher');
+  const studentLabel = t('Student', 'Student');
+  const badgeInfoLabel = t('Klikk for mer info', 'Click for more info');
+  const teacherSessionsLabel = t('Gjennomførte timer', 'Sessions taught');
+  const teacherStudentsLabel = t('Studenter hjulpet', 'Students helped');
+  const studentSessionsLabel = t('Timeforespørsler', 'Sessions requested');
+  const studentTeachersLabel = t('Kontaktede lærere', 'Tutors contacted');
+  const uploadComingSoonLabel = t('Velg filer (kommer snart)', 'Choose files (coming soon)');
+  const activityHistoryLabel = t('Aktivitetshistorikk', 'Activity history');
+  const teacherRoleLabel = t('Som lærer', 'As tutor');
+  const studentRoleLabel = t('Som elev', 'As student');
+  const statsNotAvailableLabel = t('Ingen statistikk tilgjengelig', 'No statistics available');
+  const degreePlaceholder = t('Grad', 'Degree');
+  const educationPlaceholder = t('Skole/Institusjon og fagområde', 'School/Institution and field');
 
   const isFieldVisible = (privacySetting: string | null) => {
     if (!isPublicView) return true; // Always show on own profile
@@ -235,7 +314,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 autoFocus
               >
-                <option value="">Velg {label.toLowerCase()}</option>
+                <option value="">{selectOptionLabel}</option>
                 {options?.map(option => (
                   <option key={option.value} value={option.value}>{option.label}</option>
                 ))}
@@ -304,11 +383,11 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               onClick={() => handlePrivacyToggle(privacyField, privacyValue)}
               disabled={isPrivacySaving}
               className={`flex items-center text-xs px-2 py-1 rounded-full transition-colors ${
-                privacyValue === 'PUBLIC' 
-                  ? 'bg-green-100 text-green-700 hover:bg-green-200' 
+                privacyValue === 'PUBLIC'
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
-              title={privacyValue === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+              title={privacyValue === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
             >
               {isPrivacySaving ? (
                 <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -317,7 +396,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               ) : (
                 <EyeSlashIcon className="w-3 h-3 mr-1" />
               )}
-              {privacyValue === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+              {privacyValue === 'PUBLIC' ? publicLabel : privateLabel}
             </button>
           )}
         </dt>
@@ -327,10 +406,10 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               // Special formatting for gender field
               if (fieldName === 'gender') {
                 const formattedGender = formatGender(value);
-                return formattedGender || <span className="text-gray-400 italic">Ikke oppgitt</span>;
+                return formattedGender || <span className="text-gray-400 italic">{noValueLabel}</span>;
               }
               // Default behavior for other fields
-              return value || <span className="text-gray-400 italic">Ikke oppgitt</span>;
+              return value || <span className="text-gray-400 italic">{noValueLabel}</span>;
             })()}
           </span>
           {!isPublicView && (
@@ -353,23 +432,23 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   }
 
   const genderOptions = [
-    { value: 'MALE', label: 'Mann' },
-    { value: 'FEMALE', label: 'Kvinne' },
-    { value: 'OTHER', label: 'Annet' }
+    { value: 'MALE', label: t('Mann', 'Male') },
+    { value: 'FEMALE', label: t('Kvinne', 'Female') },
+    { value: 'OTHER', label: t('Annet', 'Other') }
   ];
 
   // Region options from centralized constants
   const regionOptions = getRegionOptions();
 
   const degreeOptions = [
-    { value: 'BACHELOR', label: 'Bachelor' },
-    { value: 'MASTER', label: 'Master' },
-    { value: 'PHD', label: 'PhD/Doktor' },
-    { value: 'PROFESSOR', label: 'Professor' },
-    { value: 'DIPLOMA', label: 'Diplom' },
-    { value: 'CERTIFICATE', label: 'Sertifikat' },
-    { value: 'HIGH_SCHOOL', label: 'Videregående' },
-    { value: 'OTHER', label: 'Annet' }
+    { value: 'BACHELOR', label: t('Bachelor', 'Bachelor') },
+    { value: 'MASTER', label: t('Master', 'Master') },
+    { value: 'PHD', label: t('PhD/Doktor', 'PhD/Doctorate') },
+    { value: 'PROFESSOR', label: t('Professor', 'Professor') },
+    { value: 'DIPLOMA', label: t('Diplom', 'Diploma') },
+    { value: 'CERTIFICATE', label: t('Sertifikat', 'Certificate') },
+    { value: 'HIGH_SCHOOL', label: t('Videregående', 'Upper secondary') },
+    { value: 'OTHER', label: t('Annet', 'Other') }
   ];
 
   // Format education display
@@ -398,7 +477,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
           >
             <span>👁️</span>
-            <span className="ml-2">Se offentlig profil</span>
+            <span className="ml-2">{viewPublicProfileLabel}</span>
           </button>
         </div>
       )}
@@ -467,7 +546,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             ) : (
               <div className="flex items-center group">
                 <h1 className="text-2xl font-bold text-gray-900 flex-1">
-                  {profile.name || 'Navn ikke oppgitt'}
+                  {profile.name || nameFallback}
                 </h1>
                 {!isPublicView && (
                   <button
@@ -492,7 +571,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 {/* Show activity status with appropriate colors */}
                 <div className={`flex items-center text-sm ${isOnline ? 'text-green-600' : 'text-gray-500'}`}>
                   <div className={`mr-2 h-2 w-2 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                  {isOnline ? 'Online' : 'Offline'}
+                  {isOnline ? onlineLabel : offlineLabel}
                 </div>
                 
                 {/* Badges */}
@@ -507,7 +586,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           <button 
                             onClick={() => window.location.href = '/badges'}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${teacherBadge.color}`}
-                            title={`Lærer ${teacherBadge.level} - Klikk for mer info`}>
+                            title={`${teacherLabel} ${teacherBadge.level} - ${badgeInfoLabel}`}>
                             <span className="mr-1">👨‍🏫</span>
                             <span>{teacherBadge.icon}</span>
                           </button>
@@ -516,7 +595,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           <button 
                             onClick={() => window.location.href = '/badges'}
                             className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${studentBadge.color}`}
-                            title={`Student ${studentBadge.level} - Klikk for mer info`}>
+                            title={`${studentLabel} ${studentBadge.level} - ${badgeInfoLabel}`}>
                             <span className="mr-1">🎓</span>
                             <span>{studentBadge.icon}</span>
                           </button>
@@ -536,28 +615,28 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
         <div>
           <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
             <UserIcon className="h-5 w-5 mr-2" />
-            Personlige opplysninger
+            {personalInfoTitle}
           </h2>
           <dl className="space-y-4">
             {!isPublicView && (
               <div>
-                <dt className="text-sm font-medium text-gray-500">E-post</dt>
+                <dt className="text-sm font-medium text-gray-500">{emailLabel}</dt>
                 <dd className="mt-1 text-sm text-gray-900">{profile.email}</dd>
               </div>
             )}
             
-            {renderEditableField('gender', 'Kjønn', profile.gender, 'select', genderOptions, 'privacyGender')}
+            {renderEditableField('gender', genderLabel, profile.gender, 'select', genderOptions, 'privacyGender')}
             
-            {renderEditableField('birthYear', 'Fødselsår', profile.birthYear, 'select', birthYearOptions, 'privacyAge')}
+            {renderEditableField('birthYear', birthYearLabel, profile.birthYear, 'select', birthYearOptions, 'privacyAge')}
             
-            {renderEditableField('region', 'Region', profile.region, 'select', regionOptions, 'privacyLocation')}
+            {renderEditableField('region', regionLabel, profile.region, 'select', regionOptions, 'privacyLocation')}
             
-            {renderEditableField('postalCode', 'Postnummer', profile.postalCode, 'text', undefined, 'privacyPostalCode')}
+            {renderEditableField('postalCode', postalCodeLabel, profile.postalCode, 'text', undefined, 'privacyPostalCode')}
             
             {isFieldVisible(profile.privacyMemberSince) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                  <span>Medlem siden</span>
+                  <span>{memberSinceLabel}</span>
                   {!isPublicView && (
                     <button
                       onClick={() => handlePrivacyToggle('privacyMemberSince', profile.privacyMemberSince)}
@@ -567,7 +646,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
-                      title={profile.privacyMemberSince === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                      title={profile.privacyMemberSince === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
                     >
                       {saving === 'privacyMemberSince' ? (
                         <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -576,12 +655,12 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       ) : (
                         <EyeSlashIcon className="w-3 h-3 mr-1" />
                       )}
-                      {profile.privacyMemberSince === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                      {profile.privacyMemberSince === 'PUBLIC' ? publicLabel : privateLabel}
                     </button>
                   )}
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {formatters.date(new Date(profile.createdAt))}
+                  {formatDate(profile.createdAt)}
                 </dd>
               </div>
             )}
@@ -589,7 +668,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             {isFieldVisible(profile.privacyLastActive) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                  <span>Sist aktiv</span>
+                  <span>{lastActiveLabel}</span>
                   {!isPublicView && (
                     <button
                       onClick={() => handlePrivacyToggle('privacyLastActive', profile.privacyLastActive)}
@@ -599,7 +678,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
-                      title={profile.privacyLastActive === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                      title={profile.privacyLastActive === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
                     >
                       {saving === 'privacyLastActive' ? (
                         <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -608,12 +687,12 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       ) : (
                         <EyeSlashIcon className="w-3 h-3 mr-1" />
                       )}
-                      {profile.privacyLastActive === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                      {profile.privacyLastActive === 'PUBLIC' ? publicLabel : privateLabel}
                     </button>
                   )}
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {profile.lastActive ? formatters.date(new Date(profile.lastActive)) : <span className="text-gray-400 italic">Ikke oppgitt</span>}
+                  {profile.lastActive ? formatDate(profile.lastActive) : <span className="text-gray-400 italic">{noValueLabel}</span>}
                 </dd>
               </div>
             )}
@@ -636,7 +715,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
-                      title={profile.privacyEducation === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                      title={profile.privacyEducation === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
                     >
                       {saving === 'privacyEducation' ? (
                         <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -645,7 +724,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       ) : (
                         <EyeSlashIcon className="w-3 h-3 mr-1" />
                       )}
-                      {profile.privacyEducation === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                      {profile.privacyEducation === 'PUBLIC' ? publicLabel : privateLabel}
                     </button>
                   )}
                 </dt>
@@ -657,7 +736,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       onChange={(e) => setTempValues({ ...tempValues, degree: e.target.value })}
                       className="flex-shrink-0 w-32 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     >
-                      <option value="">Grad</option>
+                      <option value="">{degreePlaceholder}</option>
                       {degreeOptions.map(option => (
                         <option key={option.value} value={option.value}>{option.label}</option>
                       ))}
@@ -666,7 +745,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       type="text"
                       value={tempValues.education || ''}
                       onChange={(e) => setTempValues({ ...tempValues, education: e.target.value })}
-                      placeholder="Skole/Institusjon og fagområde"
+                      placeholder={educationPlaceholder}
                       className="flex-1 px-2 py-1 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       autoFocus
                     />
@@ -702,7 +781,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               ) : (
                 <dd className="mt-1 flex items-center group">
                   <span className="text-sm text-gray-900 flex-1">
-                    {formatEducation(profile.degree, profile.education) || <span className="text-gray-400 italic">Ikke oppgitt</span>}
+                    {formatEducation(profile.degree, profile.education) || <span className="text-gray-400 italic">{noValueLabel}</span>}
                   </span>
                   {!isPublicView && (
                     <button
@@ -723,13 +802,13 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
               </div>
             )}
 
-            {renderEditableField('certifications', 'Sertifiseringer', profile.certifications, 'textarea', undefined, 'privacyCertifications')}
+            {renderEditableField('certifications', certificationsLabel, profile.certifications, 'textarea', undefined, 'privacyCertifications')}
             
             {/* Portfolio/Supporting Documents Section */}
             {isFieldVisible(profile.privacyDocuments) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                  <span>Tilleggsmateriale</span>
+                  <span>{supportingMaterialsLabel}</span>
                   {!isPublicView && (
                     <button
                       onClick={() => handlePrivacyToggle('privacyDocuments', profile.privacyDocuments)}
@@ -739,7 +818,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                           ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                           : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
-                      title={profile.privacyDocuments === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                      title={profile.privacyDocuments === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
                   >
                     {saving === 'privacyDocuments' ? (
                       <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -748,7 +827,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                     ) : (
                       <EyeSlashIcon className="w-3 h-3 mr-1" />
                     )}
-                    {profile.privacyDocuments === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                    {profile.privacyDocuments === 'PUBLIC' ? publicLabel : privateLabel}
                   </button>
                 )}
               </dt>
@@ -767,7 +846,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       </div>
                     ) : (
                       <div className="text-sm text-gray-500 italic">
-                        Ingen filer tilgjengelig
+                        {noFilesLabel}
                       </div>
                     )}
                   </div>
@@ -776,13 +855,13 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                   <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center bg-gray-50">
                     <DocumentTextIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
                     <div className="text-sm text-gray-600 mb-2">
-                      <span className="font-medium">Last opp tilleggsmateriale</span>
+                      <span className="font-medium">{uploadSupportingLabel}</span>
                     </div>
                     <p className="text-xs text-gray-500">
-                      CV, portefølje, vitnemål, sertifikater, prosjekteksempler
+                      {supportingDescription}
                     </p>
                     <p className="text-xs text-gray-400 mt-1">
-                      PDF, DOC, DOCX, JPG, PNG • Maks 10MB per fil
+                      {supportingFormats}
                     </p>
                     
                     {/* Show uploaded files if any */}
@@ -810,7 +889,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                       className="mt-3 inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-400 bg-gray-100 cursor-not-allowed"
                     >
                       <DocumentArrowUpIcon className="h-4 w-4 mr-1" />
-                      Velg filer (kommer snart)
+                      {uploadComingSoonLabel}
                     </button>
                   </div>
                 )}
@@ -821,7 +900,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             {/* Activity Stats */}
             <div className="mt-6">
               <dt className="text-sm font-medium text-gray-500 mb-3 flex items-center justify-between">
-                <span>Aktivitetshistorikk</span>
+                <span>{activityHistoryLabel}</span>
                 {!isPublicView && (
                   <button
                     onClick={() => handlePrivacyToggle('privacyStats', profile.privacyStats)}
@@ -831,7 +910,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                         ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
-                    title={profile.privacyStats === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                    title={profile.privacyStats === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
                   >
                     {saving === 'privacyStats' ? (
                       <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -840,7 +919,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                     ) : (
                       <EyeSlashIcon className="w-3 h-3 mr-1" />
                     )}
-                    {profile.privacyStats === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                    {profile.privacyStats === 'PUBLIC' ? publicLabel : privateLabel}
                   </button>
                 )}
               </dt>
@@ -848,27 +927,27 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 <dd className="mt-1">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-xs text-gray-500 mb-1">Som lærer</div>
+                      <div className="text-xs text-gray-500 mb-1">{teacherRoleLabel}</div>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Økter gjennomført</span>
+                          <span className="text-sm text-gray-700">{teacherSessionsLabel}</span>
                           <span className="text-sm font-medium text-gray-900">{profile.teacherSessions || 0}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Unike elever</span>
+                          <span className="text-sm text-gray-700">{teacherStudentsLabel}</span>
                           <span className="text-sm font-medium text-gray-900">{profile.teacherStudents || 0}</span>
                         </div>
                       </div>
                     </div>
                     <div className="bg-gray-50 rounded-lg p-4">
-                      <div className="text-xs text-gray-500 mb-1">Som elev</div>
+                      <div className="text-xs text-gray-500 mb-1">{studentRoleLabel}</div>
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Økter gjennomført</span>
+                          <span className="text-sm text-gray-700">{studentSessionsLabel}</span>
                           <span className="text-sm font-medium text-gray-900">{profile.studentSessions || 0}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-700">Unike lærere</span>
+                          <span className="text-sm text-gray-700">{studentTeachersLabel}</span>
                           <span className="text-sm font-medium text-gray-900">{profile.studentTeachers || 0}</span>
                         </div>
                       </div>
@@ -877,7 +956,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 </dd>
               ) : (
                 <dd className="mt-1 text-sm text-gray-500 italic">
-                  Skjult
+                  {statsNotAvailableLabel}
                 </dd>
               )}
             </div>
@@ -900,13 +979,13 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 onChange={(e) => setTempValues({ ...tempValues, bio: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                 rows={6}
-                placeholder="Fortell litt om deg selv..."
+                placeholder={bioPlaceholder}
                 maxLength={1000}
                 autoFocus
               />
               <div className="flex items-center justify-between">
                 <span className="text-xs text-gray-500">
-                  {(tempValues.bio || '').length}/1000 tegn
+                  {(tempValues.bio || '').length}/1000 {bioCounterSuffix}
                 </span>
                 <div className="flex items-center space-x-2">
                   <button
@@ -914,13 +993,13 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                     disabled={saving === 'bio'}
                     className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
                   >
-                    {saving === 'bio' ? <LoadingSpinner className="w-4 h-4" /> : 'Lagre'}
+                    {saving === 'bio' ? <LoadingSpinner className="w-4 h-4" /> : saveLabel}
                   </button>
                   <button
                     onClick={handleFieldCancel}
                     className="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700"
                   >
-                    Avbryt
+                    {cancelLabel}
                   </button>
                 </div>
               </div>
@@ -945,7 +1024,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             ) : (
               <div className="bg-gray-50 rounded-lg p-4 text-center relative group">
                 <p className="text-sm text-gray-500 italic">
-                  Ingen biografi lagt til enda.
+                  {noBioLabel}
                 </p>
                 {!isPublicView && (
                   <button
@@ -954,7 +1033,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                   >
                     <span className="text-brand-600 text-sm font-medium flex items-center">
                       <PencilIcon className="w-4 h-4 mr-1" />
-                      Legg til biografi
+                      {addBioLabel}
                     </span>
                   </button>
                 )}
@@ -970,7 +1049,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-semibold text-gray-900 flex items-center">
               <DocumentTextIcon className="h-5 w-5 mr-2" />
-              Dokumenter
+              {documentsTitle}
             </h2>
             {!isPublicView && (
               <button
@@ -981,7 +1060,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                     ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
-                title={profile.privacyDocuments === 'PUBLIC' ? 'Klikk for å gjøre privat' : 'Klikk for å gjøre offentlig'}
+                title={profile.privacyDocuments === 'PUBLIC' ? makePrivateLabel : makePublicLabel}
               >
                 {saving === 'privacyDocuments' ? (
                   <LoadingSpinner className="w-3 h-3 mr-1" />
@@ -990,7 +1069,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
                 ) : (
                   <EyeSlashIcon className="w-3 h-3 mr-1" />
                 )}
-                {profile.privacyDocuments === 'PUBLIC' ? 'Offentlig' : 'Privat'}
+                {profile.privacyDocuments === 'PUBLIC' ? publicLabel : privateLabel}
               </button>
             )}
           </div>
