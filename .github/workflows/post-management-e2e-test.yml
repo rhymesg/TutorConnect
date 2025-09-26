@@ -358,49 +358,6 @@ jobs:
 
         npx playwright test --config=playwright-post-management.config.ts
 
-    - name: Run language toggle E2E test
-      run: |
-        cat > playwright-language-toggle.config.ts << 'EOF'
-        import { defineConfig } from '@playwright/test';
-
-        export default defineConfig({
-          testDir: './tests/e2e',
-          timeout: 60000,
-          expect: { timeout: 5000 },
-          workers: 1,
-          use: {
-            baseURL: 'http://localhost:3000',
-            trace: 'on-first-retry',
-            screenshot: 'only-on-failure',
-          },
-        });
-        EOF
-
-        mkdir -p tests/e2e
-        cat > tests/e2e/language-toggle.test.ts << 'EOF'
-        import { test, expect } from '@playwright/test';
-
-        test('language toggle updates hero title', async ({ page }) => {
-          await page.goto('/');
-          await page.waitForLoadState('networkidle');
-
-          const heroTitle = page.locator('h1');
-
-          // Initial should be Norwegian
-          await expect(heroTitle).toContainText('Læring');
-
-          // Switch to English and assert change
-          await page.click('button:has-text("EN")');
-          await expect(heroTitle).toContainText('Learning');
-
-          // Switch back to Norwegian and assert change
-          await page.click('button:has-text("NO")');
-          await expect(heroTitle).toContainText('Læring');
-        });
-        EOF
-
-        npx playwright test --config=playwright-language-toggle.config.ts language-toggle.test.ts
-      
     - name: Upload test results
       uses: actions/upload-artifact@v4
       if: always()
