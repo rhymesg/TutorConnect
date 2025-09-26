@@ -86,13 +86,13 @@ jobs:
 
               const heroTitle = page.locator('h1');
 
-              await expect(heroTitle).toContainText(/Læring|læring/i);
+              await expect(heroTitle).toContainText('Finn din perfekte lærer eller student');
 
               await page.click('button:has-text("EN")');
               await expect(heroTitle).toContainText(/Learning/i);
 
               await page.click('button:has-text("NO")');
-              await expect(heroTitle).toContainText(/Læring|læring/i);
+              await expect(heroTitle).toContainText('Finn din perfekte lærer eller student');
             });
           });
           EOF
