@@ -10,7 +10,6 @@ import {
   validateNorwegianTutoringChatCompatibility,
   getChatPermissions 
 } from '@/lib/chat-room';
-import { chat as chatTranslations } from '@/lib/translations';
 
 
 // Chat creation schema
@@ -318,7 +317,7 @@ async function handlePOST(request: NextRequest) {
       success: true,
       data: {
         chat: chatWithDetails,
-        message: chatTranslations.no.newChat?.created || 'Chat opprettet',
+        message: 'Chat created',
         metadata: {
           chatType: chatDetails.chatType,
           isNorwegianTutoring: !!relatedPostId,
