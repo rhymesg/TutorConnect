@@ -1,7 +1,7 @@
 'use client';
 
 import { Loader2, AlertCircle, Search, Grid, RefreshCw } from 'lucide-react';
-import { actions, messages } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 // Loading spinner component
 export function LoadingSpinner({ 
@@ -103,11 +103,12 @@ export function PostCardSkeleton({ className = '' }: { className?: string }) {
 
 // Inline loading for infinite scroll
 export function InfiniteScrollLoading({ className = '' }: { className?: string }) {
+  const t = useLanguageText();
   return (
     <div className={`flex items-center justify-center py-8 ${className}`}>
       <div className="flex items-center space-x-2 text-brand-600">
         <Loader2 className="w-5 h-5 animate-spin" />
-        <span className="text-sm font-medium">{messages.no.loading}</span>
+        <span className="text-sm font-medium">{t('Laster...', 'Loading...')}</span>
       </div>
     </div>
   );
@@ -121,16 +122,18 @@ export function PostListError({
   onRetry?: () => void;
   className?: string;
 }) {
+  const t = useLanguageText();
+  const retryLabel = t('Prøv igjen', 'Retry');
   return (
     <div className={`text-center py-12 ${className}`}>
       <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <AlertCircle className="w-8 h-8 text-red-600" />
       </div>
       <h3 className="text-lg font-medium text-neutral-900 mb-2">
-        {messages.no.error}
+        {t('Feil ved lasting av annonser', 'Error loading posts')}
       </h3>
       <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-        Kunne ikke laste inn annonser. Sjekk internettforbindelsen din og prøv igjen.
+        {t('Kunne ikke laste inn annonser. Sjekk internettforbindelsen din og prøv igjen.', 'Could not load posts. Check your internet connection and try again.')}
       </p>
       {onRetry && (
         <button
@@ -138,7 +141,7 @@ export function PostListError({
           className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          {actions.no.retry}
+          {retryLabel}
         </button>
       )}
     </div>
@@ -153,16 +156,18 @@ export function NetworkError({
   onRetry?: () => void;
   className?: string;
 }) {
+  const t = useLanguageText();
+  const retryLabel = t('Prøv igjen', 'Retry');
   return (
     <div className={`text-center py-12 ${className}`}>
       <div className="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <AlertCircle className="w-8 h-8 text-orange-600" />
       </div>
       <h3 className="text-lg font-medium text-neutral-900 mb-2">
-        {messages.no.networkError}
+        {t('Nettverksfeil', 'Network error')}
       </h3>
       <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-        Kunne ikke koble til serveren. Sjekk internettforbindelsen din.
+        {t('Kunne ikke koble til serveren. Sjekk internettforbindelsen din.', 'Could not connect to the server. Check your internet connection.')}
       </p>
       {onRetry && (
         <button
@@ -170,7 +175,7 @@ export function NetworkError({
           className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          {actions.no.retry}
+          {retryLabel}
         </button>
       )}
     </div>
@@ -179,8 +184,8 @@ export function NetworkError({
 
 // Empty state
 export function EmptyState({
-  title = messages.no.noResults,
-  description = 'Prøv å justere søkekriteriene eller fjerne noen filtre.',
+  title,
+  description,
   actionLabel,
   onAction,
   icon: Icon = Search,
@@ -193,16 +198,20 @@ export function EmptyState({
   icon?: React.ComponentType<{ className?: string }>;
   className?: string;
 }) {
+  const t = useLanguageText();
+  const fallbackTitle = t('Ingen resultater funnet', 'No results found');
+  const fallbackDescription = t('Prøv å justere søkekriteriene eller fjerne noen filtre.', 'Try adjusting your search criteria or removing some filters.');
+
   return (
     <div className={`text-center py-12 ${className}`}>
       <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <Icon className="w-8 h-8 text-neutral-400" />
       </div>
       <h3 className="text-lg font-medium text-neutral-900 mb-2">
-        {title}
+        {title ?? fallbackTitle}
       </h3>
       <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-        {description}
+        {description ?? fallbackDescription}
       </p>
       {onAction && actionLabel && (
         <button
@@ -226,11 +235,22 @@ export function NoSearchResults({
   onClearFilters?: () => void;
   className?: string;
 }) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
+  const baseTitle = t('Ingen resultater funnet', 'No results found');
+  const description = t('Prøv å søke med andre ord, eller juster filtrene dine.', 'Try searching with different terms or adjust your filters.');
+  const clearFiltersLabel = t('Fjern alle filtre', 'Clear all filters');
+  const title = searchQuery
+    ? language === 'no'
+      ? `Ingen resultater for "${searchQuery}"`
+      : `No results for "${searchQuery}"`
+    : baseTitle;
+
   return (
     <EmptyState
-      title={searchQuery ? `Ingen resultater for "${searchQuery}"` : messages.no.noResults}
-      description="Prøv å søke med andre ord, eller juster filtrene dine."
-      actionLabel={onClearFilters ? 'Fjern alle filtre' : undefined}
+      title={title}
+      description={description}
+      actionLabel={onClearFilters ? clearFiltersLabel : undefined}
       onAction={onClearFilters}
       icon={Search}
       className={className}
@@ -246,16 +266,18 @@ export function OfflineState({
   onRetry?: () => void;
   className?: string;
 }) {
+  const t = useLanguageText();
+  const retryLabel = t('Prøv igjen', 'Retry');
   return (
     <div className={`text-center py-12 ${className}`}>
       <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <Grid className="w-8 h-8 text-neutral-400" />
       </div>
       <h3 className="text-lg font-medium text-neutral-900 mb-2">
-        {messages.no.offline}
+        {t('Du er offline', 'You are offline')}
       </h3>
       <p className="text-neutral-600 mb-6 max-w-md mx-auto">
-        Du er ikke tilkoblet internett. Sjekk tilkoblingen din og prøv igjen.
+        {t('Du er ikke tilkoblet internett. Sjekk tilkoblingen din og prøv igjen.', 'You are not connected to the internet. Check your connection and try again.')}
       </p>
       {onRetry && (
         <button
@@ -263,7 +285,7 @@ export function OfflineState({
           className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
         >
           <RefreshCw className="w-4 h-4 mr-2" />
-          {actions.no.retry}
+          {retryLabel}
         </button>
       )}
     </div>

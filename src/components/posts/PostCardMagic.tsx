@@ -2,12 +2,15 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Clock, MapPin, User, Star, MessageCircle, Calendar } from 'lucide-react';
-import { PostWithDetails, PostType } from '@/types/database';
-import { formatters, education } from '@/lib/translations';
+import { Clock, MapPin, User, Star, MessageCircle } from 'lucide-react';
+import { PostWithDetails } from '@/types/database';
 import { StartChatButton } from '@/components/chat';
 import { MagicCard } from '@/components/ui/MagicCard';
 import { isUserOnline } from '@/lib/user-utils';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupLabelsByLanguage } from '@/constants/ageGroups';
+import { getRegionLabel } from '@/constants/regions';
 
 interface PostCardMagicProps {
   post: PostWithDetails;
@@ -16,25 +19,40 @@ interface PostCardMagicProps {
 }
 
 export default function PostCardMagic({ post, className = '', onContactClick }: PostCardMagicProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const isTutorPost = post.type === 'TEACHER';
-  const subjectName = education.no.subjects[post.subject as keyof typeof education.no.subjects] || post.subject;
+  const subjectName = getSubjectLabelByLanguage(language, post.subject);
+
+  const currencyFormatter = new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+    style: 'currency',
+    currency: 'NOK',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  const dateFormatter = new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
   
   // Format age groups
-  const ageGroupText = post.ageGroups.join(', ');
+  const ageGroupText = getAgeGroupLabelsByLanguage(language, post.ageGroups);
   
   // Format rate display
   const rateDisplay = () => {
     if (isTutorPost) {
-      return post.hourlyRate ? formatters.currency(post.hourlyRate) : 'Pris etter avtale';
+      return post.hourlyRate ? currencyFormatter.format(post.hourlyRate) : t('Pris etter avtale', 'Price negotiable');
     } else {
       if (post.hourlyRateMin && post.hourlyRateMax) {
-        return `${formatters.currency(post.hourlyRateMin)} - ${formatters.currency(post.hourlyRateMax)}`;
+        return `${currencyFormatter.format(post.hourlyRateMin)} - ${currencyFormatter.format(post.hourlyRateMax)}`;
       } else if (post.hourlyRateMax) {
-        return `Opptil ${formatters.currency(post.hourlyRateMax)}`;
+        return `${t('Opptil', 'Up to')} ${currencyFormatter.format(post.hourlyRateMax)}`;
       } else {
-        return 'Budsjett etter avtale';
+        return t('Budsjett etter avtale', 'Budget negotiable');
       }
     }
   };
@@ -42,7 +60,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
   // Format available times
   const availableTimesText = post.availableTimes.length > 0 
     ? post.availableTimes.slice(0, 3).join(', ') + (post.availableTimes.length > 3 ? '...' : '')
-    : 'Fleksibel tid';
+    : t('Fleksibel tid', 'Flexible time');
 
   const handleContactClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -67,10 +85,10 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
               : 'bg-blue-100 text-blue-800'
             }
           `}>
-            {isTutorPost ? 'Tilbyr undervisning' : 'Søker lærer'}
+            {isTutorPost ? t('Tilbyr undervisning', 'Offers tutoring') : t('Søker lærer', 'Seeking tutor')}
           </span>
           <span className="text-sm text-neutral-500">
-            {formatters.date(new Date(post.updatedAt ?? post.createdAt))}
+            {dateFormatter.format(new Date(post.updatedAt ?? post.createdAt))}
           </span>
         </div>
       </div>
@@ -134,7 +152,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
               </div>
               <div className="flex items-center text-xs text-neutral-500">
                 <MapPin className="w-3 h-3 mr-1" />
-                {post.user.region}
+                {getRegionLabel(post.user.region)}
               </div>
             </div>
           </div>
@@ -160,7 +178,7 @@ export default function PostCardMagic({ post, className = '', onContactClick }: 
                 {rateDisplay()}
               </span>
               {(post.hourlyRate || post.hourlyRateMax) && (
-                <span className="text-xs text-neutral-500">per time</span>
+                <span className="text-xs text-neutral-500">{t('per time', 'per hour')}</span>
               )}
             </div>
             

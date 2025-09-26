@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Grid, List, ArrowUpDown, Loader2, AlertCircle, Eye, EyeOff, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { Grid, List, ArrowUpDown, Loader2, AlertCircle, Eye, EyeOff, RefreshCw, WifiOff } from 'lucide-react';
 
 import PostCard, { PostCardSkeleton } from './PostCard';
 import SearchAndFiltersEnhanced from './SearchAndFiltersEnhanced';
 import ActiveFiltersEnhanced from './ActiveFiltersEnhanced';
 import { PostWithDetails, PostFilters, PaginatedPosts } from '@/types/database';
-import { actions, messages } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { useApiCall } from '@/hooks/useApiCall';
 
 interface PostListEnhancedProps {
@@ -35,6 +35,8 @@ export default function PostListEnhanced({
   showSearchHistory = true,
   enableOfflineMode = true,
 }: PostListEnhancedProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [posts, setPosts] = useState<PostWithDetails[]>(() => {
     const initialData = initialPosts?.data || [];
     return initialData;
@@ -73,10 +75,47 @@ export default function PostListEnhanced({
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   
   const observer = useRef<IntersectionObserver>();
-  const lastPostElementRef = useRef<HTMLDivElement>(null);
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
 
   const { execute: apiCall, isLoading } = useApiCall();
+
+  const labels = {
+    loading: t('Laster...', 'Loading...'),
+    loadingPosts: t('Laster flere annonser...', 'Loading more posts...'),
+    loadMore: t('Last flere', 'Load more'),
+    retry: t('Prøv igjen', 'Retry'),
+    errorShort: t('Feil ved lasting', 'Error loading'),
+    postsErrorTitle: t('Feil ved lasting av annonser', 'Error loading posts'),
+    postsErrorBody: t('Kunne ikke laste inn annonser. Prøv igjen senere.', 'Could not load posts. Please try again later.'),
+    networkErrorTitle: t('Ingen nettverkstilkobling', 'No network connection'),
+    networkErrorBody: t('Sjekk internettforbindelsen din og prøv igjen.', 'Check your internet connection and try again.'),
+    offlineBanner: t('Du er offline. Noen funksjoner kan være begrenset.', 'You are offline. Some features may be limited.'),
+    emptyTitle: t('Ingen annonser funnet', 'No listings found'),
+    emptyBody: t('Prøv å justere søkekriteriene eller fjerne noen filtre.', 'Try adjusting your search or removing some filters.'),
+    gridViewTitle: t('Rutenettvisning', 'Grid view'),
+    listViewTitle: t('Listevisning', 'List view'),
+    compactTitle: t('Kompakt visning', 'Compact view'),
+    normalTitle: t('Normal visning', 'Normal view'),
+    endOfResults: t('Du har sett alle {count} annonser', 'You have viewed all {count} posts'),
+  };
+
+  const sortOptionLabels: Record<SortOption, string> = {
+    updatedAt: t('Sist oppdatert', 'Recently updated'),
+    hourlyRate: t('Pris', 'Price'),
+    rating: t('Vurdering', 'Rating'),
+  };
+
+  const sortOrderSuffix = {
+    desc: t('nyeste først', 'newest first'),
+    asc: t('eldste først', 'oldest first'),
+  };
+
+  const formatResultsCount = (count: number) => {
+    if (language === 'no') {
+      return `${count} ${count === 1 ? 'resultat funnet' : 'resultater funnet'}`;
+    }
+    return `${count} ${count === 1 ? 'result found' : 'results found'}`;
+  };
 
   // Load search history from localStorage
   useEffect(() => {
@@ -329,17 +368,10 @@ export default function PostListEnhanced({
     };
   }, []);
 
-  const getSortLabel = (sortBy: SortOption) => {
-    switch (sortBy) {
-      case 'updatedAt': return 'Nyeste først';
-      case 'hourlyRate': return 'Pris';
-      case 'rating': return 'Vurdering';
-      default: return 'Sortering';
-    }
-  };
-
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'updatedAt', label: 'Sist oppdatert' },
+    { value: 'updatedAt', label: sortOptionLabels.updatedAt },
+    { value: 'hourlyRate', label: sortOptionLabels.hourlyRate },
+    { value: 'rating', label: sortOptionLabels.rating },
   ];
 
   return (
@@ -350,7 +382,7 @@ export default function PostListEnhanced({
         <div className="bg-orange-100 border-b border-orange-200 px-4 py-2">
           <div className="flex items-center justify-center text-sm text-orange-800">
             <WifiOff className="w-4 h-4 mr-2" />
-            Du er offline. Noen funksjoner kan være begrenset.
+            {labels.offlineBanner}
           </div>
         </div>
       )}
@@ -385,25 +417,24 @@ export default function PostListEnhanced({
             {isLoading && (posts?.length || 0) === 0 ? (
               <div className="flex items-center">
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                {messages.no.loading}
+                {labels.loading}
               </div>
             ) : hasError ? (
               <div className="flex items-center text-red-600">
                 <AlertCircle className="w-4 h-4 mr-2" />
-                Feil ved lasting
+                {labels.errorShort}
                 <button
                   onClick={handleRetry}
                   className="ml-2 text-brand-600 hover:text-brand-700 underline"
                 >
-                  Prøv igjen
+                  {labels.retry}
                 </button>
               </div>
             ) : (
               <span>
-                {(pagination?.total || 0) > 0 
-                  ? `${pagination?.total || 0} resultater funnet`
-                  : ''
-                }
+                {(pagination?.total || 0) > 0
+                  ? formatResultsCount(pagination?.total || 0)
+                  : ''}
               </span>
             )}
           </div>
@@ -414,7 +445,7 @@ export default function PostListEnhanced({
             <button
               onClick={() => setCompactMode(!compactMode)}
               className="sm:hidden p-2 text-neutral-600 hover:text-neutral-800 rounded-lg hover:bg-neutral-100"
-              title={compactMode ? 'Normal visning' : 'Kompakt visning'}
+              title={compactMode ? labels.normalTitle : labels.compactTitle}
             >
               {compactMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
@@ -431,10 +462,10 @@ export default function PostListEnhanced({
               >
                 {sortOptions.map(option => [
                   <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                    {option.label} (nyeste først)
+                    {option.label} ({sortOrderSuffix.desc})
                   </option>,
                   <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                    {option.label} (eldste først)
+                    {option.label} ({sortOrderSuffix.asc})
                   </option>
                 ])}
               </select>
@@ -449,7 +480,7 @@ export default function PostListEnhanced({
                   ? 'bg-brand-100 text-brand-600' 
                   : 'bg-white text-neutral-600 hover:bg-neutral-50'
                 }`}
-                title="Rutenettvisning"
+                title={labels.gridViewTitle}
               >
                 <Grid className="w-4 h-4" />
               </button>
@@ -459,7 +490,7 @@ export default function PostListEnhanced({
                   ? 'bg-brand-100 text-brand-600' 
                   : 'bg-white text-neutral-600 hover:bg-neutral-50'
                 }`}
-                title="Listevisning"
+                title={labels.listViewTitle}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -477,13 +508,10 @@ export default function PostListEnhanced({
               {isOnline ? <AlertCircle className="w-8 h-8" /> : <WifiOff className="w-8 h-8" />}
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              {isOnline ? 'Feil ved lasting av annonser' : 'Ingen nettverkstilkobling'}
+              {isOnline ? labels.postsErrorTitle : labels.networkErrorTitle}
             </h3>
             <p className="text-neutral-600 mb-4">
-              {isOnline 
-                ? 'Kunne ikke laste inn annonser. Prøv igjen senere.'
-                : 'Sjekk internettforbindelsen din og prøv igjen.'
-              }
+              {isOnline ? labels.postsErrorBody : labels.networkErrorBody}
             </p>
             <button
               onClick={handleRetry}
@@ -491,7 +519,7 @@ export default function PostListEnhanced({
               disabled={!isOnline}
             >
               <RefreshCw className="w-4 h-4 mr-2" />
-              {actions.no.retry}
+              {labels.retry}
             </button>
           </div>
         ) : (posts?.length || 0) === 0 && !isLoading ? (
@@ -501,10 +529,10 @@ export default function PostListEnhanced({
               <Grid className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              Ingen annonser funnet
+              {labels.emptyTitle}
             </h3>
             <p className="text-neutral-600">
-              Prøv å justere søkekriteriene eller fjerne noen filtre.
+              {labels.emptyBody}
             </p>
           </div>
         ) : (
@@ -542,7 +570,7 @@ export default function PostListEnhanced({
               <div className="flex justify-center items-center py-8">
                 <div className="flex items-center text-neutral-600">
                   <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Laster flere annonser...
+                  {labels.loadingPosts}
                 </div>
               </div>
             )}
@@ -551,7 +579,7 @@ export default function PostListEnhanced({
             {!pagination?.hasNext && (posts?.length || 0) > 0 && !isLoading && (
               <div className="text-center py-8 border-t border-neutral-200 mt-8">
                 <p className="text-neutral-500">
-                  Du har sett alle {(posts?.length || 0)} annonser
+                  {labels.endOfResults.replace('{count}', String(posts?.length || 0))}
                 </p>
               </div>
             )}
@@ -585,7 +613,7 @@ export default function PostListEnhanced({
               onClick={loadMorePosts}
               className="inline-flex items-center px-6 py-3 border border-neutral-300 rounded-lg text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
             >
-              {actions.no.loadMore}
+              {labels.loadMore}
             </button>
           </div>
         )}

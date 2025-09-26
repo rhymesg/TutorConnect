@@ -5,7 +5,7 @@ import { Grid, List, ArrowUpDown, Share, ExternalLink } from 'lucide-react';
 import PostCard, { PostCardSkeleton } from './PostCard';
 import { SearchBar, FilterPanel } from '@/components/search';
 import { PostWithDetails, PostFilters, PaginatedPosts } from '@/types/database';
-import { actions, messages, posts } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { useSearch } from '@/hooks/useSearch';
 
 interface PostListWithSearchProps {
@@ -25,8 +25,47 @@ export default function PostListWithSearch({
   className = '',
   showUrlSync = true
 }: PostListWithSearchProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [showFilters, setShowFilters] = useState(false);
+
+  const labels = {
+    searchPlaceholder: t('Søk etter lærere, fag eller område...', 'Search for tutors, subjects or areas...'),
+    activeFilters: t('Aktive filtere:', 'Active filters:'),
+    clearAll: t('Tøm alle', 'Clear all'),
+    loading: t('Laster...', 'Loading...'),
+    noResults: t('Ingen resultater funnet', 'No results found'),
+    beginSearch: t('Begynn å søke', 'Start searching'),
+    adjustFilters: t('Prøv å justere søkeordene eller filtrene dine', 'Try adjusting your keywords or filters'),
+    promptSearch: t('Bruk søkefeltet ovenfor for å finne lærere og fag', 'Use the search above to find tutors and subjects'),
+    clearFilters: t('Tøm alle filtere', 'Clear all filters'),
+    shareSearch: t('Del søk', 'Share search'),
+    highestFirst: t('høyest først', 'highest first'),
+    lowestFirst: t('lavest først', 'lowest first'),
+    gridTitle: t('Rutenettvisning', 'Grid view'),
+    listTitle: t('Listevisning', 'List view'),
+    loadMore: t('Last flere', 'Load more'),
+  };
+
+  const sortLabels: Record<SortOption, string> = {
+    updatedAt: t('Dato opprettet', 'Date created'),
+    hourlyRate: t('Pris', 'Price'),
+    rating: t('Vurdering', 'Rating'),
+  };
+
+  const resultsSummary = (count: number) => {
+    if (count === 0) {
+      return labels.noResults;
+    }
+    if (language === 'no') {
+      return `${count} ${count === 1 ? 'resultat' : 'resultater'} funnet`;
+    }
+    return `${count} ${count === 1 ? 'result found' : 'results found'}`;
+  };
+
+  const shareTitle = t('TutorConnect søk', 'TutorConnect search');
+
 
   // Initialize search hook with enhanced features
   const {
@@ -69,30 +108,26 @@ export default function PostListWithSearch({
     updateFilter('sortOrder', sortOrder || (filters.sortOrder === 'asc' ? 'desc' : 'asc'));
   };
 
-  const getSortLabel = (sortBy: SortOption) => {
-    switch (sortBy) {
-      case 'updatedAt': return posts.no.sorting.newest;
-      case 'hourlyRate': return posts.no.sorting.price;
-      case 'rating': return posts.no.sorting.rating;
-      default: return 'Sortering';
-    }
-  };
-
   const sortOptions: { value: SortOption; label: string }[] = [
-    { value: 'updatedAt', label: posts.no.sorting.created },
-    { value: 'hourlyRate', label: posts.no.sorting.price },
-    { value: 'rating', label: posts.no.sorting.rating },
+    { value: 'updatedAt', label: sortLabels.updatedAt },
+    { value: 'hourlyRate', label: sortLabels.hourlyRate },
+    { value: 'rating', label: sortLabels.rating },
   ];
 
   // Handle share functionality
   const handleShare = async () => {
     const url = shareSearchUrl();
+    const shareIntro = t('Se disse søkeresultatene på TutorConnect', 'Check out these results on TutorConnect');
+    const filterSummary = getFilterDisplayText();
+    const shareText = filterSummary.length > 0
+      ? `${shareIntro}: ${filterSummary.join(', ')}`
+      : shareIntro;
     
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'TutorConnect søk',
-          text: `Se disse søkeresultatene på TutorConnect${getFilterDisplayText().length > 0 ? ': ' + getFilterDisplayText().join(', ') : ''}`,
+          title: shareTitle,
+          text: shareText,
           url: url,
         });
       } catch (err) {
@@ -126,7 +161,7 @@ export default function PostListWithSearch({
             onFilterToggle={() => setShowFilters(!showFilters)}
             onShare={handleShare}
             activeFilterCount={getActiveFilterCount()}
-            placeholder="Søk etter lærere, fag eller område..."
+            placeholder={labels.searchPlaceholder}
           />
 
           {/* Advanced Filter Panel */}
@@ -143,7 +178,7 @@ export default function PostListWithSearch({
           {/* Active Filter Tags */}
           {hasActiveSearch() && (
             <div className="mt-4 flex items-center flex-wrap gap-2">
-              <span className="text-sm text-neutral-600">Aktive filtere:</span>
+              <span className="text-sm text-neutral-600">{labels.activeFilters}</span>
               {getFilterDisplayText().map((text, index) => (
                 <span
                   key={index}
@@ -156,7 +191,7 @@ export default function PostListWithSearch({
                 onClick={clearFilters}
                 className="text-sm text-neutral-500 hover:text-neutral-700 transition-colors ml-2"
               >
-                Tøm alle
+                {labels.clearAll}
               </button>
             </div>
           )}
@@ -173,14 +208,11 @@ export default function PostListWithSearch({
                 {isLoading ? (
                   <div className="flex items-center">
                     <div className="w-4 h-4 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin mr-2" />
-                    {messages.no.loading}
+                    {labels.loading}
                   </div>
                 ) : (
                   <span>
-                    {pagination.total > 0 
-                      ? `${pagination.total} ${pagination.total === 1 ? 'resultat' : 'resultater'} funnet`
-                      : 'Ingen resultater funnet'
-                    }
+                    {resultsSummary(pagination.total)}
                   </span>
                 )}
               </div>
@@ -192,7 +224,7 @@ export default function PostListWithSearch({
                   className="inline-flex items-center text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
                 >
                   <Share className="w-4 h-4 mr-1" />
-                  Del søk
+                  {labels.shareSearch}
                 </button>
               )}
             </div>
@@ -211,10 +243,10 @@ export default function PostListWithSearch({
                 >
                   {sortOptions.map(option => [
                     <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                      {option.label} ({posts.no.sorting.highest})
+                      {option.label} ({labels.highestFirst})
                     </option>,
                     <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                      {option.label} ({posts.no.sorting.lowest})
+                      {option.label} ({labels.lowestFirst})
                     </option>
                   ])}
                 </select>
@@ -229,7 +261,7 @@ export default function PostListWithSearch({
                     ? 'bg-brand-100 text-brand-600' 
                     : 'bg-white text-neutral-600 hover:bg-neutral-50'
                   }`}
-                  title={posts.no.viewModes.grid}
+                  title={labels.gridTitle}
                 >
                   <Grid className="w-4 h-4" />
                 </button>
@@ -239,7 +271,7 @@ export default function PostListWithSearch({
                     ? 'bg-brand-100 text-brand-600' 
                     : 'bg-white text-neutral-600 hover:bg-neutral-50'
                   }`}
-                  title={posts.no.viewModes.list}
+                  title={labels.listTitle}
                 >
                   <List className="w-4 h-4" />
                 </button>
@@ -258,20 +290,17 @@ export default function PostListWithSearch({
               <Grid className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">
-              {hasActiveSearch() ? 'Ingen resultater funnet' : 'Begynn å søke'}
+              {hasActiveSearch() ? labels.noResults : labels.beginSearch}
             </h3>
             <p className="text-neutral-600 mb-4">
-              {hasActiveSearch() 
-                ? 'Prøv å justere søkeordene eller filtrene dine'
-                : 'Bruk søkefeltet ovenfor for å finne lærere og fag'
-              }
+              {hasActiveSearch() ? labels.adjustFilters : labels.promptSearch}
             </p>
             {hasActiveSearch() && (
               <button
                 onClick={clearFilters}
                 className="inline-flex items-center px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
               >
-                Tøm alle filtere
+                {labels.clearFilters}
               </button>
             )}
           </div>
@@ -300,7 +329,7 @@ export default function PostListWithSearch({
               <div className="col-span-full flex justify-center items-center py-8">
                 <div className="flex items-center text-neutral-600">
                   <div className="w-5 h-5 border-2 border-brand-200 border-t-brand-500 rounded-full animate-spin mr-2" />
-                  {messages.no.loading}
+                  {labels.loading}
                 </div>
               </div>
             )}
@@ -335,12 +364,12 @@ export default function PostListWithSearch({
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-neutral-300 border-t-neutral-600 rounded-full animate-spin mr-2" />
-                  {messages.no.loading}
+                  {labels.loading}
                 </>
               ) : (
                 <>
                   <ExternalLink className="w-4 h-4 mr-2" />
-                  {actions.no.loadMore}
+                  {labels.loadMore}
                 </>
               )}
             </button>
