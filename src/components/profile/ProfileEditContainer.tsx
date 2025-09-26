@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ProfileEdit19 } from './ProfileEdit19';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { User } from '@prisma/client';
+import { useLanguageText } from '@/contexts/LanguageContext';
 
 interface ProfileData extends User {
   completeness: {
@@ -25,6 +26,7 @@ export function ProfileEditContainer() {
   const [profileData, setProfileData] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const t = useLanguageText();
 
   // Fetch profile data
   useEffect(() => {
@@ -65,8 +67,8 @@ export function ProfileEditContainer() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <LoadingSpinner className="w-8 h-8 mx-auto mb-4" />
-          <div>Laster profil...</div>
+         <LoadingSpinner className="w-8 h-8 mx-auto mb-4" />
+          <div>{t('Laster profil...', 'Loading profile...')}</div>
         </div>
       </div>
     );
@@ -76,12 +78,12 @@ export function ProfileEditContainer() {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="text-red-600 mb-4">Feil: {error}</div>
+          <div className="text-red-600 mb-4">{t('Feil', 'Error')}: {error}</div>
           <button
             onClick={handleCancel}
             className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
           >
-            Tilbake til profil
+            {t('Tilbake til profil', 'Back to profile')}
           </button>
         </div>
       </div>
@@ -91,7 +93,7 @@ export function ProfileEditContainer() {
   if (!profileData) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div>Profil data ikke funnet</div>
+        <div>{t('Profil data ikke funnet', 'Profile data not found')}</div>
       </div>
     );
   }

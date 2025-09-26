@@ -6,6 +6,7 @@ import { useApiCall } from '@/hooks/useApiCall';
 import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
+import { useLanguageText } from '@/contexts/LanguageContext';
 import { User } from '@prisma/client';
 
 interface PublicProfileData extends User {
@@ -52,6 +53,7 @@ interface Props {
 
 export function PublicProfileContainer({ userId }: Props) {
   const { user: currentUser } = useAuth();
+  const t = useLanguageText();
   const { execute: fetchProfile, data: profileData, isLoading: loading, error } = useApiCall<PublicProfileData>();
   const [initialLoad, setInitialLoad] = useState(true);
 
@@ -87,10 +89,10 @@ export function PublicProfileContainer({ userId }: Props) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
         <ErrorMessage 
-          title="Kunne ikke laste profil"
-          message="Profilen ble ikke funnet eller du har ikke tilgang til den."
+          title={t('Kunne ikke laste profil', 'Could not load profile')}
+          message={t('Profilen ble ikke funnet eller du har ikke tilgang til den.', 'The profile was not found or you do not have access.')}
           action={{
-            text: "Tilbake til søk",
+            text: t('Tilbake til søk', 'Back to search'),
             onClick: () => window.history.back()
           }}
         />
@@ -103,8 +105,8 @@ export function PublicProfileContainer({ userId }: Props) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <ErrorMessage 
-          title="Profil ikke funnet"
-          message="Brukerprofilen du leter etter eksisterer ikke."
+          title={t('Profil ikke funnet', 'Profile not found')}
+          message={t('Brukerprofilen du leter etter eksisterer ikke.', 'The user profile you are looking for does not exist.')}
         />
       </div>
     );
@@ -125,9 +127,9 @@ export function PublicProfileContainer({ userId }: Props) {
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
-              Tilbake
+              {t('Tilbake', 'Back')}
             </button>
-            <span className="text-sm text-gray-500">Offentlig profil</span>
+            <span className="text-sm text-gray-500">{t('Offentlig profil', 'Public profile')}</span>
           </div>
           <button
             onClick={() => window.close()}
@@ -136,7 +138,7 @@ export function PublicProfileContainer({ userId }: Props) {
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
-            Lukk
+            {t('Lukk', 'Close')}
           </button>
         </div>
       </div>

@@ -157,10 +157,10 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
   const teacherLabel = t('Lærer', 'Teacher');
   const studentLabel = t('Student', 'Student');
   const badgeInfoLabel = t('Klikk for mer info', 'Click for more info');
-  const teacherSessionsLabel = t('Gjennomførte timer', 'Sessions taught');
-  const teacherStudentsLabel = t('Studenter hjulpet', 'Students helped');
-  const studentSessionsLabel = t('Timeforespørsler', 'Sessions requested');
-  const studentTeachersLabel = t('Kontaktede lærere', 'Tutors contacted');
+  const teacherSessionsLabel = t('Timer', 'Sessions');
+  const teacherStudentsLabel = t('Studenter', 'Students');
+  const studentSessionsLabel = t('Timer', 'Sessions');
+  const studentTeachersLabel = t('Lærere', 'Tutors');
   const uploadComingSoonLabel = t('Velg filer (kommer snart)', 'Choose files (coming soon)');
   const activityHistoryLabel = t('Aktivitetshistorikk', 'Activity history');
   const teacherRoleLabel = t('Som lærer', 'As tutor');
@@ -705,7 +705,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
             {isFieldVisible(profile.privacyEducation) && (
               <div>
                 <dt className="text-sm font-medium text-gray-500 flex items-center justify-between">
-                  <span>Utdanning</span>
+                  <span>{educationTitle}</span>
                   {!isPublicView && (
                     <button
                       onClick={() => handlePrivacyToggle('privacyEducation', profile.privacyEducation)}
@@ -969,7 +969,7 @@ export function InlineProfileView({ profile, onProfileUpdate, isPublicView = fal
       <div>
         <h2 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
           <DocumentTextIcon className="h-5 w-5 mr-2" />
-          Om meg
+          {aboutTitle}
         </h2>
         {editingField === 'bio' ? (
           <div className="bg-gray-50 rounded-lg p-4">
