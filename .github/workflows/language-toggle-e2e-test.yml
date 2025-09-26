@@ -89,7 +89,7 @@ jobs:
               await expect(heroTitle).toContainText('Finn din perfekte lærer eller student');
 
               await page.click('button:has-text("EN")');
-              await expect(heroTitle).toContainText(/Learning/i);
+              await expect(heroTitle).toContainText('Find your perfect tutor or student');
 
               await page.click('button:has-text("NO")');
               await expect(heroTitle).toContainText('Finn din perfekte lærer eller student');
