@@ -18,9 +18,9 @@ import {
 } from 'lucide-react';
 
 import { PostFilters, PostType, Subject, AgeGroup, NorwegianRegion } from '@/types/database';
-import { education, regions, forms, actions } from '@/lib/translations';
-import { getSubjectOptions } from '@/constants/subjects';
-import { getAgeGroupOptions } from '@/constants/ageGroups';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectOptions, getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupOptions, getAgeGroupLabelByLanguage } from '@/constants/ageGroups';
 import { getRegionOptions } from '@/constants/regions';
 
 interface SearchAndFiltersEnhancedProps {
@@ -43,12 +43,12 @@ interface PriceRange {
   label: string;
 }
 
-const COMMON_PRICE_RANGES: PriceRange[] = [
-  { min: 0, max: 300, label: 'Under 300 kr/time' },
-  { min: 300, max: 500, label: '300 - 500 kr/time' },
-  { min: 500, max: 800, label: '500 - 800 kr/time' },
-  { min: 800, max: 1200, label: '800 - 1200 kr/time' },
-  { min: 1200, max: 999999, label: 'Over 1200 kr/time' },
+const PRICE_RANGE_VALUES: Array<Omit<PriceRange, 'label'>> = [
+  { min: 0, max: 300 },
+  { min: 300, max: 500 },
+  { min: 500, max: 800 },
+  { min: 800, max: 1200 },
+  { min: 1200, max: 999999 },
 ];
 
 export default function SearchAndFiltersEnhanced({
@@ -64,9 +64,64 @@ export default function SearchAndFiltersEnhanced({
   showMobileFilters = false,
   setShowMobileFilters,
 }: SearchAndFiltersEnhancedProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const [localSearch, setLocalSearch] = useState(filters.search || '');
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [customPriceMode, setCustomPriceMode] = useState(false);
+
+  const buildCurrencyFormatter = () => new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+    style: 'currency',
+    currency: 'NOK',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  const priceFormatter = buildCurrencyFormatter();
+
+  const buildPriceRangeLabel = (range: Omit<PriceRange, 'label'>) => {
+    if (range.max === 999999) {
+      return t('Over {amount} per time', 'Over {amount} per hour').replace('{amount}', priceFormatter.format(range.min));
+    }
+    if (range.min === 0) {
+      return t('Under {amount} per time', 'Under {amount} per hour').replace('{amount}', priceFormatter.format(range.max));
+    }
+    return `${priceFormatter.format(range.min)} - ${priceFormatter.format(range.max)} ${t('per time', 'per hour')}`;
+  };
+
+  const commonPriceRanges: PriceRange[] = PRICE_RANGE_VALUES.map((range) => ({
+    ...range,
+    label: buildPriceRangeLabel(range),
+  }));
+
+  const subjectOptions = getSubjectOptions().map((option) => ({
+    value: option.value,
+    label: getSubjectLabelByLanguage(language, option.value),
+  }));
+
+  const ageGroupOptions = getAgeGroupOptions().map((option) => ({
+    value: option.value,
+    label: getAgeGroupLabelByLanguage(language, option.value),
+  }));
+
+  const regionOptions = getRegionOptions();
+
+  const copy = {
+    recentSearches: t('Tidligere søk', 'Recent searches'),
+    subjectHeading: t('Fag', 'Subjects'),
+    subjectLabel: t('Fag', 'Subject'),
+    subjectPlaceholder: t('Velg fag', 'Select subject'),
+    locationLabel: t('Sted', 'Location'),
+    locationPlaceholder: t('Velg sted', 'Select location'),
+    ageGroupsLabel: t('Aldersgrupper', 'Age groups'),
+    statusLabel: t('Status', 'Status'),
+    includePaused: t('Inkluder pauserte annonser', 'Include paused posts'),
+    desktopFiltersTitle: t('Filtrer resultater', 'Filter results'),
+    mobileResetAll: t('Nullstill alle', 'Reset all'),
+    mobileShowResults: t('Vis resultater', 'Show results'),
+    backToPresets: t('← Tilbake til forhåndsdefinerte områder', '← Back to preset ranges'),
+    searchPlaceholder: t('Søk etter fag eller område...', 'Search subjects or locations...'),
+  };
 
   // Debounce search input
   useEffect(() => {
@@ -138,13 +193,7 @@ export default function SearchAndFiltersEnhanced({
   };
 
   // Subject options from centralized constants
-  const subjectOptions = getSubjectOptions();
-
-  // Age group options from centralized constants
-  const ageGroupOptions = getAgeGroupOptions();
-
-  // Region options from centralized constants
-  const regionOptions = getRegionOptions();
+  // Age group and region options already derived above
 
   // Search suggestions component
   const SearchSuggestions = () => (
@@ -153,7 +202,7 @@ export default function SearchAndFiltersEnhanced({
         <div className="p-3 border-b border-neutral-100">
           <div className="text-xs font-medium text-neutral-500 mb-2 flex items-center">
             <History className="w-3 h-3 mr-1" />
-            Tidligere søk
+            {copy.recentSearches}
           </div>
           <div className="space-y-1">
             {searchHistory.slice(0, 5).map((search, index) => (
@@ -188,7 +237,7 @@ export default function SearchAndFiltersEnhanced({
       {/* Subject suggestions */}
       {localSearch && (
         <div className="p-3">
-          <div className="text-xs font-medium text-neutral-500 mb-2">Fag</div>
+          <div className="text-xs font-medium text-neutral-500 mb-2">{copy.subjectHeading}</div>
           <div className="space-y-1">
             {subjectOptions
               .filter(option => 
@@ -258,9 +307,9 @@ export default function SearchAndFiltersEnhanced({
 
       {/* Subject Filter */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-3">
+      <label className="block text-sm font-medium text-neutral-700 mb-3">
           <BookOpen className="w-4 h-4 inline mr-1" />
-          {forms.no.subject}
+          {copy.subjectLabel}
         </label>
         <div className="relative">
           <select
@@ -268,7 +317,7 @@ export default function SearchAndFiltersEnhanced({
             onChange={(e) => updateFilter('subject', e.target.value || undefined)}
             className="w-full p-3 border border-neutral-300 rounded-lg bg-white text-neutral-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none"
           >
-            <option value="">{forms.no.selectSubject}</option>
+            <option value="">{copy.subjectPlaceholder}</option>
             {subjectOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
@@ -281,9 +330,9 @@ export default function SearchAndFiltersEnhanced({
 
       {/* Age Groups Filter */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-3">
+      <label className="block text-sm font-medium text-neutral-700 mb-3">
           <Users className="w-4 h-4 inline mr-1" />
-          Aldersgrupper
+          {copy.ageGroupsLabel}
         </label>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           {ageGroupOptions.map((ageGroup) => (
@@ -310,9 +359,9 @@ export default function SearchAndFiltersEnhanced({
 
       {/* Location Filter */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-3">
+      <label className="block text-sm font-medium text-neutral-700 mb-3">
           <MapPin className="w-4 h-4 inline mr-1" />
-          {forms.no.location}
+          {copy.locationLabel}
         </label>
         <div className="relative">
           <select
@@ -320,7 +369,7 @@ export default function SearchAndFiltersEnhanced({
             onChange={(e) => updateFilter('location', e.target.value || undefined)}
             className="w-full p-3 border border-neutral-300 rounded-lg bg-white text-neutral-900 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 appearance-none"
           >
-            <option value="">{forms.no.selectLocation}</option>
+            <option value="">{copy.locationPlaceholder}</option>
             {regionOptions.map((region) => (
               <option key={region.value} value={region.value}>
                 {region.label}
@@ -407,8 +456,8 @@ export default function SearchAndFiltersEnhanced({
 
       {/* Status Filter */}
       <div>
-        <label className="block text-sm font-medium text-neutral-700 mb-3">
-          Status
+      <label className="block text-sm font-medium text-neutral-700 mb-3">
+          {copy.statusLabel}
         </label>
         <div className="flex items-center">
           <input
@@ -419,7 +468,7 @@ export default function SearchAndFiltersEnhanced({
             className="h-4 w-4 rounded border-neutral-300 text-brand-600 focus:ring-brand-500 focus:ring-offset-0"
           />
           <label htmlFor="include-paused" className="ml-3 text-sm text-neutral-700">
-            Inkluder pauserte annonser
+            {copy.includePaused}
           </label>
         </div>
       </div>
@@ -434,7 +483,7 @@ export default function SearchAndFiltersEnhanced({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
           <input
             type="text"
-            placeholder={forms.no.searchPlaceholder}
+            placeholder={copy.searchPlaceholder}
             value={localSearch}
             onChange={(e) => setLocalSearch(e.target.value)}
             onKeyDown={(e) => {
@@ -470,7 +519,7 @@ export default function SearchAndFiltersEnhanced({
           <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200 bg-white">
             <h3 className="text-lg font-medium text-neutral-900 flex items-center">
               <Sliders className="w-5 h-5 mr-2" />
-              Filtrer resultater
+              {copy.desktopFiltersTitle}
             </h3>
             <button
               onClick={() => setShowDesktopFilters && setShowDesktopFilters(false)}
@@ -522,7 +571,7 @@ export default function SearchAndFiltersEnhanced({
                       <div className="flex items-center justify-between px-4 py-6 border-b border-neutral-200">
                         <Dialog.Title className="text-lg font-medium text-neutral-900 flex items-center">
                           <Filter className="w-5 h-5 mr-2" />
-                          Filtrer resultater
+                          {copy.desktopFiltersTitle}
                         </Dialog.Title>
                         <button
                           onClick={() => setShowMobileFilters(false)}
@@ -545,13 +594,13 @@ export default function SearchAndFiltersEnhanced({
                             className="px-4 py-2 text-sm font-medium text-neutral-700 border border-neutral-300 rounded-lg hover:bg-neutral-50 transition-colors"
                             disabled={!hasActiveFilters()}
                           >
-                            Nullstill alle
+                            {copy.mobileResetAll}
                           </button>
                           <button
                             onClick={() => setShowMobileFilters(false)}
                             className="px-6 py-2 text-sm font-medium text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors"
                           >
-                            Vis resultater
+                            {copy.mobileShowResults}
                           </button>
                         </div>
                       </div>

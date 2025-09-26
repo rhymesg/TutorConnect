@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { X, Search, MapPin, BookOpen, Users, Banknote, Filter, Sliders, ChevronDown, RotateCcw } from 'lucide-react';
 import { PostFilters } from '@/types/database';
-import { education, formatters } from '@/lib/translations';
-import { getSubjectLabel } from '@/constants/subjects';
-import { getAgeGroupLabel } from '@/constants/ageGroups';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupLabelByLanguage } from '@/constants/ageGroups';
 import { getRegionLabel } from '@/constants/regions';
 
 interface ActiveFiltersEnhancedProps {
@@ -25,6 +24,9 @@ export default function ActiveFiltersEnhanced({
   setShowDesktopFilters,
   setShowMobileFilters
 }: ActiveFiltersEnhancedProps) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
   const removeFilter = (key: keyof PostFilters) => {
     const updated = { ...filters };
     delete updated[key];
@@ -62,7 +64,7 @@ export default function ActiveFiltersEnhanced({
 
   // Subject filter
   if (filters.subject) {
-    const subjectLabel = getSubjectLabel(filters.subject);
+    const subjectLabel = getSubjectLabelByLanguage(language, filters.subject);
     activeFilters.push({
       key: 'subject' as keyof PostFilters,
       label: subjectLabel,
@@ -83,9 +85,9 @@ export default function ActiveFiltersEnhanced({
 
   // Age groups filter
   if (filters.ageGroups?.length) {
-    const label = filters.ageGroups.length === 1 
-      ? getAgeGroupLabel(filters.ageGroups[0])
-      : `${filters.ageGroups.length} aldersgrupper`;
+    const label = filters.ageGroups.length === 1
+      ? getAgeGroupLabelByLanguage(language, filters.ageGroups[0])
+      : `${filters.ageGroups.length} ${t('aldersgrupper', 'age groups')}`;
 
     activeFilters.push({
       key: 'ageGroups' as keyof PostFilters,
@@ -98,12 +100,21 @@ export default function ActiveFiltersEnhanced({
   // Price range filter
   if (filters.minRate || filters.maxRate) {
     let label = '';
+    const formatter = new Intl.NumberFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      style: 'currency',
+      currency: 'NOK',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    });
+
+    const formatAmount = (value: number) => formatter.format(value);
+
     if (filters.minRate && filters.maxRate) {
-      label = `${formatters.currency(filters.minRate)} - ${formatters.currency(filters.maxRate)}`;
+      label = `${formatAmount(filters.minRate)} - ${formatAmount(filters.maxRate)}`;
     } else if (filters.minRate) {
-      label = `Fra ${formatters.currency(filters.minRate)}`;
+      label = `${t('Fra', 'From')} ${formatAmount(filters.minRate)}`;
     } else if (filters.maxRate) {
-      label = `Opptil ${formatters.currency(filters.maxRate)}`;
+      label = `${t('Opptil', 'Up to')} ${formatAmount(filters.maxRate)}`;
     }
     
     activeFilters.push({
@@ -118,7 +129,7 @@ export default function ActiveFiltersEnhanced({
   if (filters.includePaused) {
     activeFilters.push({
       key: 'includePaused' as keyof PostFilters,
-      label: 'Inkluderer pauserte annonser',
+      label: t('Inkluderer pauserte annonser', 'Include paused posts'),
       icon: Filter,
       onRemove: () => removeFilter('includePaused')
     });
@@ -176,7 +187,7 @@ export default function ActiveFiltersEnhanced({
               className="hidden sm:inline-flex items-center px-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-all shadow-sm"
             >
               <Sliders className="w-4 h-4 mr-2" />
-              Avanserte filtre
+              {t('Avanserte filtre', 'Advanced filters')}
               {getActiveFilterCount() > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-brand-500 rounded-full">
                   {getActiveFilterCount()}
@@ -193,7 +204,7 @@ export default function ActiveFiltersEnhanced({
               className="sm:hidden inline-flex items-center px-3 py-2 border border-neutral-300 rounded-lg text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-all shadow-sm"
             >
               <Filter className="w-4 h-4 mr-2" />
-              Filtrer
+              {t('Filtrer', 'Filter')}
               {getActiveFilterCount() > 0 && (
                 <span className="ml-2 inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-brand-500 rounded-full">
                   {getActiveFilterCount()}
@@ -230,7 +241,7 @@ export default function ActiveFiltersEnhanced({
             className="inline-flex items-center px-3 py-2 text-sm text-brand-600 hover:text-brand-700 hover:bg-brand-50 rounded-lg transition-all"
           >
             <RotateCcw className="w-4 h-4 mr-1" />
-            Nullstill
+            {t('Nullstill', 'Reset')}
           </button>
         )}
       </div>
