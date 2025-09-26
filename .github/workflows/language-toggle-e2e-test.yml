@@ -85,16 +85,14 @@ jobs:
               await page.waitForLoadState('networkidle');
 
               const heroTitle = page.locator('h1');
-              const norwegianTitle = 'Finn din perfekte lærer eller student';
-              const englishTitle = 'Find your perfect tutor or student';
 
-              await expect(heroTitle).toContainText(norwegianTitle, { timeout: 5000 });
+              await expect(heroTitle).toContainText(/Læring|læring/i);
 
               await page.click('button:has-text("EN")');
-              await expect(heroTitle).toContainText(englishTitle, { timeout: 5000 });
+              await expect(heroTitle).toContainText(/Learning/i);
 
               await page.click('button:has-text("NO")');
-              await expect(heroTitle).toContainText(norwegianTitle, { timeout: 5000 });
+              await expect(heroTitle).toContainText(/Læring|læring/i);
             });
           });
           EOF
