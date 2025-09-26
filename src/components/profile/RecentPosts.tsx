@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { formatters, education } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
 import { 
   AcademicCapIcon, 
   UserGroupIcon,
@@ -22,43 +23,42 @@ interface Props {
 }
 
 export function RecentPosts({ posts }: Props) {
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const formatDate = (value: string | Date) => {
+    const date = value instanceof Date ? value : new Date(value);
+    return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-GB', {
+      timeZone: 'Europe/Oslo',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    }).format(date);
+  };
+
+  const tutorLabel = t('Tilbyr undervisning', 'Offers tutoring');
+  const studentLabel = t('Søker lærer', 'Seeking tutor');
+  const createdLabel = t('Opprettet', 'Created');
+  const emptyTitle = t('Ingen innlegg enda', 'No posts yet');
+  const emptyDescription = t('Dine innlegg vil vises her når du oppretter dem.', 'Your posts will appear here once you create them.');
+  const createPostLabel = t('Opprett innlegg', 'Create post');
+  const viewPostLabel = t('Se innlegg', 'View post');
+  const seeAllLabel = t('Se alle innlegg', 'See all posts');
+
   const getPostTypeInfo = (type: string) => {
     if (type === 'TUTOR_OFFER') {
       return {
-        label: 'Tilbyr undervisning',
+        label: tutorLabel,
         icon: AcademicCapIcon,
         color: 'text-blue-600 bg-blue-100',
       };
     }
     
     return {
-      label: 'Søker lærer',
+      label: studentLabel,
       icon: UserGroupIcon,
       color: 'text-green-600 bg-green-100',
     };
-  };
-
-  const getSubjectLabel = (subject: string) => {
-    // Convert database enum to display label
-    const subjectMap: Record<string, string> = {
-      MATH: 'Matematikk',
-      NORWEGIAN: 'Norsk',
-      ENGLISH: 'Engelsk',
-      SCIENCE: 'Naturfag',
-      PHYSICS: 'Fysikk',
-      CHEMISTRY: 'Kjemi',
-      BIOLOGY: 'Biologi',
-      HISTORY: 'Historie',
-      GEOGRAPHY: 'Geografi',
-      SOCIAL_STUDIES: 'Samfunnsfag',
-      RELIGION: 'Religion og etikk',
-      MUSIC: 'Musikk',
-      ART: 'Kunst og håndverk',
-      PROGRAMMING: 'Programmering',
-      ECONOMICS: 'Økonomi',
-    };
-    
-    return subjectMap[subject] || subject;
   };
 
   if (!posts.length) {
@@ -66,17 +66,17 @@ export function RecentPosts({ posts }: Props) {
       <div className="text-center py-8 bg-gray-50 rounded-lg">
         <ClockIcon className="mx-auto h-12 w-12 text-gray-400" />
         <h3 className="mt-2 text-sm font-medium text-gray-900">
-          Ingen innlegg enda
+          {emptyTitle}
         </h3>
         <p className="mt-1 text-sm text-gray-500">
-          Dine innlegg vil vises her når du oppretter dem.
+          {emptyDescription}
         </p>
         <div className="mt-6">
           <Link
             href="/posts/new"
             className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
-            Opprett innlegg
+            {createPostLabel}
           </Link>
         </div>
       </div>
@@ -106,10 +106,10 @@ export function RecentPosts({ posts }: Props) {
                   <div className="mt-1 flex items-center space-x-2 text-sm text-gray-500">
                     <span>{typeInfo.label}</span>
                     <span>•</span>
-                    <span>{getSubjectLabel(post.subject)}</span>
+                    <span>{getSubjectLabelByLanguage(language, post.subject)}</span>
                   </div>
                   <p className="mt-1 text-xs text-gray-400">
-                    Opprettet: {formatters.date(new Date(post.createdAt))}
+                    {createdLabel}: {formatDate(post.createdAt)}
                   </p>
                 </div>
               </div>
@@ -117,7 +117,7 @@ export function RecentPosts({ posts }: Props) {
               <Link
                 href={`/posts/${post.id}`}
                 className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600"
-                title="Se innlegg"
+                title={viewPostLabel}
               >
                 <ArrowTopRightOnSquareIcon className="h-4 w-4" />
               </Link>
@@ -132,7 +132,7 @@ export function RecentPosts({ posts }: Props) {
             href="/dashboard?tab=posts"
             className="text-sm font-medium text-blue-600 hover:text-blue-800"
           >
-            Se alle innlegg →
+            {seeAllLabel} →
           </Link>
         </div>
       )}
