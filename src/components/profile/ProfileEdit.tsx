@@ -285,10 +285,10 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
 
       {/* Education */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Utdanning</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">{t('Utdanning', 'Education')}</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
-            label="Skole/Institusjon"
+            label={t('Skole/Institusjon', 'School/Institution')}
             name="school"
             type="text"
             value={formData.school || ''}
@@ -298,7 +298,7 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
           />
           
           <FormField
-            label="Grad/Utdanning"
+            label={t('Grad/Utdanning', 'Degree/Education')}
             name="degree"
             type="text"
             value={formData.degree || ''}
@@ -310,14 +310,14 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
         
         <div className="mt-6">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Sertifiseringer
+            {t('Sertifiseringer', 'Certifications')}
           </label>
           <textarea
             value={formData.certifications || ''}
             onChange={(e) => handleInputChange('certifications', e.target.value)}
             rows={4}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Beskriv dine sertifiseringer, kurs og kvalifikasjoner..."
+            placeholder={t('Beskriv dine sertifiseringer, kurs og kvalifikasjoner...', 'Describe your certifications, courses, and qualifications...')}
           />
           {errors.certifications && <FormError errors={errors.certifications} />}
         </div>
@@ -325,20 +325,20 @@ export function ProfileEdit({ profile, onSave, onCancel }: Props) {
 
       {/* Bio */}
       <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Om meg</h3>
+        <h3 className="text-lg font-medium text-gray-900 mb-4">{t('Om meg', 'About me')}</h3>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Biografi
+            {t('Biografi', 'Biography')}
           </label>
           <textarea
             value={formData.bio || ''}
             onChange={(e) => handleInputChange('bio', e.target.value)}
             rows={6}
             className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-            placeholder="Fortell litt om deg selv, din undervisningserfaring, og hva du tilbyr..."
+            placeholder={t('Fortell litt om deg selv, din undervisningserfaring, og hva du tilbyr...', 'Share your experience, teaching approach, and what you offer...')}
           />
           <p className="mt-1 text-sm text-gray-500">
-            {(formData.bio || '').length}/1000 tegn
+            {(formData.bio || '').length}/1000 {t('tegn', 'characters')}
           </p>
           {errors.bio && <FormError errors={errors.bio} />}
         </div>
