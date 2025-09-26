@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Dialog, Transition } from '@headlessui/react';
@@ -14,6 +14,7 @@ import {
   DocumentTextIcon,
   PlusIcon,
 } from '@heroicons/react/24/outline';
+import { useLanguageText } from '@/contexts/LanguageContext';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -34,36 +35,42 @@ interface NavigationItem {
   badge?: number;
 }
 
-const navigationGroupsConfig = (unreadMessagesCount: number): NavigationGroup[] => [
-  {
-    title: 'Søk & Opprett',
-    items: [
-      { name: 'Opprett annonse', href: '/posts/new', icon: PlusIcon },
-      { name: 'Finn en lærer', href: '/posts/teachers', icon: MagnifyingGlassIcon },
-      { name: 'Finn en student', href: '/posts/students', icon: MagnifyingGlassIcon },
-    ],
-  },
-  {
-    title: 'Mine Aktiviteter',
-    items: [
-      { name: 'Mine annonser', href: '/profile/posts', icon: DocumentTextIcon },
-      { name: 'Mine samtaler', href: '/chat', icon: ChatBubbleLeftRightIcon, badge: unreadMessagesCount },
-      { name: 'Mine timer', href: '/appointments', icon: CalendarIcon },
-    ],
-  },
-  {
-    title: 'Konto',
-    items: [
-      { name: 'Min profil', href: '/profile', icon: UserIcon },
-      { name: 'Innstillinger', href: '/settings', icon: Cog6ToothIcon },
-    ],
-  },
-];
-
 export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0, showDesktop = true }: SidebarProps) {
   const pathname = usePathname();
   const [isMounted, setIsMounted] = useState(false);
-  const navigationGroups = navigationGroupsConfig(unreadMessagesCount);
+  const t = useLanguageText();
+
+  const navigationGroups = useMemo<NavigationGroup[]>(() => ([
+    {
+      title: t('Søk & Opprett', 'Search & Create'),
+      items: [
+        { name: t('Opprett annonse', 'Post an ad'), href: '/posts/new', icon: PlusIcon },
+        { name: t('Finn en lærer', 'Find a tutor'), href: '/posts/teachers', icon: MagnifyingGlassIcon },
+        { name: t('Finn en student', 'Find a student'), href: '/posts/students', icon: MagnifyingGlassIcon },
+      ],
+    },
+    {
+      title: t('Mine aktiviteter', 'My activity'),
+      items: [
+        { name: t('Mine annonser', 'My ads'), href: '/profile/posts', icon: DocumentTextIcon },
+        { name: t('Mine samtaler', 'Conversations'), href: '/chat', icon: ChatBubbleLeftRightIcon, badge: unreadMessagesCount },
+        { name: t('Mine timer', 'Appointments'), href: '/appointments', icon: CalendarIcon },
+      ],
+    },
+    {
+      title: t('Konto', 'Account'),
+      items: [
+        { name: t('Min profil', 'My profile'), href: '/profile', icon: UserIcon },
+        { name: t('Innstillinger', 'Settings'), href: '/settings', icon: Cog6ToothIcon },
+      ],
+    },
+  ]), [t, unreadMessagesCount]);
+
+  const closeSidebarLabel = t('Lukk sidemeny', 'Close sidebar');
+  const sidebarNavLabel = t('Sidemeny navigasjon', 'Sidebar navigation');
+  const notificationLabel = (count: number) => count > 0
+    ? t(`${count} nye varsler`, `${count} new notifications`)
+    : '';
 
   useEffect(() => {
     setIsMounted(true);
@@ -122,13 +129,13 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0, show
             type="button"
             className="rounded-md p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700"
             onClick={onClose}
-            aria-label="Lukk sidemeny"
+            aria-label={closeSidebarLabel}
           >
             <XMarkIcon className="h-6 w-6" aria-hidden="true" />
           </button>
         </div>
 
-        <nav className="min-h-0 flex-1 overflow-y-auto px-6 py-8" aria-label="Sidemeny navigasjon">
+        <nav className="min-h-0 flex-1 overflow-y-auto px-6 py-8" aria-label={sidebarNavLabel}>
           <div className="space-y-8">
             {navigationGroups.map((group, index) => (
               <div key={index}>
@@ -161,7 +168,10 @@ export default function Sidebar({ isOpen, onClose, unreadMessagesCount = 0, show
                           />
                           <span className="flex-1">{item.name}</span>
                           {item.badge !== undefined && item.badge > 0 && (
-                            <span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800" aria-label={`${item.badge} nye varsler`}>
+                            <span
+                              className="ml-2 inline-flex items-center justify-center rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800"
+                              aria-label={notificationLabel(item.badge)}
+                            >
                               {item.badge > 99 ? '99+' : item.badge}
                             </span>
                           )}
