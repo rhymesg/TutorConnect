@@ -1,16 +1,17 @@
 'use client';
 
 import { useParams } from 'next/navigation';
-import { useLanguage } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import AppointmentsList from '@/components/appointments/AppointmentsList';
 
 export default function ChatAppointmentsPage() {
   const params = useParams();
-  const language = useLanguage();
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const chatId = params?.chatId as string;
 
-  const title = language === 'no' ? 'Avtaler for denne chatten' : 'Appointments for this chat';
-  const backButtonText = language === 'no' ? 'Tilbake' : 'Back';
+  const title = t('Avtaler for denne chatten', 'Appointments for this chat');
+  const backButtonText = t('Tilbake', 'Back');
 
   return (
     <AppointmentsList 

@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, Clock, MapPin, User, MessageCircle, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Language, useLanguage } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { getSubjectLabel } from '@/constants/subjects';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppointmentResponseModal from '@/components/chat/AppointmentResponseModal';
@@ -47,7 +47,8 @@ export default function AppointmentsList({
   onBackClick,
 }: AppointmentsListProps) {
   const router = useRouter();
-  const language = useLanguage();
+  const { language } = useLanguage();
+  const t = useLanguageText();
   const { user, accessToken } = useAuth();
   const locale = language === 'no' ? 'nb-NO' : 'en-US';
   
@@ -58,55 +59,40 @@ export default function AppointmentsList({
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
-  
+
+  const acceptAppointmentError = t('Kunne ikke godta avtalen', 'Could not accept the appointment');
+  const rejectAppointmentError = t('Kunne ikke avslå avtalen', 'Could not decline the appointment');
+  const confirmCompletedError = t('Kunne ikke bekrefte at avtalen ble gjennomført', 'Could not confirm the appointment was completed');
+  const markNotCompletedError = t('Kunne ikke markere avtalen som ikke gjennomført', 'Could not mark the appointment as not completed');
+  const deleteAppointmentError = t('Kunne ikke slette avtalen', 'Could not delete the appointment');
+
   // Available filter options - split ALL into CURRENT and PAST
   const availableFilters = ['CURRENT', 'PAST', 'PENDING', 'CONFIRMED', 'WAITING_TO_COMPLETE', 'COMPLETED', 'CANCELLED'] as const;
     
   type FilterType = typeof availableFilters[number];
   const [filter, setFilter] = useState<FilterType>('CURRENT');
 
-  const t = {
-    no: {
-      title,
-      backToChat: backButtonText || 'Tilbake til chat',
-      noAppointments: chatId ? 'Ingen avtaler enda' : 'Ingen avtaler enda',
-      noAppointmentsDesc: chatId ? 'Dere har ingen planlagte avtaler for denne chatten' : 'Du har ingen planlagte avtaler',
-      pending: 'Venter',
-      confirmed: 'Bekreftet',
-      waiting_to_complete: 'Venter på fullføring',
-      completed: 'Fullført',
-      cancelled: 'Avbrutt',
-      current: 'Kommende',
-      past: 'Tidligere',
-      with: 'med',
-      subject: 'Fag',
-      duration: 'minutter',
-      goToChat: 'Gå til chat',
-      online: 'Online',
-      error: 'Feil ved lasting av avtaler'
-    },
-    en: {
-      title,
-      backToChat: backButtonText || 'Back to chat',
-      noAppointments: chatId ? 'No appointments yet' : 'No appointments yet',
-      noAppointmentsDesc: chatId ? 'You have no scheduled appointments for this chat' : 'You have no scheduled appointments',
-      pending: 'Pending',
-      confirmed: 'Confirmed',
-      waiting_to_complete: 'Waiting to Complete',
-      completed: 'Completed',
-      cancelled: 'Cancelled',
-      current: 'Upcoming',
-      past: 'Past',
-      with: 'with',
-      subject: 'Subject',
-      duration: 'minutes',
-      goToChat: 'Go to chat',
-      online: 'Online',
-      error: 'Error loading appointments'
-    }
+  const translations = {
+    title,
+    backToChat: backButtonText ?? t('Tilbake til chat', 'Back to chat'),
+    noAppointments: t('Ingen avtaler enda', 'No appointments yet'),
+    noAppointmentsDesc: chatId
+      ? t('Dere har ingen planlagte avtaler for denne chatten', 'You have no scheduled appointments for this chat')
+      : t('Du har ingen planlagte avtaler', 'You have no scheduled appointments'),
+    pending: t('Venter', 'Pending'),
+    confirmed: t('Bekreftet', 'Confirmed'),
+    waiting_to_complete: t('Venter på fullføring', 'Waiting to Complete'),
+    completed: t('Fullført', 'Completed'),
+    cancelled: t('Avbrutt', 'Cancelled'),
+    current: t('Kommende', 'Upcoming'),
+    past: t('Tidligere', 'Past'),
+    with: t('med', 'with'),
+    subject: t('Fag', 'Subject'),
+    duration: t('minutter', 'minutes'),
+    goToChat: t('Gå til chat', 'Go to chat'),
+    online: t('Online', 'Online'),
+    error: t('Feil ved lasting av avtaler', 'Error loading appointments'),
   };
-
-  const translations = t[language];
 
   const statusColors = {
     PENDING: 'bg-yellow-100 text-yellow-800 border-yellow-200',
@@ -210,11 +196,11 @@ export default function AppointmentsList({
     const timeString = timeFormatter.format(date);
 
     if (targetKey === todayKey) {
-      return `${language === 'no' ? 'I dag' : 'Today'} ${timeString}`;
+      return `${t('I dag', 'Today')} ${timeString}`;
     }
 
     if (targetKey === tomorrowKey) {
-      return `${language === 'no' ? 'I morgen' : 'Tomorrow'} ${timeString}`;
+      return `${t('I morgen', 'Tomorrow')} ${timeString}`;
     }
 
     return `${dateFormatter.format(date)} ${timeString}`;
@@ -305,13 +291,13 @@ export default function AppointmentsList({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Kunne ikke godta avtalen');
+        throw new Error(errorData.error || acceptAppointmentError);
       }
       
       await fetchAppointments();
       setShowAppointmentModal(false);
     } catch (error: any) {
-      setAppointmentError(error?.message || 'Kunne ikke godta avtalen');
+      setAppointmentError(error?.message || acceptAppointmentError);
       throw error;
     }
   };
@@ -331,13 +317,13 @@ export default function AppointmentsList({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Kunne ikke avslå avtalen');
+        throw new Error(errorData.error || rejectAppointmentError);
       }
       
       await fetchAppointments();
       setShowAppointmentModal(false);
     } catch (error: any) {
-      setAppointmentError(error?.message || 'Kunne ikke avslå avtalen');
+      setAppointmentError(error?.message || rejectAppointmentError);
       throw error;
     }
   };
@@ -357,13 +343,13 @@ export default function AppointmentsList({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+        throw new Error(errorData.error || confirmCompletedError);
       }
       
       await fetchAppointments();
       setShowAppointmentModal(false);
     } catch (error: any) {
-      setAppointmentError(error?.message || 'Kunne ikke bekrefte at avtalen ble gjennomført');
+      setAppointmentError(error?.message || confirmCompletedError);
       throw error;
     }
   };
@@ -383,13 +369,13 @@ export default function AppointmentsList({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Kunne ikke markere avtalen som ikke gjennomført');
+        throw new Error(errorData.error || markNotCompletedError);
       }
       
       await fetchAppointments();
       setShowAppointmentModal(false);
     } catch (error: any) {
-      setAppointmentError(error?.message || 'Kunne ikke markere avtalen som ikke gjennomført');
+      setAppointmentError(error?.message || markNotCompletedError);
       throw error;
     }
   };
@@ -408,13 +394,13 @@ export default function AppointmentsList({
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(errorData.error || 'Kunne ikke slette avtalen');
+        throw new Error(errorData.error || deleteAppointmentError);
       }
       
       await fetchAppointments();
       setShowAppointmentModal(false);
     } catch (error: any) {
-      setAppointmentError(error?.message || 'Kunne ikke slette avtalen');
+      setAppointmentError(error?.message || deleteAppointmentError);
       throw error;
     }
   };
@@ -503,7 +489,7 @@ export default function AppointmentsList({
               onClick={fetchAppointments}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              {language === 'no' ? 'Prøv igjen' : 'Retry'}
+              {t('Prøv igjen', 'Retry')}
             </button>
           </div>
         ) : filteredAndSortedAppointments.length === 0 ? (
