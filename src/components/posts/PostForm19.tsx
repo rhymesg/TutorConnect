@@ -72,9 +72,9 @@ export default function PostForm19({
   const previewEmptyMessage = t('Fyll ut tittelen og beskrivelsen for å se forhåndsvisning', 'Fill in the title and description to see a preview');
   const tutorBadgeLabel = t('Lærer tilbyr', 'Tutor offering');
   const studentBadgeLabel = t('Student søker', 'Student seeking');
-  const pauseLabel = t('Sett på pause', 'Pause listing');
-  const pauseTooltip = t('Når annonsen er pauset, blir den skjult fra listen og du mottar ingen nye meldinger.', 'While paused, the listing is hidden and you will not receive new messages.');
-  const activateLabel = t('Gjør aktiv', 'Activate listing');
+  const pauseLabel = t('Sett på pause', 'Set paused');
+  const pauseTooltip = t('Når annonsen er pauset, blir den skjult fra listen og du mottar ingen nye meldinger.', 'While paused, the ad is hidden and you will not receive new messages.');
+  const activateLabel = t('Sett aktiv', 'Set active');
   const activateTooltip = t('Når annonsen er aktiv, vises den i listen og du kan motta nye meldinger.', 'When active, the listing appears in search and you can receive new messages.');
   const offlineError = t('Nettverksfeil oppstod.', 'A network error occurred.');
   const unknownErrorLabel = t('Feil', 'Error');
@@ -89,7 +89,7 @@ export default function PostForm19({
   const deleteTitle = t('Slett annonse?', 'Delete listing?');
   const deleteMessage = t('Er du sikker på at du vil slette denne annonsen? Denne handlingen kan ikke angres.', 'Are you sure you want to delete this listing? This action cannot be undone.');
   const deleteTip = t('Tips:', 'Tip:');
-  const deleteTipBody = t('Hvis du bare vil skjule annonsen midlertidig, bruk "Sett på pause" i stedet.', 'If you only want to hide the listing temporarily, use "Pause listing" instead.');
+  const deleteTipBody = t('Hvis du bare vil skjule annonsen midlertidig, bruk "Sett på pause" i stedet.', 'If you only want to hide the ad temporarily, use "Set paused" instead.');
   const deleteCancelLabel = t('Avbryt', 'Cancel');
   const deleteConfirmLabel = t('Slett', 'Delete');
 
