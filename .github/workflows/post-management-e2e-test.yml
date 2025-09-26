@@ -91,7 +91,7 @@ jobs:
           ],
         });
         EOF
-        
+
         mkdir -p tests/e2e
         cat > tests/e2e/post-management.test.ts << 'EOF'
         import { test, expect } from '@playwright/test';
@@ -220,76 +220,91 @@ jobs:
             console.log('✅ Successfully navigated to edit page');
             
                     
-            // Test 5: Test status toggle buttons
+            // Test 5: Test status toggle functionality
             console.log('🧪 Test 5: Test status toggle functionality');
-            
-            // Define helper selectors for both Norwegian and English variants
-            const activeButtonTexts = ['Set active', 'Set Aktiv', 'Sett aktiv'];
-            const pausedButtonTexts = ['Set paused', 'Set Pauset', 'Sett på pause'];
 
-            const buildButtonLocator = (texts: string[]) =>
-              page.locator(texts.map((text) => `button:has-text("${text}")`).join(', ')).first();
+            const variants = {
+              active: ['Set active', 'Set Aktiv', 'Sett aktiv'],
+              paused: ['Set paused', 'Set Pauset', 'Sett på pause'],
+            } as const;
 
-            const findStatusButton = async () => {
-              const activeButton = buildButtonLocator(activeButtonTexts);
-              if (await activeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-                return { button: activeButton, state: 'active' as const };
+            const locateButton = async (state: keyof typeof variants) => {
+              const selector = variants[state]
+                .map((text) => `button:has-text("${text}")`)
+                .join(', ');
+              const locator = page.locator(selector).first();
+              if (await locator.isVisible({ timeout: 500 }).catch(() => false)) {
+                return locator;
               }
-
-              const pausedButton = buildButtonLocator(pausedButtonTexts);
-              if (await pausedButton.isVisible({ timeout: 1000 }).catch(() => false)) {
-                return { button: pausedButton, state: 'paused' as const };
-              }
-
               return null;
             };
 
-            const logAllButtons = async (label: string) => {
-              const contents = await page.locator('button').allTextContents();
-              console.log(`${label}:`, contents);
-              return contents;
+            const getState = async () => {
+              const activeButton = await locateButton('active');
+              if (activeButton) {
+                return { state: 'active' as const, button: activeButton };
+              }
+              const pausedButton = await locateButton('paused');
+              if (pausedButton) {
+                return { state: 'paused' as const, button: pausedButton };
+              }
+              return null;
             };
-            
-            await page.waitForTimeout(2000);
-            await logAllButtons('🔍 All buttons on page at start');
 
-            const initialState = await findStatusButton();
-            if (!initialState) {
-              const buttons = await logAllButtons('🔍 Buttons when status toggle missing');
+            const waitForState = async (desired: 'active' | 'paused', timeout = 10000) => {
+              const start = Date.now();
+              while (Date.now() - start < timeout) {
+                const button = await locateButton(desired);
+                if (button) {
+                  return button;
+                }
+                await page.waitForTimeout(500);
+              }
+              return null;
+            };
+
+            const initial = await waitForState('active') || await waitForState('paused');
+            if (!initial) {
+              const buttons = await page.locator('button').allTextContents();
               throw new Error('Status toggle button not found. Available buttons: ' + buttons.join(', '));
             }
 
-            const initialButtonText = (await initialState.button.textContent())?.trim() || initialState.state;
-            console.log(`✅ Found status button: ${initialButtonText}`);
+            const initialText = (await initial.textContent())?.trim() ?? 'unknown';
+            const initialState = (await locateButton('active'))?.isSameAs(initial) ? 'active' : 'paused';
+            console.log(`✅ Found status button: ${initialText}`);
 
-            // Toggle once
-            await initialState.button.click();
-            console.log(`🔄 Clicked ${initialButtonText} button, waiting for status change...`);
-            await page.waitForTimeout(4000);
+            const nextState = initialState === 'active' ? 'paused' : 'active';
+            await Promise.all([
+              page.waitForResponse((response) =>
+                response.url().includes('/status') && response.request().method() === 'PATCH',
+              ),
+              initial.click(),
+            ]);
 
-            const firstToggleState = await findStatusButton();
-            await logAllButtons('🔍 All buttons after first toggle');
-
-            if (!firstToggleState || firstToggleState.state === initialState.state) {
-              throw new Error('Status toggle did not change state as expected.');
+            const toggledButton = await waitForState(nextState);
+            if (!toggledButton) {
+              const buttons = await page.locator('button').allTextContents();
+              throw new Error('Status toggle did not change state as expected. Buttons: ' + buttons.join(', '));
             }
 
-            const firstToggleText = (await firstToggleState.button.textContent())?.trim() || firstToggleState.state;
-            console.log(`✅ Status toggled successfully: ${initialButtonText} → ${firstToggleText}`);
+            const toggledText = (await toggledButton.textContent())?.trim() ?? nextState;
+            console.log(`✅ Status toggled successfully: ${initialText} → ${toggledText}`);
 
-            // Toggle back to original state
-            await firstToggleState.button.click();
-            console.log(`🔄 Clicking ${firstToggleText} button to toggle back...`);
-            await page.waitForTimeout(4000);
+            const revertState = nextState === 'active' ? 'paused' : 'active';
+            await Promise.all([
+              page.waitForResponse((response) =>
+                response.url().includes('/status') && response.request().method() === 'PATCH',
+              ),
+              toggledButton.click(),
+            ]);
 
-            const finalState = await findStatusButton();
-            if (!finalState) {
-              const buttons = await logAllButtons('🔍 Buttons after attempting second toggle');
+            const finalButton = await waitForState(revertState);
+            if (!finalButton) {
+              const buttons = await page.locator('button').allTextContents();
               throw new Error('Unable to locate status button after second toggle. Buttons: ' + buttons.join(', '));
             }
 
-            const finalButtonText = (await finalState.button.textContent())?.trim() || finalState.state;
-            console.log(`✅ Status toggle completed. Final button: ${finalButtonText}`);
+            console.log(`✅ Status toggle completed. Final button: ${(await finalButton.textContent())?.trim()}`);
             
             // Click "Lagre endringer" button and verify redirect to post detail page
             console.log('🔄 Clicking Lagre endringer button...');
@@ -340,8 +355,51 @@ jobs:
           });
         });
         EOF
-        
+
         npx playwright test --config=playwright-post-management.config.ts
+
+    - name: Run language toggle E2E test
+      run: |
+        cat > playwright-language-toggle.config.ts << 'EOF'
+        import { defineConfig } from '@playwright/test';
+
+        export default defineConfig({
+          testDir: './tests/e2e',
+          timeout: 60000,
+          expect: { timeout: 5000 },
+          workers: 1,
+          use: {
+            baseURL: 'http://localhost:3000',
+            trace: 'on-first-retry',
+            screenshot: 'only-on-failure',
+          },
+        });
+        EOF
+
+        mkdir -p tests/e2e
+        cat > tests/e2e/language-toggle.test.ts << 'EOF'
+        import { test, expect } from '@playwright/test';
+
+        test('language toggle updates hero title', async ({ page }) => {
+          await page.goto('/');
+          await page.waitForLoadState('networkidle');
+
+          const heroTitle = page.locator('h1');
+
+          // Initial should be Norwegian
+          await expect(heroTitle).toContainText('Læring');
+
+          // Switch to English and assert change
+          await page.click('button:has-text("EN")');
+          await expect(heroTitle).toContainText('Learning');
+
+          // Switch back to Norwegian and assert change
+          await page.click('button:has-text("NO")');
+          await expect(heroTitle).toContainText('Læring');
+        });
+        EOF
+
+        npx playwright test --config=playwright-language-toggle.config.ts language-toggle.test.ts
       
     - name: Upload test results
       uses: actions/upload-artifact@v4

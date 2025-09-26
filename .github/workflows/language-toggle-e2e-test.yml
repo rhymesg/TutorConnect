@@ -1,0 +1,108 @@
+# 🌐 Language Toggle E2E Test Workflow
+#
+# This workflow verifies that the language toggle in the header correctly switches
+# visible text between Norwegian and English. It covers the main home hero heading,
+# ensuring users immediately see the selected language reflected.
+
+name: Language Toggle E2E Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+env:
+  NODE_ENV: production
+  TESTER_EMAIL: ${{ secrets.TESTER_EMAIL }}
+  TESTER_PASSWORD: ${{ secrets.TESTER_PASSWORD }}
+
+jobs:
+  language-toggle-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --include=dev
+
+      - name: Setup environment
+        run: |
+          echo "NEXT_PUBLIC_SUPABASE_URL=${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}" >> $GITHUB_ENV
+          echo "SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" >> $GITHUB_ENV
+          echo "JWT_ACCESS_SECRET=${{ secrets.JWT_ACCESS_SECRET }}" >> $GITHUB_ENV
+          echo "JWT_REFRESH_SECRET=${{ secrets.JWT_REFRESH_SECRET }}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "ALLOW_TEST_SETUP=true" >> $GITHUB_ENV
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Start application
+        run: |
+          npm run start &
+          sleep 10
+          curl --retry 10 --retry-delay 5 --retry-connrefused http://localhost:3000
+
+      - name: Run language toggle E2E test
+        run: |
+          cat > playwright-language-toggle.config.ts << 'EOF'
+          import { defineConfig } from '@playwright/test';
+
+          export default defineConfig({
+            testDir: './tests/e2e',
+            timeout: 60000,
+            expect: { timeout: 5000 },
+            workers: 1,
+            use: {
+              baseURL: 'http://localhost:3000',
+              trace: 'on-first-retry',
+              screenshot: 'only-on-failure',
+            },
+          });
+          EOF
+
+          mkdir -p tests/e2e
+          cat > tests/e2e/language-toggle.test.ts << 'EOF'
+          import { test, expect } from '@playwright/test';
+
+          test.describe('Language Toggle', () => {
+            test('switching between NO and EN updates hero heading', async ({ page }) => {
+              await page.goto('/');
+              await page.waitForLoadState('networkidle');
+
+              const heroTitle = page.locator('h1');
+
+              await expect(heroTitle).toContainText(/Læring|læring/i);
+
+              await page.click('button:has-text("EN")');
+              await expect(heroTitle).toContainText(/Learning/i);
+
+              await page.click('button:has-text("NO")');
+              await expect(heroTitle).toContainText(/Læring|læring/i);
+            });
+          });
+          EOF
+
+          npx playwright test --config=playwright-language-toggle.config.ts language-toggle.test.ts
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-language-toggle-report
+          path: playwright-report/
+          retention-days: 14
