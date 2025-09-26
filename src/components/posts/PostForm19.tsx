@@ -6,19 +6,20 @@ import {
   AlertTriangle,
   CheckCircle,
   Eye,
-  Clock as ClockIcon,
   Wifi,
   WifiOff,
   X,
   Trash2
 } from 'lucide-react';
 
-import { LoadingSpinner, ErrorMessage } from '@/components/ui';
+import { LoadingSpinner } from '@/components/ui';
 import { createPostAction, updatePostAction, type PostFormState } from '@/lib/actions/posts';
 import PostFormFields19 from './PostFormFields19';
 import { PostWithDetails } from '@/types/database';
-import { education, forms, actions, posts } from '@/lib/translations';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getRegionLabel } from '@/constants/regions';
 
 interface PostForm19Props {
   mode: 'create' | 'edit';
@@ -42,6 +43,56 @@ export default function PostForm19({
   const [isOnline, setIsOnline] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const headerTitle = mode === 'create'
+    ? t('Opprett ny annonse', 'Create new listing')
+    : t('Rediger annonse', 'Edit listing');
+
+  const headerSubtitle = mode === 'create'
+    ? t('Lag en annonse for å tilby undervisning eller finne en lærer', 'Create a listing to offer tutoring or find a tutor')
+    : t('Oppdater informasjonen i annonsen din', 'Update the information in your listing');
+
+  const savingStateLabel = mode === 'create'
+    ? t('Oppretter...', 'Creating...')
+    : t('Lagrer...', 'Saving...');
+  const saveErrorLabel = mode === 'create'
+    ? t('Kunne ikke opprette annonse', 'Could not create post')
+    : t('Kunne ikke lagre endringer', 'Could not save changes');
+  const networkHint = t('Sjekk internettforbindelsen din og prøv igjen.', 'Check your internet connection and try again.');
+  const showPreviewLabel = t('Vis forhåndsvisning', 'Show preview');
+  const hidePreviewLabel = t('Skjul forhåndsvisning', 'Hide preview');
+  const cancelLabel = t('Avbryt', 'Cancel');
+  const submitLabel = mode === 'create'
+    ? t('Publiser annonse', 'Publish listing')
+    : t('Lagre endringer', 'Save changes');
+  const previewHeading = t('Forhåndsvisning', 'Preview');
+  const previewSavingLabel = t('Lagrer...', 'Saving...');
+  const previewEmptyMessage = t('Fyll ut tittelen og beskrivelsen for å se forhåndsvisning', 'Fill in the title and description to see a preview');
+  const tutorBadgeLabel = t('Lærer tilbyr', 'Tutor offering');
+  const studentBadgeLabel = t('Student søker', 'Student seeking');
+  const pauseLabel = t('Sett på pause', 'Pause listing');
+  const pauseTooltip = t('Når annonsen er pauset, blir den skjult fra listen og du mottar ingen nye meldinger.', 'While paused, the listing is hidden and you will not receive new messages.');
+  const activateLabel = t('Gjør aktiv', 'Activate listing');
+  const activateTooltip = t('Når annonsen er aktiv, vises den i listen og du kan motta nye meldinger.', 'When active, the listing appears in search and you can receive new messages.');
+  const offlineError = t('Nettverksfeil oppstod.', 'A network error occurred.');
+  const unknownErrorLabel = t('Feil', 'Error');
+  const tipsTitle = t('Tips for en god annonse', 'Tips for a great listing');
+  const tipsList = [
+    t('Skriv en klar og beskrivende tittel', 'Write a clear and descriptive title'),
+    t('Beskriv din erfaring og undervisningsmetoder', 'Describe your experience and teaching approach'),
+    t('Vær spesifikk om tilgjengelighet', 'Be specific about your availability'),
+    t('Sett en realistisk pris', 'Set a realistic price'),
+    t('Oppdater profilen din før du publiserer', 'Update your profile before publishing'),
+  ];
+  const deleteTitle = t('Slett annonse?', 'Delete listing?');
+  const deleteMessage = t('Er du sikker på at du vil slette denne annonsen? Denne handlingen kan ikke angres.', 'Are you sure you want to delete this listing? This action cannot be undone.');
+  const deleteTip = t('Tips:', 'Tip:');
+  const deleteTipBody = t('Hvis du bare vil skjule annonsen midlertidig, bruk "Sett på pause" i stedet.', 'If you only want to hide the listing temporarily, use "Pause listing" instead.');
+  const deleteCancelLabel = t('Avbryt', 'Cancel');
+  const deleteConfirmLabel = t('Slett', 'Delete');
+
 
   // React 19 useActionState for form handling
   const [state, submitAction, isPending] = useActionState<PostFormState, FormData>(
@@ -103,11 +154,11 @@ export default function PostForm19({
         window.location.href = '/profile/posts';
       } else {
         const error = await response.json();
-        alert(`Error: ${error.error || 'Failed to delete post'}`);
+        alert(`${unknownErrorLabel}: ${error.error || t('Kunne ikke slette annonse', 'Failed to delete listing')}`);
       }
     } catch (error) {
       console.error('Failed to delete post:', error);
-      alert('Network error occurred.');
+      alert(offlineError);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -121,10 +172,14 @@ export default function PostForm19({
     if (!previewData.title || !previewData.description) {
       return (
         <div className="bg-neutral-50 rounded-xl p-6 text-center">
-          <p className="text-neutral-500">Fyll ut tittelen og beskrivelsen for å se forhåndsvisning</p>
+          <p className="text-neutral-500">{previewEmptyMessage}</p>
         </div>
       );
     }
+
+    const subjectLabel = previewData.subject
+      ? getSubjectLabelByLanguage(language, previewData.subject)
+      : '';
 
     return (
       <div className="bg-white rounded-xl shadow-sm border border-neutral-200 p-6">
@@ -134,12 +189,12 @@ export default function PostForm19({
               ? 'bg-green-100 text-green-800' 
               : 'bg-blue-100 text-blue-800'
           }`}>
-            {previewData.type === 'TEACHER' ? 'Lærer tilbyr' : 'Student søker'}
+            {previewData.type === 'TEACHER' ? tutorBadgeLabel : studentBadgeLabel}
           </span>
           {isPending && (
             <div className="flex items-center text-sm text-orange-600">
               <LoadingSpinner className="w-4 h-4 mr-1" />
-              <span>Lagrer...</span>
+              <span>{previewSavingLabel}</span>
             </div>
           )}
         </div>
@@ -155,7 +210,7 @@ export default function PostForm19({
         {previewData.subject && (
           <div className="flex flex-wrap gap-2 mb-3">
             <span className="inline-flex items-center px-2 py-1 rounded-md bg-brand-50 text-brand-700 text-xs font-medium">
-              {education.no.subjects[previewData.subject.toLowerCase() as keyof typeof education.no.subjects] || previewData.subject}
+              {subjectLabel || previewData.subject}
             </span>
           </div>
         )}
@@ -166,7 +221,7 @@ export default function PostForm19({
               <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
               </svg>
-              {previewData.location}
+              {getRegionLabel(previewData.location)}
             </div>
           )}
         </div>
@@ -180,15 +235,8 @@ export default function PostForm19({
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-              {mode === 'create' ? 'Opprett ny annonse' : 'Rediger annonse'}
-            </h1>
-            <p className="text-neutral-600">
-              {mode === 'create' 
-                ? 'Lag en annonse for å tilby undervisning eller finne en lærer'
-                : 'Oppdater informasjonen i annonsen din'
-              }
-            </p>
+            <h1 className="text-2xl font-bold text-neutral-900 mb-2">{headerTitle}</h1>
+            <p className="text-neutral-600">{headerSubtitle}</p>
           </div>
 
           {/* Status indicators */}
@@ -197,9 +245,7 @@ export default function PostForm19({
             {isPending && (
               <div className="flex items-center">
                 <LoadingSpinner className="w-4 h-4 mr-1" />
-                <span className="text-neutral-600">
-                  {mode === 'create' ? 'Oppretter...' : 'Lagrer...'}
-                </span>
+                <span className="text-neutral-600">{savingStateLabel}</span>
               </div>
             )}
           </div>
@@ -224,14 +270,14 @@ export default function PostForm19({
                   <AlertTriangle className="w-5 h-5 text-red-600 mr-3 flex-shrink-0" />
                   <div className="flex-1">
                     <h3 className="text-sm font-medium text-red-800">
-                      {mode === 'create' ? 'Kunne ikke opprette annonse' : 'Kunne ikke lagre endringer'}
+                      {saveErrorLabel}
                     </h3>
                     <p className="text-sm text-red-700 mt-1">{state.error}</p>
                   </div>
                 </div>
                 {!isOnline && (
                   <p className="text-sm text-red-700 mt-2">
-                    Sjekk internettforbindelsen din og prøv igjen.
+                    {networkHint}
                   </p>
                 )}
               </div>
@@ -244,82 +290,66 @@ export default function PostForm19({
                   <>
                     <div className="flex items-center space-x-3">
                       {post?.status === 'AKTIV' || !post?.status ? (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            console.log('Updating post status to PAUSET...');
-                            console.log('Auth token:', accessToken ? 'exists' : 'missing');
-                            
-                            const response = await fetch(`/api/posts/${post?.id}/status`, {
-                              method: 'PATCH',
-                              headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': accessToken ? `Bearer ${accessToken}` : ''
-                              },
-                              body: JSON.stringify({ status: 'PAUSET' })
-                            });
-                            
-                            console.log('Response status:', response.status);
-                            
-                            if (response.ok) {
-                              const result = await response.json();
-                              console.log('Success:', result);
-                              window.location.reload();
-                            } else {
-                              const error = await response.json();
-                              console.error('Error response:', error);
-                              alert(`오류: ${error.error}`);
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/posts/${post?.id}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+                                },
+                                body: JSON.stringify({ status: 'PAUSET' })
+                              });
+
+                              if (response.ok) {
+                                await response.json();
+                                window.location.reload();
+                              } else {
+                                const error = await response.json();
+                                alert(`${unknownErrorLabel}: ${error.error}`);
+                              }
+                            } catch (error) {
+                              alert(offlineError);
                             }
-                          } catch (error) {
-                            console.error('Failed to update status:', error);
-                            alert('네트워크 오류가 발생했습니다.');
-                          }
-                        }}
-                        title="Når annonsen er pauset, blir den skjult fra postlisten og du mottar ingen nye meldinger"
-                        className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-red-600 border border-red-300 hover:bg-red-50"
-                      >
-                        Set Pauset
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            console.log('Updating post status to AKTIV...');
-                            console.log('Auth token:', accessToken ? 'exists' : 'missing');
-                            
-                            const response = await fetch(`/api/posts/${post?.id}/status`, {
-                              method: 'PATCH',
-                              headers: { 
-                                'Content-Type': 'application/json',
-                                'Authorization': accessToken ? `Bearer ${accessToken}` : ''
-                              },
-                              body: JSON.stringify({ status: 'AKTIV' })
-                            });
-                            
-                            console.log('Response status:', response.status);
-                            
-                            if (response.ok) {
-                              const result = await response.json();
-                              console.log('Success:', result);
-                              window.location.reload();
-                            } else {
-                              const error = await response.json();
-                              console.error('Error response:', error);
-                              alert(`오류: ${error.error}`);
+                          }}
+                          title={pauseTooltip}
+                          className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-red-600 border border-red-300 hover:bg-red-50"
+                        >
+                          {pauseLabel}
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            try {
+                              const response = await fetch(`/api/posts/${post?.id}/status`, {
+                                method: 'PATCH',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'Authorization': accessToken ? `Bearer ${accessToken}` : ''
+                                },
+                                body: JSON.stringify({ status: 'AKTIV' })
+                              });
+
+                              if (response.ok) {
+                                await response.json();
+                                window.location.reload();
+                              } else {
+                                const error = await response.json();
+                                alert(`${unknownErrorLabel}: ${error.error}`);
+                              }
+                            } catch (error) {
+                              alert(offlineError);
                             }
-                          } catch (error) {
-                            console.error('Failed to update status:', error);
-                            alert('네트워크 오류가 발생했습니다.');
-                          }
-                        }}
-                        title="Når annonsen blir aktiv, vises den i postlisten og du kan motta nye meldinger"
-                        className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-blue-600 border border-blue-300 hover:bg-blue-50"
-                      >
-                        Set Aktiv
-                      </button>
-                    )}
+                          }}
+                          title={activateTooltip}
+                          className="inline-flex items-center px-4 py-2 text-sm rounded-lg font-medium bg-white text-blue-600 border border-blue-300 hover:bg-blue-50"
+                        >
+                          {activateLabel}
+                        </button>
+                      )}
                     
                     {/* Delete button - hidden but kept for future use */}
                     {false && (
@@ -342,7 +372,7 @@ export default function PostForm19({
                     className="inline-flex items-center px-4 py-2 text-sm text-neutral-600 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50"
                   >
                     <Eye className="w-4 h-4 mr-2" />
-                    {showPreview ? actions.no.hidePreview : actions.no.preview}
+                    {showPreview ? hidePreviewLabel : showPreviewLabel}
                   </button>
                 )}
               </div>
@@ -354,7 +384,7 @@ export default function PostForm19({
                   disabled={isPending}
                   className="px-6 py-2 text-sm font-medium text-neutral-700 bg-white border border-neutral-300 rounded-lg hover:bg-neutral-50 disabled:opacity-50"
                 >
-                  {actions.no.cancel}
+                  {cancelLabel}
                 </button>
                 
                 <button
@@ -364,7 +394,7 @@ export default function PostForm19({
                 >
                   {isPending && <LoadingSpinner className="w-4 h-4 mr-2" />}
                   <Save className="w-4 h-4 mr-2" />
-                  {mode === 'create' ? actions.no.publishPost : actions.no.saveChanges}
+                  {submitLabel}
                 </button>
               </div>
             </div>
@@ -377,11 +407,11 @@ export default function PostForm19({
             {showPreview ? (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-medium text-neutral-900">Forhåndsvisning</h3>
+                  <h3 className="text-lg font-medium text-neutral-900">{previewHeading}</h3>
                   {isPending && (
                     <span className="inline-flex items-center px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">
                       <div className="w-1.5 h-1.5 bg-orange-600 rounded-full mr-1 animate-pulse"></div>
-                      Lagrer
+                      {previewSavingLabel}
                     </span>
                   )}
                 </div>
@@ -389,28 +419,14 @@ export default function PostForm19({
               </div>
             ) : (
               <div className="bg-neutral-50 rounded-xl p-6">
-                <h3 className="text-lg font-medium text-neutral-900 mb-4">Tips for en god annonse</h3>
+                <h3 className="text-lg font-medium text-neutral-900 mb-4">{tipsTitle}</h3>
                 <div className="space-y-4 text-sm text-neutral-600">
-                  <div className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Skriv en klar og beskrivende tittel</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Beskriv din erfaring og undervisningsmetoder</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Vær spesifikk om tilgjengelighet</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Sett en realistisk pris</span>
-                  </div>
-                  <div className="flex items-start">
-                    <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
-                    <span>Oppdater profilen din før du publiserer</span>
-                  </div>
+                  {tipsList.map((tip) => (
+                    <div key={tip} className="flex items-start">
+                      <CheckCircle className="w-4 h-4 mr-2 mt-0.5 text-green-600 flex-shrink-0" />
+                      <span>{tip}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -424,14 +440,14 @@ export default function PostForm19({
           <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
             <div className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Slett annonse?
+                {deleteTitle}
               </h3>
               <p className="text-sm text-gray-600 mb-4">
-                Er du sikker på at du vil slette denne annonsen? Denne handlingen kan ikke angres.
+                {deleteMessage}
               </p>
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
                 <p className="text-sm text-blue-700">
-                  <strong>Tip:</strong> Hvis du bare vil skjule annonsen midlertidig, bruk "Set Pauset" i stedet.
+                  <strong>{deleteTip}</strong> {deleteTipBody}
                 </p>
               </div>
               <div className="flex gap-3">
@@ -440,7 +456,7 @@ export default function PostForm19({
                   disabled={isDeleting}
                   className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
                 >
-                  Avbryt
+                  {deleteCancelLabel}
                 </button>
                 <button
                   onClick={handleDeletePost}
@@ -452,7 +468,7 @@ export default function PostForm19({
                   ) : (
                     <Trash2 className="h-4 w-4" />
                   )}
-                  Slett
+                  {deleteConfirmLabel}
                 </button>
               </div>
             </div>

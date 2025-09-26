@@ -5,11 +5,22 @@
 
 import { z } from 'zod';
 import { PostType, PostStatus, Subject, AgeGroup, NorwegianRegion } from '@prisma/client';
-import { forms } from '@/lib/translations';
+const validationMessages = {
+  no: {
+    required: 'Dette feltet er påkrevd',
+    minLength: 'Minimum {min} tegn påkrevd',
+    maxLength: 'Maksimum {max} tegn tillatt',
+    time: 'Tid må være i format TT:MM',
+    atLeastOne: 'Du må velge minst ett alternativ',
+    maxSelections: 'Du kan velge maksimum {max} alternativer',
+  },
+} as const;
 
-// Helper function to create Norwegian error messages
-const norMsg = (key: string, params?: Record<string, any>) => {
-  let message = forms.no.validation[key as keyof typeof forms.no.validation] || key;
+const activeLanguage: keyof typeof validationMessages = 'no';
+
+const validationMessage = (key: keyof typeof validationMessages.no | string, params?: Record<string, any>) => {
+  const messages = validationMessages[activeLanguage];
+  let message = messages[key as keyof typeof messages] ?? key;
   if (params) {
     Object.entries(params).forEach(([param, value]) => {
       message = message.replace(`{${param}}`, value.toString());
@@ -76,7 +87,7 @@ export const NorwegianRegionFormSchema = z.enum([
 // Enhanced time slots validation with Norwegian messages
 export const TimeSlotFormSchema = z.string()
   .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, {
-    message: norMsg('time')
+    message: validationMessage('time')
   })
   .refine(time => {
     const [hours, minutes] = time.split(':').map(Number);
@@ -104,8 +115,8 @@ export const PriceFormSchema = z.number()
 
 // Title validation with Norwegian messages
 export const TitleFormSchema = z.string()
-  .min(5, norMsg('minLength', { min: 5 }))
-  .max(100, norMsg('maxLength', { max: 100 }))
+  .min(5, validationMessage('minLength', { min: 5 }))
+  .max(100, validationMessage('maxLength', { max: 100 }))
   .trim()
   .refine(title => {
     // Check for common spam patterns or inappropriate content
@@ -121,8 +132,8 @@ export const TitleFormSchema = z.string()
 
 // Description validation with Norwegian messages
 export const DescriptionFormSchema = z.string()
-  .min(20, norMsg('minLength', { min: 20 }))
-  .max(2000, norMsg('maxLength', { max: 2000 }))
+  .min(20, validationMessage('minLength', { min: 20 }))
+  .max(2000, validationMessage('maxLength', { max: 2000 }))
   .trim()
   .refine(description => {
     // Check for contact info in description (should use proper contact fields)
@@ -138,7 +149,7 @@ export const DescriptionFormSchema = z.string()
 
 // Location validation
 export const LocationFormSchema = z.string()
-  .min(1, norMsg('required'))
+  .min(1, validationMessage('required'))
   .refine(location => {
     // Ensure it's a valid Norwegian region/county
     const validLocations = [
@@ -154,7 +165,7 @@ export const LocationFormSchema = z.string()
 
 // Specific location validation
 export const SpecificLocationFormSchema = z.string()
-  .max(200, norMsg('maxLength', { max: 200 }))
+  .max(200, validationMessage('maxLength', { max: 200 }))
   .trim()
   .optional()
   .refine(location => {
@@ -180,13 +191,13 @@ export const CreatePostFormSchema = z.object({
     .max(50, 'Fagområdet kan ikke være lengre enn 50 tegn')
     .optional(),
   ageGroups: z.array(AgeGroupFormSchema)
-    .min(1, norMsg('atLeastOne'))
-    .max(6, norMsg('maxSelections', { max: 6 })),
+    .min(1, validationMessage('atLeastOne'))
+    .max(6, validationMessage('maxSelections', { max: 6 })),
   
   description: DescriptionFormSchema,
   
   availableDays: z.array(z.string())
-    .min(1, norMsg('atLeastOne'))
+    .min(1, validationMessage('atLeastOne'))
     .max(7, 'Du kan ikke velge mer enn 7 dager'),
   
   // Time range
@@ -291,14 +302,14 @@ export const UpdatePostFormSchema = z.object({
     .max(50, 'Fagområdet kan ikke være lengre enn 50 tegn')
     .optional(),
   ageGroups: z.array(AgeGroupFormSchema)
-    .min(1, norMsg('atLeastOne'))
-    .max(6, norMsg('maxSelections', { max: 6 }))
+    .min(1, validationMessage('atLeastOne'))
+    .max(6, validationMessage('maxSelections', { max: 6 }))
     .optional(),
   
   description: DescriptionFormSchema.optional(),
   
   availableDays: z.array(z.string())
-    .min(1, norMsg('atLeastOne'))
+    .min(1, validationMessage('atLeastOne'))
     .max(7, 'Du kan ikke velge mer enn 7 dager')
     .optional(),
   

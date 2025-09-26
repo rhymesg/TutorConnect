@@ -18,8 +18,9 @@ import FormCheckboxGroup from '@/components/forms/FormCheckboxGroup';
 import LocationAutocomplete from '@/components/forms/LocationAutocomplete';
 
 import { CreatePostInput, UpdatePostInput } from '@/schemas/post';
-import { education, regions, forms } from '@/lib/translations';
-import { getAgeGroupOptions } from '@/constants/ageGroups';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
+import { getSubjectOptions, getSubjectLabelByLanguage } from '@/constants/subjects';
+import { getAgeGroupOptions, getAgeGroupLabelByLanguage } from '@/constants/ageGroups';
 import { getRegionOptions } from '@/constants/regions';
 
 interface PostFormFieldsProps {
@@ -32,12 +33,104 @@ interface PostFormFieldsProps {
   mode: 'create' | 'edit';
 }
 
+function usePostFormCopy() {
+  const { language } = useLanguage();
+  const t = useLanguageText();
+
+  const copy = {
+    postType: {
+      heading: t('Annonsetype', 'Post type'),
+      teacherTitle: t('Tilbyr undervisning', 'Offers tutoring'),
+      teacherDescription: t('Jeg er lærer og vil tilby mine tjenester', 'I am a tutor and want to offer my services'),
+      studentTitle: t('Søker lærer', 'Seeking tutor'),
+      studentDescription: t('Jeg er student og trenger hjelp', 'I am a student and need help'),
+    },
+    basic: {
+      heading: t('Grunnleggende informasjon', 'Basic information'),
+      title: {
+        label: t('Tittel på annonsen', 'Post title'),
+        placeholder: t('F.eks. Matematikk for videregående skole', 'E.g. Mathematics for high school'),
+        help: t('Skriv en tydelig og beskrivende tittel', 'Write a clear and descriptive title'),
+      },
+      description: {
+        label: t('Detaljert beskrivelse', 'Detailed description'),
+        placeholder: t('Beskriv hva du tilbyr eller søker. Inkluder erfaring, undervisningsmetoder og andre relevante detaljer...', 'Describe what you offer or need. Include experience, teaching methods, and other relevant details...'),
+        help: t('Jo mer informasjon du gir, desto lettere er det å finne den rette matchen', 'The more information you provide, the easier it is to find the right match'),
+      },
+      subject: {
+        label: t('Fagområde', 'Subject area'),
+        placeholder: t('Velg fag', 'Select subject'),
+        help: t('Velg fagområdet du kan undervise i eller trenger hjelp med', 'Choose the subject you can teach or need help with'),
+      },
+      ageGroups: {
+        label: t('Aldersgrupper', 'Age groups'),
+        help: t('Velg hvilke aldersgrupper du kan undervise eller trenger hjelp for', 'Select the age groups you can teach or need support for'),
+      },
+    },
+    location: {
+      heading: t('Sted', 'Location'),
+      region: {
+        label: t('Fylke/Region', 'County/Region'),
+        help: t('Velg området hvor du kan undervise eller ønsker undervisning', 'Choose the area where you can teach or want tutoring'),
+        placeholder: t('Velg fylke', 'Select region'),
+      },
+      specific: {
+        label: t('Spesifikt sted (valgfritt)', 'Specific location (optional)'),
+        placeholder: t('F.eks. Oslo sentrum, hjemme hos meg, online', 'E.g. Oslo city centre, at my place, online'),
+        help: t('Spesifiser hvor undervisningen kan foregå', 'Specify where the lessons can take place'),
+      },
+    },
+    availability: {
+      heading: t('Tilgjengelighet', 'Availability'),
+      daysLabel: t('Tilgjengelige dager', 'Available days'),
+      daysHelp: t('Velg hvilke dager du er tilgjengelig', 'Choose the days you are available'),
+      timesLabel: t('Tilgjengelige tidspunkt', 'Available times'),
+      timesHelp: t('Legg til konkrete tidspunkt du er tilgjengelig. Hold tidene korte (f.eks. 17:00).', 'Add specific times you are available. Keep entries short (e.g. 17:00).'),
+      addTime: t('+ Legg til tid', '+ Add time'),
+      removeTime: t('Fjern tid', 'Remove time'),
+      scheduleLabel: t('Foretrukket timeplan (valgfritt)', 'Preferred schedule (optional)'),
+      schedulePlaceholder: t('Beskriv din foretrukne timeplan eller spesielle ønsker...', 'Describe your preferred schedule or special requests...'),
+      scheduleHelp: t('Gi mer informasjon om din tilgjengelighet', 'Provide more details about your availability'),
+    },
+    pricing: {
+      heading: t('Prising', 'Pricing'),
+      fixedLabel: t('Fast pris (NOK/time)', 'Fixed rate (NOK/hour)'),
+      minLabel: t('Min pris (NOK/time)', 'Minimum rate (NOK/hour)'),
+      maxLabel: t('Maks pris (NOK/time)', 'Maximum rate (NOK/hour)'),
+      help: t('Angi enten en fast pris eller et prisområde. La stå tomt for "pris etter avtale"', 'Specify a fixed price or a range. Leave empty for "price on agreement"'),
+    },
+  };
+
+  const dayOptions = language === 'no'
+    ? [
+        { value: 'MONDAY', label: 'Mandag' },
+        { value: 'TUESDAY', label: 'Tirsdag' },
+        { value: 'WEDNESDAY', label: 'Onsdag' },
+        { value: 'THURSDAY', label: 'Torsdag' },
+        { value: 'FRIDAY', label: 'Fredag' },
+        { value: 'SATURDAY', label: 'Lørdag' },
+        { value: 'SUNDAY', label: 'Søndag' },
+      ]
+    : [
+        { value: 'MONDAY', label: 'Monday' },
+        { value: 'TUESDAY', label: 'Tuesday' },
+        { value: 'WEDNESDAY', label: 'Wednesday' },
+        { value: 'THURSDAY', label: 'Thursday' },
+        { value: 'FRIDAY', label: 'Friday' },
+        { value: 'SATURDAY', label: 'Saturday' },
+        { value: 'SUNDAY', label: 'Sunday' },
+      ];
+
+  return { language, copy, dayOptions, t };
+}
+
 function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' | 'errors'>) {
+  const { copy } = usePostFormCopy();
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
         <Users className="w-5 h-5 mr-2" />
-        {forms.no.postType}
+        {copy.postType.heading}
       </h3>
       <Controller
         name="type"
@@ -59,8 +152,8 @@ function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' 
                 className="sr-only"
               />
               <div className="flex-1">
-                <div className="font-medium text-neutral-900">Tilbyr undervisning</div>
-                <div className="text-sm text-neutral-500">Jeg er lærer og vil tilby mine tjenester</div>
+                <div className="font-medium text-neutral-900">{copy.postType.teacherTitle}</div>
+                <div className="text-sm text-neutral-500">{copy.postType.teacherDescription}</div>
               </div>
             </label>
             
@@ -79,8 +172,8 @@ function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' 
                 className="sr-only"
               />
               <div className="flex-1">
-                <div className="font-medium text-neutral-900">Søker lærer</div>
-                <div className="text-sm text-neutral-500">Jeg er student og trenger hjelp</div>
+                <div className="font-medium text-neutral-900">{copy.postType.studentTitle}</div>
+                <div className="text-sm text-neutral-500">{copy.postType.studentDescription}</div>
               </div>
             </label>
           </div>
@@ -92,55 +185,58 @@ function PostTypeField({ control, errors }: Pick<PostFormFieldsProps, 'control' 
 }
 
 function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps, 'register' | 'control' | 'errors'>) {
-  // Subject options
-  const subjectOptions = Object.entries(education.no.subjects).map(([key, name]) => ({
-    value: key.toUpperCase(),
-    label: name,
+  const { language, copy } = usePostFormCopy();
+
+  const subjectOptions = getSubjectOptions().map((option) => ({
+    value: option.value,
+    label: getSubjectLabelByLanguage(language, option.value),
   }));
 
-  // Age group options
-  const ageGroupOptions = getAgeGroupOptions();
+  const ageGroupOptions = getAgeGroupOptions().map((option) => ({
+    value: option.value,
+    label: getAgeGroupLabelByLanguage(language, option.value),
+  }));
 
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
         <BookOpen className="w-5 h-5 mr-2" />
-        Grunnleggende informasjon
+        {copy.basic.heading}
       </h3>
       <div className="space-y-6">
         <FormField
-          label={forms.no.titleLabel}
+          label={copy.basic.title.label}
           name="title"
           required
           maxLength={100}
-          placeholder={forms.no.titlePlaceholder}
+          placeholder={copy.basic.title.placeholder}
           {...register('title')}
           error={errors.title?.message}
-          helperText={forms.no.titleHelp}
+          helperText={copy.basic.title.help}
         />
 
         <FormTextarea
-          label={forms.no.descriptionLabel}
+          label={copy.basic.description.label}
           name="description"
           required
           rows={6}
           maxLength={2000}
           showCharCount
-          placeholder={forms.no.descriptionPlaceholder}
+          placeholder={copy.basic.description.placeholder}
           {...register('description')}
           error={errors.description?.message}
-          helperText={forms.no.descriptionHelp}
+          helperText={copy.basic.description.help}
         />
 
         <FormSelect
-          label={forms.no.subjectLabel}
+          label={copy.basic.subject.label}
           name="subject"
           required
           {...register('subject')}
           error={errors.subject?.message}
-          helperText={forms.no.subjectHelp}
+          helperText={copy.basic.subject.help}
         >
-          <option value="">Velg fag</option>
+          <option value="">{copy.basic.subject.placeholder}</option>
           {subjectOptions.map(option => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -153,7 +249,7 @@ function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps
           control={control}
           render={({ field }) => (
             <FormCheckboxGroup
-              label={forms.no.ageGroupsLabel}
+              label={copy.basic.ageGroups.label}
               name="ageGroups"
               options={ageGroupOptions}
               value={field.value}
@@ -161,7 +257,7 @@ function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps
               required
               maxSelections={4}
               error={errors.ageGroups?.message}
-              helperText={forms.no.ageGroupsHelp}
+              helperText={copy.basic.ageGroups.help}
             />
           )}
         />
@@ -170,23 +266,24 @@ function BasicInfoFields({ register, control, errors }: Pick<PostFormFieldsProps
   );
 }
 
-function LocationFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
+function LocationFields({ control, register, errors }: Pick<PostFormFieldsProps, 'control' | 'register' | 'errors'>) {
+  const { copy } = usePostFormCopy();
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
         <MapPin className="w-5 h-5 mr-2" />
-        Sted
+        {copy.location.heading}
       </h3>
       <div className="space-y-6">
         <FormSelect
-          label={forms.no.locationLabel}
+          label={copy.location.region.label}
           name="location"
           required
           {...register('location')}
           error={errors.location?.message}
-          helperText={forms.no.locationHelp}
+          helperText={copy.location.region.help}
         >
-          <option value="">{forms.no.locationPlaceholder}</option>
+          <option value="">{copy.location.region.placeholder}</option>
           {getRegionOptions().map(region => (
             <option key={region.value} value={region.value}>
               {region.label}
@@ -199,14 +296,14 @@ function LocationFields({ register, errors }: Pick<PostFormFieldsProps, 'registe
           control={control}
           render={({ field }) => (
             <LocationAutocomplete
-              label={forms.no.specificLocationLabel}
+              label={copy.location.specific.label}
               name="specificLocation"
               value={field.value || ''}
               onChange={field.onChange}
               onBlur={field.onBlur}
-              placeholder={forms.no.specificLocationPlaceholder}
+              placeholder={copy.location.specific.placeholder}
               error={errors.specificLocation?.message}
-              helperText={forms.no.specificLocationHelp}
+              helperText={copy.location.specific.help}
             />
           )}
         />
@@ -223,17 +320,7 @@ function AvailabilityFields({
   getValues, 
   errors 
 }: Pick<PostFormFieldsProps, 'control' | 'register' | 'watch' | 'setValue' | 'getValues' | 'errors'>) {
-  
-  // Day options
-  const dayOptions = [
-    { value: 'MONDAY', label: 'Mandag' },
-    { value: 'TUESDAY', label: 'Tirsdag' },
-    { value: 'WEDNESDAY', label: 'Onsdag' },
-    { value: 'THURSDAY', label: 'Torsdag' },
-    { value: 'FRIDAY', label: 'Fredag' },
-    { value: 'SATURDAY', label: 'Lørdag' },
-    { value: 'SUNDAY', label: 'Søndag' },
-  ];
+  const { copy, dayOptions } = usePostFormCopy();
 
   // Time slot helpers
   const addTimeSlot = () => {
@@ -259,7 +346,7 @@ function AvailabilityFields({
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
         <Clock className="w-5 h-5 mr-2" />
-        {forms.no.availabilityLabel}
+        {copy.availability.heading}
       </h3>
       <div className="space-y-6">
         <Controller
@@ -267,7 +354,7 @@ function AvailabilityFields({
           control={control}
           render={({ field }) => (
             <FormCheckboxGroup
-              label={forms.no.availableDaysLabel}
+              label={copy.availability.daysLabel}
               name="availableDays"
               options={dayOptions}
               value={field.value}
@@ -276,14 +363,14 @@ function AvailabilityFields({
               layout="grid"
               gridCols={3}
               error={errors.availableDays?.message}
-              helperText={forms.no.availableDaysHelp}
+              helperText={copy.availability.daysHelp}
             />
           )}
         />
 
         <div>
           <label className="block text-sm font-medium text-neutral-700 mb-3">
-            {forms.no.availableTimesLabel} <span className="text-red-500">*</span>
+            {copy.availability.timesLabel} <span className="text-red-500">*</span>
           </label>
           <div className="space-y-3">
             {(watch('availableTimes') || ['09:00']).map((time, index) => (
@@ -299,7 +386,7 @@ function AvailabilityFields({
                     type="button"
                     onClick={() => removeTimeSlot(index)}
                     className="p-2 text-red-600 hover:text-red-700 rounded-lg hover:bg-red-50"
-                    title="Fjern tid"
+                    title={copy.availability.removeTime}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -312,23 +399,23 @@ function AvailabilityFields({
                 onClick={addTimeSlot}
                 className="text-brand-600 hover:text-brand-700 text-sm font-medium"
               >
-                + Legg til tid
+                {copy.availability.addTime}
               </button>
             )}
           </div>
-          <p className="text-sm text-neutral-500 mt-2">{forms.no.availableTimesHelp}</p>
+          <p className="text-sm text-neutral-500 mt-2">{copy.availability.timesHelp}</p>
           {errors.availableTimes && <p className="text-red-600 text-sm mt-2">{errors.availableTimes.message}</p>}
         </div>
 
         <FormTextarea
-          label={forms.no.scheduleLabel}
+          label={copy.availability.scheduleLabel}
           name="preferredSchedule"
           rows={3}
           maxLength={500}
-          placeholder={forms.no.schedulePlaceholder}
+          placeholder={copy.availability.schedulePlaceholder}
           {...register('preferredSchedule')}
           error={errors.preferredSchedule?.message}
-          helperText={forms.no.scheduleHelp}
+          helperText={copy.availability.scheduleHelp}
         />
       </div>
     </div>
@@ -336,16 +423,17 @@ function AvailabilityFields({
 }
 
 function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register' | 'errors'>) {
+  const { copy } = usePostFormCopy();
   return (
     <div>
       <h3 className="text-lg font-medium text-neutral-900 mb-4 flex items-center">
         <DollarSign className="w-5 h-5 mr-2" />
-        {forms.no.pricingLabel}
+        {copy.pricing.heading}
       </h3>
       <div className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <FormField
-            label={forms.no.fixedRateLabel}
+            label={copy.pricing.fixedLabel}
             name="hourlyRate"
             type="number"
             min={0}
@@ -356,7 +444,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
             error={errors.hourlyRate?.message}
           />
           <FormField
-            label={forms.no.minRateLabel}
+            label={copy.pricing.minLabel}
             name="hourlyRateMin"
             type="number"
             min={0}
@@ -367,7 +455,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
             error={errors.hourlyRateMin?.message}
           />
           <FormField
-            label={forms.no.maxRateLabel}
+            label={copy.pricing.maxLabel}
             name="hourlyRateMax"
             type="number"
             min={0}
@@ -379,7 +467,7 @@ function PricingFields({ register, errors }: Pick<PostFormFieldsProps, 'register
           />
         </div>
         <p className="text-sm text-neutral-500">
-          {forms.no.pricingHelp}
+          {copy.pricing.help}
         </p>
       </div>
     </div>
