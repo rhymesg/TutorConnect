@@ -223,74 +223,73 @@ jobs:
             // Test 5: Test status toggle buttons
             console.log('🧪 Test 5: Test status toggle functionality');
             
-            // Look for either "Set Aktiv" or "Set Pauset" button
-            const setAktivBtn = page.locator('button:has-text("Set Aktiv")');
-            const setPausetBtn = page.locator('button:has-text("Set Pauset")');
+            // Define helper selectors for both Norwegian and English variants
+            const activeButtonTexts = ['Set active', 'Set Aktiv', 'Sett aktiv'];
+            const pausedButtonTexts = ['Set paused', 'Set Pauset', 'Sett på pause'];
+
+            const buildButtonLocator = (texts: string[]) =>
+              page.locator(texts.map((text) => `button:has-text("${text}")`).join(', ')).first();
+
+            const findStatusButton = async () => {
+              const activeButton = buildButtonLocator(activeButtonTexts);
+              if (await activeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+                return { button: activeButton, state: 'active' as const };
+              }
+
+              const pausedButton = buildButtonLocator(pausedButtonTexts);
+              if (await pausedButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+                return { button: pausedButton, state: 'paused' as const };
+              }
+
+              return null;
+            };
+
+            const logAllButtons = async (label: string) => {
+              const contents = await page.locator('button').allTextContents();
+              console.log(`${label}:`, contents);
+              return contents;
+            };
             
-            let statusButton;
-            let initialButtonText;
-            let toggledButtonText;
-            
-            // Wait a bit for the page to load completely
             await page.waitForTimeout(2000);
-            
-            // Debug what buttons are actually on the page first
-            const allButtons = await page.locator('button').allTextContents();
-            console.log('🔍 All buttons on page at start:', allButtons);
-            
-            if (await setAktivBtn.isVisible({ timeout: 5000 })) {
-              statusButton = setAktivBtn;
-              initialButtonText = "Set Aktiv";
-              toggledButtonText = "Set Pauset";
-              console.log(`✅ Found status button: ${initialButtonText}`);
-            } else if (await setPausetBtn.isVisible({ timeout: 5000 })) {
-              statusButton = setPausetBtn;
-              initialButtonText = "Set Pauset";
-              toggledButtonText = "Set Aktiv";
-              console.log(`✅ Found status button: ${initialButtonText}`);
-            } else {
-              console.log('🔍 All buttons on page:', allButtons);
-              throw new Error('Status toggle button not found. Available buttons: ' + allButtons.join(', '));
+            await logAllButtons('🔍 All buttons on page at start');
+
+            const initialState = await findStatusButton();
+            if (!initialState) {
+              const buttons = await logAllButtons('🔍 Buttons when status toggle missing');
+              throw new Error('Status toggle button not found. Available buttons: ' + buttons.join(', '));
             }
-            
-            expect(statusButton).toBeTruthy();
+
+            const initialButtonText = (await initialState.button.textContent())?.trim() || initialState.state;
             console.log(`✅ Found status button: ${initialButtonText}`);
-            
-            // First toggle
-            await statusButton.click();
+
+            // Toggle once
+            await initialState.button.click();
             console.log(`🔄 Clicked ${initialButtonText} button, waiting for status change...`);
             await page.waitForTimeout(4000);
-            
-            // Check if button text changed
-            const newButton = page.locator(`button:has-text("${toggledButtonText}")`);
-            
-            // Wait a bit longer for the status change and check what buttons we have
-            await page.waitForTimeout(5000);
-            const buttonsAfterToggle = await page.locator('button').allTextContents();
-            console.log('🔍 All buttons after first toggle:', buttonsAfterToggle);
-            
-            // Look for the toggled button text
-            if (await newButton.isVisible({ timeout: 5000 })) {
-              console.log(`✅ Status toggled successfully: ${initialButtonText} → ${toggledButtonText}`);
-              
-              // Second toggle (back to original) - simplified approach
-              console.log(`🔄 Clicking ${toggledButtonText} button to toggle back...`);
-              await newButton.click();
-              await page.waitForTimeout(5000);
-              
-              // Final verification - just check that a status button exists
-              const anyStatusButton = page.locator('button:has-text("Set Aktiv"), button:has-text("Set Pauset")');
-              await expect(anyStatusButton).toBeVisible({ timeout: 5000 });
-              
-              const finalButtonText = await anyStatusButton.textContent();
-              console.log(`✅ Status toggle completed. Final button: ${finalButtonText?.trim()}`);
-            } else {
-              // If the expected toggle button is not found, just verify that the status button is still clickable
-              console.log('⚠️ Expected toggle button not found, but status toggle may have worked');
-              const anyStatusButton = page.locator('button:has-text("Set Aktiv"), button:has-text("Set Pauset")');
-              await expect(anyStatusButton).toBeVisible({ timeout: 5000 });
-              console.log('✅ Status button is still present and clickable');
+
+            const firstToggleState = await findStatusButton();
+            await logAllButtons('🔍 All buttons after first toggle');
+
+            if (!firstToggleState || firstToggleState.state === initialState.state) {
+              throw new Error('Status toggle did not change state as expected.');
             }
+
+            const firstToggleText = (await firstToggleState.button.textContent())?.trim() || firstToggleState.state;
+            console.log(`✅ Status toggled successfully: ${initialButtonText} → ${firstToggleText}`);
+
+            // Toggle back to original state
+            await firstToggleState.button.click();
+            console.log(`🔄 Clicking ${firstToggleText} button to toggle back...`);
+            await page.waitForTimeout(4000);
+
+            const finalState = await findStatusButton();
+            if (!finalState) {
+              const buttons = await logAllButtons('🔍 Buttons after attempting second toggle');
+              throw new Error('Unable to locate status button after second toggle. Buttons: ' + buttons.join(', '));
+            }
+
+            const finalButtonText = (await finalState.button.textContent())?.trim() || finalState.state;
+            console.log(`✅ Status toggle completed. Final button: ${finalButtonText}`);
             
             // Click "Lagre endringer" button and verify redirect to post detail page
             console.log('🔄 Clicking Lagre endringer button...');
