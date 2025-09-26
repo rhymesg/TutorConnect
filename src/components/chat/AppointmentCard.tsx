@@ -1,8 +1,8 @@
 'use client';
 
 import { Calendar, Clock, Check, X } from 'lucide-react';
-import { Language } from '@/lib/translations';
 import { ReactNode } from 'react';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface AppointmentCardProps {
   appointmentData: {
@@ -14,7 +14,6 @@ interface AppointmentCardProps {
     location?: string;
   };
   status: string;
-  language: Language;
   title?: string;
   showStatusBadge?: boolean;
   statusPosition?: 'top' | 'bottom';
@@ -25,29 +24,27 @@ interface AppointmentCardProps {
 export default function AppointmentCard({
   appointmentData,
   status,
-  language,
   title,
   showStatusBadge = true,
   statusPosition = 'top',
   extraContent,
   className = ''
 }: AppointmentCardProps) {
-  const t = language === 'no' ? {
-    proposedTime: 'Foreslått tid',
-    appointmentDetails: 'Avtaledetaljer',
-    pending: 'Venter på svar',
-    confirmed: 'Bekreftet',
-    cancelled: 'Avbrutt',
-    waiting_to_complete: 'Venter på fullføring',
-    completed: 'Fullført'
-  } : {
-    proposedTime: 'Proposed time',
-    appointmentDetails: 'Appointment Details',
-    pending: 'Pending',
-    confirmed: 'Confirmed',
-    cancelled: 'Cancelled',
-    waiting_to_complete: 'Waiting to complete',
-    completed: 'Completed'
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+  const locale = language === 'no' ? 'nb-NO' : 'en-GB';
+  const proposedTimeLabel = translate('Foreslått tid', 'Proposed time');
+  const pendingLabel = translate('Venter på svar', 'Pending');
+  const confirmedLabel = translate('Bekreftet', 'Confirmed');
+  const cancelledLabel = translate('Avbrutt', 'Cancelled');
+  const waitingLabel = translate('Venter på fullføring', 'Waiting to complete');
+  const completedLabel = translate('Fullført', 'Completed');
+  const statusLabels: Record<string, string> = {
+    PENDING: pendingLabel,
+    CONFIRMED: confirmedLabel,
+    CANCELLED: cancelledLabel,
+    WAITING_TO_COMPLETE: waitingLabel,
+    COMPLETED: completedLabel,
   };
 
   const formatDate = (dateStr: string) => {
@@ -64,14 +61,14 @@ export default function AppointmentCard({
     
     if (isNaN(date.getTime())) return 'Invalid Date';
     
-    const options: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
       day: 'numeric',
-      timeZone: 'Europe/Oslo'
+      timeZone: 'Europe/Oslo',
     };
-    return date.toLocaleDateString(language === 'no' ? 'nb-NO' : 'en-US', options);
+    return date.toLocaleDateString(locale, options);
   };
 
   const formatTime = (timeStr: string) => {
@@ -91,11 +88,11 @@ export default function AppointmentCard({
     
     if (isNaN(date.getTime())) return '';
     
-    return date.toLocaleTimeString(language === 'no' ? 'nb-NO' : 'en-US', { 
-      hour: '2-digit', 
+    return date.toLocaleTimeString(locale, {
+      hour: '2-digit',
       minute: '2-digit',
-      hour12: false,
-      timeZone: 'Europe/Oslo'
+      hour12: language !== 'no',
+      timeZone: 'Europe/Oslo',
     });
   };
 
@@ -114,12 +111,12 @@ export default function AppointmentCard({
         {status === 'CANCELLED' && <X className="h-4 w-4" />}
         {status === 'WAITING_TO_COMPLETE' && <Clock className="h-4 w-4" />}
         {status === 'COMPLETED' && <Check className="h-4 w-4" />}
-        {t[status.toLowerCase() as keyof typeof t] || status}
+        {statusLabels[status] || status}
       </div>
     );
   };
 
-  const displayTitle = title || t.proposedTime;
+  const displayTitle = title || proposedTimeLabel;
 
   return (
     <div className={`p-4 rounded-lg border-2 ${

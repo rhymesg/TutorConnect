@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Check, 
   CheckCheck, 
@@ -27,7 +27,7 @@ import {
   FileText
 } from 'lucide-react';
 import { Message, MessageAttachment } from '@/types/chat';
-import { Language, chat as chatTranslations, formatters } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import { MessageTimestamp } from './MessageStatus';
 import AppointmentMessage from './AppointmentMessage';
 
@@ -54,7 +54,6 @@ interface MessageBubbleProps {
   isOwn: boolean;
   showAvatar: boolean;
   showTimestamp: boolean;
-  language: Language;
   status?: 'sending' | 'sent' | 'delivered' | 'read' | 'failed';
   isOptimistic?: boolean;
   error?: string;
@@ -75,7 +74,6 @@ export default function MessageBubble({
   isOwn,
   showAvatar,
   showTimestamp,
-  language,
   status,
   isOptimistic,
   error,
@@ -90,12 +88,44 @@ export default function MessageBubble({
   onRetry,
   onViewAppointment,
 }: MessageBubbleProps) {
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
   const [showMenu, setShowMenu] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
   const [imageError, setImageError] = useState<string[]>([]);
   const menuRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
+  const locale = language === 'no' ? 'nb-NO' : 'en-GB';
+  const timeZone = 'Europe/Oslo';
+  const timeFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: language !== 'no',
+    timeZone,
+  }), [locale, language]);
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone,
+  }), [locale]);
+  const yesterdayLabel = translate('I går', 'Yesterday');
+  const pinnedLabel = translate('Festet melding', 'Pinned message');
+  const sendingLabel = translate('Sender...', 'Sending...');
+  const sendFailedLabel = translate('Kunne ikke sende', 'Failed to send');
+  const retryLabel = translate('Prøv igjen', 'Retry');
+  const editedLabel = translate('redigert', 'edited');
+  const pendingLabel = translate('(venter)', '(pending)');
+  const actions = {
+    reply: translate('Svar', 'Reply'),
+    copy: translate('Kopier', 'Copy'),
+    pin: translate('Fest melding', 'Pin message'),
+    unpin: translate('Løsne melding', 'Unpin message'),
+    forward: translate('Videresend', 'Forward'),
+    edit: translate('Rediger', 'Edit'),
+    delete: translate('Slett', 'Delete'),
+    report: translate('Rapporter', 'Report'),
+  };
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -135,28 +165,30 @@ export default function MessageBubble({
 
   const commonReactions = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
-  const formatTime = (date: Date) => {
-    return formatters.time(date);
-  };
+  const formatTime = (date: Date) => timeFormatter.format(date);
 
   const formatDateTime = (date: Date) => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays === 0) {
       return formatTime(date);
-    } else if (diffDays === 1) {
-      return `${language === 'no' ? 'I går' : 'Yesterday'} ${formatTime(date)}`;
-    } else if (diffDays < 7) {
-      const weekday = new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
-        timeZone: 'Europe/Oslo',
+    }
+
+    if (diffDays === 1) {
+      return `${yesterdayLabel} ${formatTime(date)}`;
+    }
+
+    if (diffDays < 7) {
+      const weekday = new Intl.DateTimeFormat(locale, {
+        timeZone,
         weekday: 'short',
       }).format(date);
       return `${weekday} ${formatTime(date)}`;
-    } else {
-      return formatters.date(date);
     }
+
+    return dateFormatter.format(date);
   };
 
   // Get message status (use prop status first, then message status)
@@ -221,7 +253,6 @@ export default function MessageBubble({
           <AppointmentMessage
             message={message}
             isOwn={isOwn}
-            language={language}
             onViewAppointment={() => onViewAppointment?.(message.id)}
           />
         </div>
@@ -250,7 +281,7 @@ export default function MessageBubble({
         {message.isPinned && (
           <div className="flex items-center gap-1 text-xs text-yellow-600 mb-1">
             <Pin className="h-3 w-3" />
-            <span>{language === 'no' ? 'Festet melding' : 'Pinned message'}</span>
+            <span>{pinnedLabel}</span>
           </div>
         )}
         {!isOwn && showAvatar && (
@@ -300,21 +331,21 @@ export default function MessageBubble({
           {/* Optimistic/Error message */}
           {messageIsOptimistic && messageStatus === 'sending' && (
             <div className="text-xs opacity-75 mt-1">
-              {language === 'no' ? 'Sender...' : 'Sending...'}
+              {sendingLabel}
             </div>
           )}
           
           {messageError && messageStatus === 'failed' && (
             <div className="text-xs bg-red-400/20 px-2 py-1 rounded mt-2 flex items-center justify-between">
               <span className="text-red-100">
-                {language === 'no' ? 'Kunne ikke sende' : 'Failed to send'}
+                {sendFailedLabel}
               </span>
               {onRetry && (
                 <button
                   onClick={onRetry}
                   className="text-xs underline text-red-200 hover:text-red-100 ml-2"
                 >
-                  {language === 'no' ? 'Prøv igjen' : 'Retry'}
+                  {retryLabel}
                 </button>
               )}
             </div>
@@ -324,7 +355,7 @@ export default function MessageBubble({
             <span className={`text-xs italic ml-2 ${
               isOwn ? 'text-blue-100' : 'text-gray-500'
             }`}>
-              {language === 'no' ? 'redigert' : 'edited'}
+              {editedLabel}
             </span>
           )}
 
@@ -452,7 +483,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50"
                   >
                     <Reply className="h-4 w-4" />
-                    {t.actions.reply}
+                    {actions.reply}
                   </button>
                 )}
                 
@@ -461,7 +492,7 @@ export default function MessageBubble({
                   className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50"
                 >
                   <Copy className="h-4 w-4" />
-                  {t.actions.copy}
+                  {actions.copy}
                 </button>
                 
                 {onPin && (
@@ -470,7 +501,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50"
                   >
                     <Pin className="h-4 w-4" />
-                    {message.isPinned ? t.actions.unpin : t.actions.pin}
+                    {message.isPinned ? actions.unpin : actions.pin}
                   </button>
                 )}
                 
@@ -480,7 +511,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50"
                   >
                     <Forward className="h-4 w-4" />
-                    {t.actions.forward}
+                    {actions.forward}
                   </button>
                 )}
                 
@@ -490,7 +521,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50"
                   >
                     <Edit3 className="h-4 w-4" />
-                    {t.actions.edit}
+                    {actions.edit}
                   </button>
                 )}
                 
@@ -500,7 +531,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50 text-red-600"
                   >
                     <Trash2 className="h-4 w-4" />
-                    {t.actions.delete}
+                    {actions.delete}
                   </button>
                 )}
                 
@@ -510,7 +541,7 @@ export default function MessageBubble({
                     className="w-full flex items-center gap-3 px-4 py-2 text-left text-sm hover:bg-gray-50 text-red-600"
                   >
                     <Flag className="h-4 w-4" />
-                    {t.actions.report}
+                    {actions.report}
                   </button>
                 )}
               </div>
@@ -528,7 +559,7 @@ export default function MessageBubble({
             )}
             {messageIsOptimistic && (
               <span className="text-orange-500">
-                {language === 'no' ? '(venter)' : '(pending)'}
+                {pendingLabel}
               </span>
             )}
           </div>

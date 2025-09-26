@@ -3,13 +3,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { Send, Paperclip, Mic, X, Image, FileText } from 'lucide-react';
 import { Message } from '@/types/chat';
-import { Language, chat as chatTranslations } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface MessageComposerProps {
   onSendMessage: (content: string, type?: Message['type']) => Promise<void>;
-  language: Language;
   disabled?: boolean;
   placeholder?: string;
   chatId?: string;
@@ -26,12 +25,22 @@ interface FileAttachment {
 
 export default function MessageComposer({
   onSendMessage,
-  language,
   disabled = false,
   placeholder,
   chatId,
 }: MessageComposerProps) {
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+
+  const placeholderLabel = translate('Skriv en melding...', 'Type a message...');
+  const attachmentLabels = {
+    image: translate('Bilde', 'Image'),
+    document: translate('Dokument', 'Document'),
+    audio: translate('Lyd', 'Audio'),
+    video: translate('Video', 'Video'),
+  };
+  const uploadingLabel = translate('Laster opp...', 'Uploading...');
+  const notAvailableLabel = translate('Denne brukeren er ikke tilgjengelig for meldinger', 'This user is not available for messages');
   
   const [message, setMessage] = useState('');
   const [attachments, setAttachments] = useState<FileAttachment[]>([]);
@@ -263,7 +272,7 @@ export default function MessageComposer({
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed rounded-t-lg opacity-50"
                 >
                   <Image className="h-4 w-4 text-gray-400" />
-                  {t.composer.attachments.image}
+                  {attachmentLabels.image}
                 </button>
                 
                 <button
@@ -272,7 +281,7 @@ export default function MessageComposer({
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50"
                 >
                   <FileText className="h-4 w-4 text-gray-400" />
-                  {t.composer.attachments.document}
+                  {attachmentLabels.document}
                 </button>
                 
                 <button
@@ -281,7 +290,7 @@ export default function MessageComposer({
                   className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-400 cursor-not-allowed opacity-50 rounded-b-lg"
                 >
                   <Mic className="h-4 w-4 text-gray-400" />
-                  {t.composer.attachments.audio}
+                  {attachmentLabels.audio}
                 </button>
                 
               </div>
@@ -296,7 +305,7 @@ export default function MessageComposer({
             value={message}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder={placeholder || t.composer.placeholder}
+            placeholder={placeholder || placeholderLabel}
             disabled={disabled}
             className="w-full resize-none border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ minHeight: '40px', maxHeight: '120px' }}
@@ -334,17 +343,14 @@ export default function MessageComposer({
       {/* Status messages */}
       {disabled && (
         <p className="text-center text-sm text-gray-500 mt-2">
-          {language === 'no' 
-            ? 'Denne brukeren er ikke tilgjengelig for meldinger'
-            : 'This user is not available for messages'
-          }
+          {notAvailableLabel}
         </p>
       )}
       
       {isUploading && (
         <div className="flex items-center justify-center gap-2 text-sm text-blue-600 mt-2">
           <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <span>{t.composer.uploading}</span>
+          <span>{uploadingLabel}</span>
         </div>
       )}
       

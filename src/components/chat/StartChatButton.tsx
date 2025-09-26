@@ -3,8 +3,7 @@
 import { useState } from 'react';
 import { MessageCircle, Send, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { chat as chatTranslations, useLanguage, forms } from '@/lib/translations';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface StartChatButtonProps {
   postId: string;
@@ -26,9 +25,22 @@ export default function StartChatButton({
   className = '',
 }: StartChatButtonProps) {
   const { user, isAuthenticated } = useAuth();
-  const language = useLanguage();
-  const t = chatTranslations[language];
-  const f = forms[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+  const labels = {
+    openButton: translate('Send melding', 'Send message'),
+    modalTitle: translate('Ny melding', 'New message'),
+    toLabel: translate('Til', 'To'),
+    roleTeacher: translate('Lærer', 'Teacher'),
+    roleStudent: translate('Student', 'Student'),
+    relatedPost: translate('Knyttet til denne annonsen', 'Related to this listing'),
+    messageLabel: translate('Melding', 'Message'),
+    messagePlaceholder: translate('Skriv meldingen din her...', 'Write your message here...'),
+    cancel: translate('Avbryt', 'Cancel'),
+    send: translate('Send melding', 'Send message'),
+    sending: translate('Sender...', 'Sending...'),
+    explore: translate('Utforsk innlegg', 'Explore posts'),
+  };
   
   const [showModal, setShowModal] = useState(false);
   const [message, setMessage] = useState('');
@@ -84,9 +96,8 @@ export default function StartChatButton({
   };
 
   const getDefaultMessage = () => {
-    const greeting = language === 'no' ? 'Hei' : 'Hi';
-    const interested = language === 'no' ? 'Jeg er interessert i' : "I'm interested in";
-    
+    const greeting = translate('Hei', 'Hi');
+    const interested = translate('Jeg er interessert i', "I'm interested in");
     return `${greeting} ${authorName}!\n\n${interested} "${postTitle}".`;
   };
 
@@ -103,7 +114,7 @@ export default function StartChatButton({
         className={`flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors ${className}`}
       >
         <MessageCircle className="h-4 w-4" />
-        {language === 'no' ? 'Send melding' : 'Send message'}
+        {labels.openButton}
       </button>
 
       {/* Chat Modal */}
@@ -114,10 +125,10 @@ export default function StartChatButton({
             <div className="flex items-center justify-between p-4 border-b border-gray-200">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
-                  {t.newMessage}
+                  {labels.modalTitle}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {language === 'no' ? 'Till' : 'To'} {authorName}
+                  {labels.toLabel} {authorName}
                 </p>
               </div>
               <button
@@ -136,12 +147,9 @@ export default function StartChatButton({
                     ? 'bg-green-100 text-green-700' 
                     : 'bg-blue-100 text-blue-700'
                 }`}>
-                  {postType === 'TEACHER' 
-                    ? (language === 'no' ? 'Lærer' : 'Teacher')
-                    : (language === 'no' ? 'Student' : 'Student')
-                  }
+                  {postType === 'TEACHER' ? labels.roleTeacher : labels.roleStudent}
                 </div>
-                <span className="text-sm text-gray-600">{t.post.relatedTo}</span>
+                <span className="text-sm text-gray-600">{labels.relatedPost}</span>
               </div>
               <h4 className="font-medium text-gray-900">{postTitle}</h4>
             </div>
@@ -149,14 +157,14 @@ export default function StartChatButton({
             {/* Message Form */}
             <div className="p-4">
               <label htmlFor="chat-message" className="block text-sm font-medium text-gray-700 mb-2">
-                {f.message}
+                {labels.messageLabel}
               </label>
               <textarea
                 id="chat-message"
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
                 rows={6}
-                placeholder={f.enterMessage}
+                placeholder={labels.messagePlaceholder}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
               
@@ -174,7 +182,7 @@ export default function StartChatButton({
                 className="px-4 py-2 text-gray-600 hover:text-gray-800"
                 disabled={isLoading}
               >
-                {language === 'no' ? 'Avbryt' : 'Cancel'}
+                {labels.cancel}
               </button>
               <button
                 onClick={handleStartChat}
@@ -186,10 +194,7 @@ export default function StartChatButton({
                 ) : (
                   <Send className="h-4 w-4" />
                 )}
-                {isLoading 
-                  ? (language === 'no' ? 'Sender...' : 'Sending...') 
-                  : t.sendMessage
-                }
+                {isLoading ? labels.sending : labels.send}
               </button>
             </div>
           </div>

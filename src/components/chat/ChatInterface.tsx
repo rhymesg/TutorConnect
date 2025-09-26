@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { X, MessageCircle } from 'lucide-react';
-import { useLanguage, chat as chatTranslations } from '@/lib/translations';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useChat } from '@/hooks/useChat';
 import { useAuth } from '@/contexts/AuthContext';
 import { Message } from '@/types/chat';
@@ -29,8 +29,7 @@ export default function ChatInterface({
   className = '' 
 }: ChatInterfaceProps) {
   const router = useRouter();
-  const language = useLanguage();
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
   const { user } = useAuth();
   
   // Layout state
@@ -531,7 +530,6 @@ export default function ChatInterface({
             <div className="sticky top-0 z-20 bg-white border-b border-gray-200">
               <ChatHeader
                 chat={chats.find(c => c.id === selectedChatId) || chat}
-                language={language}
                 onShowPostDetails={() => {/* console.log('Show post details') */}}
                 onArchiveChat={() => handleArchiveChat(selectedChatId)}
                 onDeleteChat={() => handleDeleteChat(selectedChatId)}
@@ -548,7 +546,6 @@ export default function ChatInterface({
               <MessageList
                 messages={messages}
                 currentUserId={user?.id || ""}
-                language={language}
                 isLoading={isLoadingMessages}
                 hasMore={false} // TODO: Implement pagination
                 typingUsers={[]}
@@ -563,7 +560,6 @@ export default function ChatInterface({
             <div className="flex-shrink-0">
               <MessageComposer
                 onSendMessage={handleSendMessage}
-                language={language}
                 disabled={false}
                 chatId={selectedChatId}
               />
@@ -601,7 +597,6 @@ export default function ChatInterface({
           setAppointmentError(null);
         }}
         onSubmit={handleAppointmentSubmit}
-        language={language}
         chatId={selectedChatId || ''}
         error={appointmentError}
       />
@@ -616,7 +611,6 @@ export default function ChatInterface({
             setAppointmentResponseError(null);
           }}
           message={selectedAppointmentMessage}
-          language={language}
           onAccept={handleAcceptAppointment}
           onReject={handleRejectAppointment}
           onCompleted={handleCompletedAppointment}

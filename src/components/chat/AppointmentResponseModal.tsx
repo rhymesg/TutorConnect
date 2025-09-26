@@ -2,17 +2,15 @@
 
 import { useState } from 'react';
 import { Check, X, Trash2 } from 'lucide-react';
-import { Language } from '@/lib/translations';
 import { Message } from '@/types/chat';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import AppointmentCard from './AppointmentCard';
-import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
 interface AppointmentResponseModalProps {
   isOpen: boolean;
   onClose: () => void;
   message: Message;
-  language: Language;
   onAccept: () => Promise<void>;
   onReject: () => Promise<void>;
   onCompleted?: () => Promise<void>;
@@ -25,276 +23,156 @@ export default function AppointmentResponseModal({
   isOpen,
   onClose,
   message,
-  language,
   onAccept,
   onReject,
   onCompleted,
   onNotCompleted,
   onDelete,
-  error
+  error,
 }: AppointmentResponseModalProps) {
+  const { user } = useAuth();
+  const { language } = useLanguage();
+  const translate = useLanguageText();
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const { user } = useAuth();
 
-  const status = message.appointment?.status || 'PENDING';
-  const isWaitingToComplete = status === 'WAITING_TO_COMPLETE';
-  const isOwnRequest = message.senderId === user?.id; // Check if current user sent the appointment request
-  
-  const t = language === 'no' ? {
-    // Original appointment request texts
-    title: 'Avtaleforespørsel',
-    proposedTime: 'Foreslått tid',
-    accept: 'Godta',
-    reject: 'Avslå',
-    cancel: 'Lukk',
-    from: 'Fra',
-    location: 'Sted',
-    alreadyResponded: 'Du har allerede svart på denne avtalen',
-    
-    // For the person who made the request
-    yourRequest: 'Din avtaleforespørsel',
-    youProposed: 'Du foreslo denne timen',
-    
-    // Completion confirmation texts
-    completionTitle: 'Avtale fullført?',
-    completionQuestion: 'Ble denne avtalen gjennomført som planlagt?',
-    completed: 'Ja, gjennomført',
-    notCompleted: 'Nei, ikke gjennomført',
-    appointmentDetails: 'Avtaledetaljer',
-    waitingForOther: 'Venter på svar fra den andre parten',
-    bothConfirmed: 'Begge parter har bekreftet at avtalen ble gjennomført',
-    yourResponse: 'Du har svart:',
-    responseCompleted: 'Gjennomført',
-    responseNotCompleted: 'Ikke gjennomført',
-    
-    // Status labels
-    pending: 'Venter på svar',
-    confirmed: 'Bekreftet',
-    cancelled: 'Avbrutt',
-    waiting_to_complete: 'Venter på fullføring',
-    completed_status: 'Fullført',
-    delete: 'Slett',
-    deleteConfirm: 'Er du sikker på at du vil slette denne avtalen?',
-    deleteWarning: 'Denne handlingen kan ikke angres.',
-    confirmDelete: 'Ja, slett',
-    cancelDelete: 'Avbryt'
-  } : {
-    // Original appointment request texts
-    title: 'Appointment Request',
-    proposedTime: 'Proposed time',
-    accept: 'Accept',
-    reject: 'Reject', 
-    cancel: 'Close',
-    from: 'From',
-    location: 'Location',
-    alreadyResponded: 'You have already responded to this appointment',
-    
-    // For the person who made the request
-    yourRequest: 'Your Appointment Request',
-    youProposed: 'You proposed this time',
-    
-    // Completion confirmation texts
-    completionTitle: 'Appointment Completed?',
-    completionQuestion: 'Was this appointment completed as planned?',
-    completed: 'Yes, completed',
-    notCompleted: 'No, not completed',
-    appointmentDetails: 'Appointment Details',
-    waitingForOther: 'Waiting for response from the other party',
-    bothConfirmed: 'Both parties confirmed the appointment was completed',
-    yourResponse: 'Your response:',
-    responseCompleted: 'Completed',
-    responseNotCompleted: 'Not completed',
-    
-    // Status labels
-    pending: 'Pending',
-    confirmed: 'Confirmed',
-    cancelled: 'Cancelled',
-    waiting_to_complete: 'Waiting to complete',
-    completed_status: 'Completed',
-    delete: 'Delete',
-    deleteConfirm: 'Are you sure you want to delete this appointment?',
-    deleteWarning: 'This action cannot be undone.',
-    confirmDelete: 'Yes, delete',
-    cancelDelete: 'Cancel'
+  const appointmentStatus = message.appointment?.status || 'PENDING';
+  const isWaitingToComplete = appointmentStatus === 'WAITING_TO_COMPLETE';
+  const isOwnRequest = message.senderId === user?.id;
+
+  const labels = {
+    title: translate('Avtaleforespørsel', 'Appointment Request'),
+    proposedTime: translate('Foreslått tid', 'Proposed time'),
+    accept: translate('Godta', 'Accept'),
+    reject: translate('Avslå', 'Decline'),
+    close: translate('Lukk', 'Close'),
+    from: translate('Fra', 'From'),
+    location: translate('Sted', 'Location'),
+    alreadyResponded: translate('Du har allerede svart på denne avtalen', 'You have already responded to this appointment'),
+    yourRequest: translate('Din avtaleforespørsel', 'Your appointment request'),
+    youProposed: translate('Du foreslo denne timen', 'You proposed this time'),
+    completionTitle: translate('Avtale fullført?', 'Appointment completed?'),
+    completionQuestion: translate('Ble denne avtalen gjennomført som planlagt?', 'Was this appointment completed as planned?'),
+    completed: translate('Ja, gjennomført', 'Yes, completed'),
+    notCompleted: translate('Nei, ikke gjennomført', 'No, not completed'),
+    appointmentDetails: translate('Avtaledetaljer', 'Appointment details'),
+    waitingForOther: translate('Venter på svar fra den andre parten', 'Waiting for response from the other party'),
+    bothConfirmed: translate('Begge parter har bekreftet at avtalen ble gjennomført', 'Both parties confirmed the appointment was completed'),
+    yourResponse: translate('Du har svart:', 'You responded:'),
+    responseCompleted: translate('Gjennomført', 'Completed'),
+    responseNotCompleted: translate('Ikke gjennomført', 'Not completed'),
+    delete: translate('Slett', 'Delete'),
+    deleteConfirm: translate('Er du sikker på at du vil slette denne avtalen?', 'Are you sure you want to delete this appointment?'),
+    deleteWarning: translate('Denne handlingen kan ikke angres.', 'This action cannot be undone.'),
+    confirmDelete: translate('Ja, slett', 'Yes, delete'),
+    cancelDelete: translate('Avbryt', 'Cancel'),
+    processing: translate('Behandler...', 'Processing...'),
+    waitingToComplete: translate('Venter på fullføring', 'Waiting to complete'),
+    completedStatus: translate('Fullført', 'Completed'),
   };
 
-  if (!isOpen) return null;
+  if (!isOpen) {
+    return null;
+  }
 
-  // Parse appointment data
-  let appointmentData;
+  let appointmentData: any = {};
   try {
     appointmentData = JSON.parse(message.content);
   } catch {
     appointmentData = message.appointment || {};
   }
 
-  // Check if current user is the teacher (post owner)
   const isTeacher = message.appointment?.chat?.relatedPost?.userId === user?.id;
-  
-  // Check if current user has already responded
-  const userHasResponded = isTeacher 
-    ? message.appointment?.teacherReady 
-    : message.appointment?.studentReady;
-    
-  // Check if other party has responded
-  const otherPartyResponded = isTeacher
-    ? message.appointment?.studentReady
-    : message.appointment?.teacherReady;
+  const userHasResponded = isTeacher ? message.appointment?.teacherReady : message.appointment?.studentReady;
+  const otherPartyResponded = isTeacher ? message.appointment?.studentReady : message.appointment?.teacherReady;
 
-
-  const handleAccept = async () => {
-    if (isProcessing) return;
+  const wrapAction = async (action: (() => Promise<void>) | undefined) => {
+    if (!action || isProcessing) return;
     setIsProcessing(true);
     try {
-      await onAccept();
+      await action();
       onClose();
-    } catch (error) {
-      // Error handled by parent
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleReject = async () => {
-    if (isProcessing) return;
-    setIsProcessing(true);
-    try {
-      await onReject();
-      onClose();
-    } catch (error) {
-      // Error handled by parent
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleCompleted = async () => {
-    if (isProcessing || !onCompleted) return;
-    setIsProcessing(true);
-    try {
-      await onCompleted();
-      onClose();
-    } catch (error) {
-      // Error handled by parent
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleNotCompleted = async () => {
-    if (isProcessing || !onNotCompleted) return;
-    setIsProcessing(true);
-    try {
-      await onNotCompleted();
-      onClose();
-    } catch (error) {
-      // Error handled by parent
     } finally {
       setIsProcessing(false);
     }
   };
 
   const handleDelete = async () => {
-    if (isProcessing || !onDelete) return;
+    if (!onDelete || isProcessing) return;
     setIsProcessing(true);
     try {
       await onDelete();
       onClose();
-    } catch (error) {
-      // Error handled by parent
     } finally {
       setIsProcessing(false);
       setShowDeleteConfirmation(false);
     }
   };
 
-  const isAlreadyResponded = status !== 'PENDING' && status !== 'WAITING_TO_COMPLETE';
-  const isCompleted = status === 'COMPLETED';
+  const statusLabels: Record<string, string> = {
+    PENDING: translate('Venter på svar', 'Pending'),
+    CONFIRMED: translate('Bekreftet', 'Confirmed'),
+    CANCELLED: translate('Avbrutt', 'Cancelled'),
+    WAITING_TO_COMPLETE: labels.waitingToComplete,
+    COMPLETED: labels.completedStatus,
+  };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">
-              {isWaitingToComplete 
-                ? t.completionTitle 
-                : isOwnRequest 
-                  ? t.yourRequest 
-                  : t.title
-              }
-            </h2>
-            <div className="flex items-center gap-2">
-              {onDelete && (status === 'PENDING' || status === 'CONFIRMED' || status === 'CANCELLED') && (
-                <button
-                  onClick={() => setShowDeleteConfirmation(true)}
-                  disabled={isProcessing}
-                  className="text-red-400 hover:text-red-600 disabled:opacity-50"
-                  title={t.delete}
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              )}
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="h-6 w-6" />
-              </button>
-            </div>
+    <div className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4" onClick={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">{labels.title}</h2>
+            <p className="text-sm text-gray-500">
+              {labels.from} {message.sender?.name || message.relatedPost?.user?.name || ''}
+            </p>
           </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
 
-          {/* Appointment Details */}
+        <div className="px-6 py-4 space-y-4">
           <AppointmentCard
             appointmentData={appointmentData}
-            status={status}
-            language={language}
-            title={isWaitingToComplete ? t.appointmentDetails : t.proposedTime}
+            status={appointmentStatus}
+            title={isWaitingToComplete ? labels.appointmentDetails : labels.proposedTime}
             statusPosition="top"
             className="mb-4"
           />
 
-          {/* Status Messages - All in consistent position */}
-          <div className="mb-4">
-            {/* Completion question for waiting to complete status */}
+          <div className="space-y-3">
             {isWaitingToComplete && !userHasResponded && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm mb-3">
-                {t.completionQuestion}
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-700 text-sm">
+                {labels.completionQuestion}
               </div>
             )}
-            
-            {/* User's response if they already answered */}
+
             {isWaitingToComplete && userHasResponded && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-3">
-                <strong>{t.yourResponse}</strong> {userHasResponded === true ? t.responseCompleted : t.responseNotCompleted}
-                {otherPartyResponded ? null : ` (${t.waitingForOther})`}
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                <strong>{labels.yourResponse}</strong> {userHasResponded ? labels.responseCompleted : labels.responseNotCompleted}
+                {!otherPartyResponded && ` (${labels.waitingForOther})`}
               </div>
             )}
 
-            {/* Message for person who made the request */}
             {!isWaitingToComplete && isOwnRequest && (
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm mb-3">
-                {t.youProposed}
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm">
+                {labels.youProposed}
               </div>
             )}
 
-
-            {/* Already responded message */}
-            {isAlreadyResponded && !isWaitingToComplete && !isCompleted && !isOwnRequest && (
-              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm mb-3">
-                {t.alreadyResponded}
+            {!isWaitingToComplete && !isOwnRequest && userHasResponded && (
+              <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-gray-700 text-sm">
+                {labels.alreadyResponded}
               </div>
             )}
 
-            {/* Both confirmed completion message */}
-            {isCompleted && (
-              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm mb-3">
-                {t.bothConfirmed}
+            {appointmentStatus === 'COMPLETED' && (
+              <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+                {labels.bothConfirmed}
               </div>
             )}
 
-            {/* Error message */}
             {error && (
               <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
                 {error}
@@ -302,110 +180,103 @@ export default function AppointmentResponseModal({
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-3">
-            {isWaitingToComplete && !isCompleted ? (
-              <>
-                <button
-                  onClick={handleCompleted}
-                  disabled={isProcessing || userHasResponded}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Check className="h-4 w-4" />
-                  )}
-                  {isProcessing ? (language === 'no' ? 'Behandler...' : 'Processing...') : t.completed}
-                </button>
-                <button
-                  onClick={handleNotCompleted}
-                  disabled={isProcessing || userHasResponded}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-500">
+              <span>{translate('Status:', 'Status:')}</span>
+              <span className="font-medium">{statusLabels[appointmentStatus] || appointmentStatus}</span>
+            </div>
+
+            <div className="flex gap-2">
+              {isWaitingToComplete && !userHasResponded && (
+                <>
+                  <button
+                    onClick={() => wrapAction(onCompleted)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    disabled={isProcessing}
+                  >
+                    {isProcessing ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Check className="h-4 w-4" />}
+                    {isProcessing ? labels.processing : labels.completed}
+                  </button>
+                  <button
+                    onClick={() => wrapAction(onNotCompleted)}
+                    className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-800 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                    disabled={isProcessing}
+                  >
                     <X className="h-4 w-4" />
-                  )}
-                  {isProcessing ? (language === 'no' ? 'Behandler...' : 'Processing...') : t.notCompleted}
-                </button>
-              </>
-            ) : !isAlreadyResponded && !isWaitingToComplete && !isCompleted && !isOwnRequest ? (
-              <>
-                <button
-                  onClick={handleAccept}
-                  disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
+                    {labels.notCompleted}
+                  </button>
+                </>
+              )}
+
+              {!isWaitingToComplete && !userHasResponded && (
+                <>
+                  <button
+                    onClick={() => wrapAction(onAccept)}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 disabled:opacity-50"
+                    disabled={isProcessing}
+                  >
                     <Check className="h-4 w-4" />
-                  )}
-                  {isProcessing ? (language === 'no' ? 'Behandler...' : 'Processing...') : t.accept}
-                </button>
-                <button
-                  onClick={handleReject}
-                  disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
+                    {isProcessing ? labels.processing : labels.accept}
+                  </button>
+                  <button
+                    onClick={() => wrapAction(onReject)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700 disabled:opacity-50"
+                    disabled={isProcessing}
+                  >
                     <X className="h-4 w-4" />
-                  )}
-                  {isProcessing ? (language === 'no' ? 'Behandler...' : 'Processing...') : t.reject}
+                    {labels.reject}
+                  </button>
+                </>
+              )}
+
+              {!isWaitingToComplete && isOwnRequest && onDelete && (
+                <button
+                  onClick={() => setShowDeleteConfirmation(true)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-200 text-gray-700 text-sm rounded-lg hover:bg-gray-300 disabled:opacity-50"
+                  disabled={isProcessing}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  {labels.delete}
                 </button>
-              </>
-            ) : (
+              )}
+
               <button
                 onClick={onClose}
-                className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
+                disabled={isProcessing}
               >
-                {t.cancel}
+                {labels.close}
               </button>
-            )}
+            </div>
           </div>
         </div>
-      </div>
-      
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-60 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-sm w-full">
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                {t.deleteConfirm}
-              </h3>
-              <p className="text-sm text-gray-600 mb-4">
-                {t.deleteWarning}
-              </p>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowDeleteConfirmation(false)}
-                  disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 disabled:opacity-50"
-                >
-                  {t.cancelDelete}
-                </button>
+
+        {showDeleteConfirmation && (
+          <div className="px-6 pb-6">
+            <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+              <h4 className="text-sm font-semibold text-red-700 mb-1">{labels.deleteConfirm}</h4>
+              <p className="text-xs text-red-600">{labels.deleteWarning}</p>
+              <div className="flex gap-2 mt-3">
                 <button
                   onClick={handleDelete}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-600 text-white text-sm rounded hover:bg-red-700 disabled:opacity-50"
                   disabled={isProcessing}
-                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {isProcessing ? (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Trash2 className="h-4 w-4" />
-                  )}
-                  {isProcessing ? (language === 'no' ? 'Sletter...' : 'Deleting...') : t.confirmDelete}
+                  {isProcessing ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Trash2 className="h-4 w-4" />}
+                  {isProcessing ? labels.processing : labels.confirmDelete}
+                </button>
+                <button
+                  onClick={() => setShowDeleteConfirmation(false)}
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-800"
+                  disabled={isProcessing}
+                >
+                  {labels.cancelDelete}
                 </button>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
