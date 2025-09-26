@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Message, TypingIndicator } from '@/types/chat';
-import { Language, chat as chatTranslations } from '@/lib/translations';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import MessageBubble from './MessageBubble';
 import TypingIndicators from './TypingIndicators';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
@@ -11,7 +11,6 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 interface MessageListProps {
   messages: Message[];
   currentUserId: string;
-  language: Language;
   isLoading?: boolean;
   hasMore?: boolean;
   typingUsers?: TypingIndicator[];
@@ -25,7 +24,6 @@ interface MessageListProps {
 export default function MessageList({
   messages,
   currentUserId,
-  language,
   isLoading = false,
   hasMore = false,
   typingUsers = [],
@@ -35,9 +33,15 @@ export default function MessageList({
   onViewAppointment,
   className = '',
 }: MessageListProps) {
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
   const locale = language === 'no' ? 'nb-NO' : 'en-US';
   const timeZone = 'Europe/Oslo';
+  const noMessagesTitle = translate('Ingen meldinger enda', 'No messages yet');
+  const noMessagesSubtitle = translate('Send den første meldingen for å starte samtalen', 'Send the first message to start the conversation');
+  const loadingMoreLabel = translate('Laster flere meldinger...', 'Loading more messages...');
+  const loadMoreLabel = translate('Last flere meldinger', 'Load more messages');
+  const scrollToBottomLabel = translate('Gå til bunn', 'Scroll to bottom');
   const dateKeyFormatter = useMemo(
     () =>
       new Intl.DateTimeFormat('en-CA', {
@@ -59,6 +63,8 @@ export default function MessageList({
       }),
     [locale]
   );
+  const todayLabel = translate('I dag', 'Today');
+  const yesterdayLabel = translate('I går', 'Yesterday');
   
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
@@ -163,12 +169,14 @@ export default function MessageList({
     const yesterdayKey = dateKeyFormatter.format(new Date(Date.now() - 24 * 60 * 60 * 1000));
 
     if (dateKey === todayKey) {
-      return language === 'no' ? 'I dag' : 'Today';
-    } else if (dateKey === yesterdayKey) {
-      return language === 'no' ? 'I går' : 'Yesterday';
-    } else {
-      return longDateFormatter.format(displayDate);
+      return todayLabel;
     }
+
+    if (dateKey === yesterdayKey) {
+      return yesterdayLabel;
+    }
+
+    return longDateFormatter.format(displayDate);
   };
 
   // Message action handlers
@@ -208,15 +216,8 @@ export default function MessageList({
     return (
       <div className={`flex-1 flex items-center justify-center ${className}`}>
         <div className="text-center text-gray-500">
-          <p className="text-lg mb-2">
-            {language === 'no' ? 'Ingen meldinger enda' : 'No messages yet'}
-          </p>
-          <p className="text-sm">
-            {language === 'no' 
-              ? 'Send den første meldingen for å starte samtalen'
-              : 'Send the first message to start the conversation'
-            }
-          </p>
+          <p className="text-lg mb-2">{noMessagesTitle}</p>
+          <p className="text-sm">{noMessagesSubtitle}</p>
         </div>
       </div>
     );
@@ -237,14 +238,14 @@ export default function MessageList({
             {isLoading ? (
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <LoadingSpinner size="sm" />
-                <span>{language === 'no' ? 'Laster flere meldinger...' : 'Loading more messages...'}</span>
+                <span>{loadingMoreLabel}</span>
               </div>
             ) : (
               <button
                 onClick={onLoadMore}
                 className="text-sm text-blue-600 hover:text-blue-700 px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
               >
-                {language === 'no' ? 'Last flere meldinger' : 'Load more messages'}
+                {loadMoreLabel}
               </button>
             )}
           </div>
@@ -269,7 +270,6 @@ export default function MessageList({
                   isOwn={message.senderId === currentUserId}
                   showAvatar={message.showAvatar}
                   showTimestamp={message.showTimestamp}
-                  language={language}
                   status={message.status}
                   isOptimistic={message.isOptimistic}
                   error={message.error}
@@ -295,7 +295,6 @@ export default function MessageList({
             <TypingIndicators 
               typingUsers={typingUsers}
               currentUserId={currentUserId}
-              language={language}
             />
           </div>
         )}
@@ -308,7 +307,7 @@ export default function MessageList({
           <button
             onClick={scrollToBottom}
             className="absolute bottom-4 right-4 p-3 bg-blue-500 text-white rounded-full shadow-lg hover:bg-blue-600 transition-colors z-10"
-            title={language === 'no' ? 'Gå til bunn' : 'Scroll to bottom'}
+            title={scrollToBottomLabel}
           >
             <ChevronDown className="h-5 w-5" />
           </button>

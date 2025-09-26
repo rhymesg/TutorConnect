@@ -3,11 +3,10 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
 import { Search, MessageCircle, User, Archive, Trash2, Pin, MoreHorizontal } from 'lucide-react';
 import { ChatListItem, ChatFilter } from '@/types/chat';
-import { chat as chatTranslations, useLanguage, formatters } from '@/lib/translations';
 import LoadingSpinner from '@/components/ui/LoadingSpinner';
-import { NoChatsEmptyState, NoSearchResultsEmptyState, ConnectionErrorEmptyState, ChatListLoadingState } from './EmptyStates';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSubjectLabel } from '@/constants/subjects';
+import { getSubjectLabelByLanguage } from '@/constants/subjects';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface ChatRoomListProps {
   chats: ChatListItem[];
@@ -44,8 +43,53 @@ export default function ChatRoomList({
   onRetry,
   onExploreContacts,
 }: ChatRoomListProps) {
-  const language = useLanguage();
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+  const locale = language === 'no' ? 'nb-NO' : 'en-GB';
+  const timeFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: language !== 'no',
+    timeZone: 'Europe/Oslo',
+  }), [language, locale]);
+  const weekdayFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    timeZone: 'Europe/Oslo',
+  }), [locale]);
+  const dateFormatter = useMemo(() => new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'Europe/Oslo',
+  }), [locale]);
+  const currencyFormatter = useMemo(
+    () =>
+      new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: 'NOK',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }),
+    [locale]
+  );
+
+  const labels = {
+    title: translate('Samtaler', 'Conversations'),
+    searchPlaceholder: translate('Søk i samtaler...', 'Search conversations...'),
+    noChatsTitle: translate('Ingen samtaler enda', 'No conversations yet'),
+    noChatsDescription: translate('Start en samtale ved å kontakte en lærer eller student gjennom deres innlegg.', 'Start a conversation by contacting a teacher or student through their post.'),
+    noResults: translate('Ingen samtaler funnet', 'No conversations found'),
+    loadMore: translate('Last flere', 'Load more'),
+    loadingMore: translate('Laster...', 'Loading...'),
+    retryLoad: translate('Kunne ikke laste samtaler', 'Could not load conversations'),
+    retryButton: translate('Prøv igjen', 'Try again'),
+    messagePlaceholder: translate('Ingen meldinger enda', 'No messages yet'),
+    appointmentRequest: translate('Timeavtale forespørsel', 'Appointment request'),
+    appointmentConfirmed: translate('Timeavtale bekreftet', 'Appointment confirmed'),
+    yesterday: translate('I går', 'Yesterday'),
+    loading: translate('Laster...', 'Loading...'),
+    teacher: translate('Lærer', 'Teacher'),
+    student: translate('Student', 'Student'),
+  };
   const { user } = useAuth();
   
   const [searchQuery, setSearchQuery] = useState('');
@@ -80,21 +124,18 @@ export default function ChatRoomList({
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {
-      return formatters.time(date);
-    } else if (diffDays === 1) {
-      return language === 'no' ? 'I går' : 'Yesterday';
-    } else if (diffDays < 7) {
-      return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
-        timeZone: 'Europe/Oslo',
-        weekday: 'short',
-      }).format(date);
-    } else {
-      return new Intl.DateTimeFormat(language === 'no' ? 'nb-NO' : 'en-US', {
-        timeZone: 'Europe/Oslo',
-        month: 'short',
-        day: 'numeric',
-      }).format(date);
+      return timeFormatter.format(date);
     }
+
+    if (diffDays === 1) {
+      return labels.yesterday;
+    }
+
+    if (diffDays < 7) {
+      return weekdayFormatter.format(date);
+    }
+
+    return dateFormatter.format(date);
   };
 
   const truncateMessage = (message: string, maxLength: number = 60) => {
@@ -108,14 +149,14 @@ export default function ChatRoomList({
         <div className="text-center">
           <MessageCircle className="mx-auto h-12 w-12 text-gray-300 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            {t.errors.loadFailed}
+            {labels.retryLoad}
           </h3>
           <p className="text-gray-500 mb-4">{error}</p>
           <button 
             onClick={() => window.location.reload()}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {t.errors.tryAgain || 'Try Again'}
+            {labels.retryButton}
           </button>
         </div>
       </div>
@@ -127,7 +168,7 @@ export default function ChatRoomList({
       {/* Header */}
       <div className="px-4 pt-4 pb-2 md:pb-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
-          {t.roomList.title}
+          {labels.title}
         </h2>
         
         {/* Search */}
@@ -135,7 +176,7 @@ export default function ChatRoomList({
           <Search className="absolute left-3 top-9 md:top-3 h-4 w-4 text-gray-400" />
           <input
             type="text"
-            placeholder={t.roomList.search}
+            placeholder={labels.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mt-6 md:mt-0"
@@ -154,10 +195,10 @@ export default function ChatRoomList({
           <div className="flex flex-col items-center justify-center p-8 text-center">
             <MessageCircle className="h-12 w-12 text-gray-300 mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {chats.length === 0 ? t.noChats : t.roomList.noResults}
+              {chats.length === 0 ? labels.noChatsTitle : labels.noResults}
             </h3>
             <p className="text-gray-500 text-sm max-w-xs">
-              {chats.length === 0 ? t.noChatsDesc : ''}
+              {chats.length === 0 ? labels.noChatsDescription : ''}
             </p>
           </div>
         ) : (
@@ -223,9 +264,9 @@ export default function ChatRoomList({
                         chat.unreadCount > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'
                       }`}>
                         {chat.lastMessage.type === 'APPOINTMENT_REQUEST' 
-                          ? `📅 ${t.appointment.request}`
+                          ? `📅 ${labels.appointmentRequest}`
                           : chat.lastMessage.type === 'APPOINTMENT_RESPONSE'
-                          ? `✅ ${t.appointment.confirmed}`
+                          ? `✅ ${labels.appointmentConfirmed}`
                           : chat.lastMessage.type === 'SYSTEM_MESSAGE'
                           ? `ℹ️ ${chat.lastMessage.content}`
                           : truncateMessage(chat.lastMessage.content)
@@ -233,7 +274,7 @@ export default function ChatRoomList({
                       </p>
                     ) : (
                       <p className="text-sm text-gray-500 truncate">
-                        {chat.relatedPost?.title || (language === 'no' ? 'Ingen meldinger enda' : 'No messages yet')}
+                        {chat.relatedPost?.title || labels.messagePlaceholder}
                       </p>
                     )}
                     
@@ -265,17 +306,15 @@ export default function ChatRoomList({
                               ? (postType === 'TEACHER' ? 'STUDENT' : 'TEACHER')
                               : postType;
                             
-                            return otherUserRole === 'TEACHER' 
-                              ? (language === 'no' ? 'Lærer' : 'Teacher')
-                              : (language === 'no' ? 'Student' : 'Student');
+                          return otherUserRole === 'TEACHER' ? labels.teacher : labels.student;
                           })()}
                         </div>
                         <span className="text-xs text-gray-600 font-medium">
-                          {getSubjectLabel(chat.relatedPost.subject)}
+                          {getSubjectLabelByLanguage(language, chat.relatedPost.subject)}
                         </span>
                         {chat.relatedPost.hourlyRate && (
                           <span className="text-xs text-gray-500">
-                            • {formatters.currency(chat.relatedPost.hourlyRate)}/t
+                            • {currencyFormatter.format(chat.relatedPost.hourlyRate)}/t
                           </span>
                         )}
                       </div>
@@ -297,10 +336,10 @@ export default function ChatRoomList({
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <LoadingSpinner size="sm" />
-                      {language === 'no' ? 'Laster...' : 'Loading...'}
+                      {labels.loading}
                     </div>
                   ) : (
-                    t.roomList.loadMore
+                    labels.loadMore
                   )}
                 </button>
               </div>

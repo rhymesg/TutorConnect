@@ -4,12 +4,11 @@
 import { useRouter } from 'next/navigation';
 import { User } from 'lucide-react';
 import { ChatListItem } from '@/types/chat';
-import { Language, chat as chatTranslations } from '@/lib/translations';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface ChatHeaderProps {
   chat: ChatListItem;
-  language: Language;
   onCall?: () => void;
   onVideoCall?: () => void;
   onShowPostDetails?: () => void;
@@ -24,7 +23,6 @@ interface ChatHeaderProps {
 
 export default function ChatHeader({
   chat,
-  language,
   onCall,
   onVideoCall,
   onShowPostDetails,
@@ -37,7 +35,16 @@ export default function ChatHeader({
   onViewAppointments,
 }: ChatHeaderProps) {
   const router = useRouter();
-  const t = chatTranslations[language];
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+  const labels = {
+    viewListing: translate('Se annonse', 'View listing'),
+    viewAppointments: translate('Se timer', 'View appointments'),
+    scheduleLesson: translate('Avtale time', 'Schedule lesson'),
+    teacherBadge: translate('Lærer', 'Teacher'),
+    studentBadge: translate('Student', 'Student'),
+    badgeInfo: translate('Klikk for mer info', 'Click for more info'),
+  };
 
   // Get badges for the other user (like in ChatRoomList component)
   const getOtherUserBadges = () => {
@@ -98,7 +105,7 @@ export default function ChatHeader({
                     <button 
                       onClick={() => window.location.href = '/badges'}
                       className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${teacherBadge.color}`}
-                      title={`Lærer ${teacherBadge.level} - Klikk for mer info`}
+                      title={`${labels.teacherBadge} ${teacherBadge.level} - ${labels.badgeInfo}`}
                     >
                       <span className="mr-1">👨‍🏫</span>
                       <span>{teacherBadge.icon}</span>
@@ -108,7 +115,7 @@ export default function ChatHeader({
                     <button 
                       onClick={() => window.location.href = '/badges'}
                       className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium hover:scale-105 transition-transform cursor-pointer ${studentBadge.color}`}
-                      title={`Student ${studentBadge.level} - Klikk for mer info`}
+                      title={`${labels.studentBadge} ${studentBadge.level} - ${labels.badgeInfo}`}
                     >
                       <span className="mr-1">🎓</span>
                       <span>{studentBadge.icon}</span>
@@ -124,7 +131,7 @@ export default function ChatHeader({
                     onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
                     className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
                   >
-                    Se annonse
+                    {labels.viewListing}
                     <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
@@ -136,7 +143,7 @@ export default function ChatHeader({
                   data-testid="chat-header-view-appointments"
                   className="flex-shrink-0 inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
                 >
-                  Se timer
+                {labels.viewAppointments}
                   <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -145,9 +152,9 @@ export default function ChatHeader({
               <button
                 onClick={onScheduleAppointment}
                 className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors ml-auto"
-                title="Avtale undervisningstime"
+                title={labels.scheduleLesson}
               >
-                Avtale time
+                {labels.scheduleLesson}
               </button>
             </div>
           </div>
@@ -157,10 +164,10 @@ export default function ChatHeader({
         <div className="hidden md:flex items-center gap-4">
             {chat.relatedPost?.id && (
               <button
-                onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
-                className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
-              >
-                Se annonse
+                    onClick={() => router.push(`/posts/${chat.relatedPost.id}?from_chat=${chat.id}`)}
+                    className="flex-shrink-0 inline-flex items-center text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  >
+                    {labels.viewListing}
                 <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                 </svg>
@@ -172,7 +179,7 @@ export default function ChatHeader({
               data-testid="chat-header-view-appointments"
               className="flex-shrink-0 inline-flex items-center text-sm text-green-600 hover:text-green-800 font-medium transition-colors"
             >
-              Se timer
+              {labels.viewAppointments}
               <svg className="ml-1 h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
               </svg>
@@ -181,9 +188,9 @@ export default function ChatHeader({
           <button
             onClick={onScheduleAppointment}
             className="flex-shrink-0 inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-md hover:bg-blue-200 border border-blue-200 hover:border-blue-300 transition-colors ml-auto"
-            title="Avtale undervisningstime"
+            title={labels.scheduleLesson}
           >
-            Avtale time
+            {labels.scheduleLesson}
           </button>
         </div>
       </div>

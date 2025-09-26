@@ -1,35 +1,30 @@
 'use client';
 
-import { Language } from '@/lib/translations';
 import { Message } from '@/types/chat';
 import AppointmentCard from './AppointmentCard';
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 interface AppointmentMessageProps {
   message: Message;
   isOwn: boolean;
-  language: Language;
   onViewAppointment?: () => void;
 }
 
 export default function AppointmentMessage({
   message,
   isOwn,
-  language,
   onViewAppointment
 }: AppointmentMessageProps) {
-  const t = language === 'no' ? {
-    viewAppointment: 'Se avtale',
-    appointmentDeleted: 'Avtalen ble avslått og slettet'
-  } : {
-    viewAppointment: 'View appointment',
-    appointmentDeleted: 'Appointment was rejected and deleted'
-  };
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+  const viewAppointmentLabel = translate('Se avtale', 'View appointment');
+  const appointmentDeletedLabel = translate('Avtalen ble avslått og slettet', 'Appointment was rejected and deleted');
 
   // If appointment was deleted (appointmentId is null but message still exists)
   if ((message.appointmentId === null || !message.appointment) && message.type === 'APPOINTMENT_REQUEST') {
     return (
       <div className="p-3 bg-gray-100 border-l-4 border-gray-400 rounded-lg text-gray-600 text-sm italic">
-        {t.appointmentDeleted}
+        {appointmentDeletedLabel}
       </div>
     );
   }
@@ -65,7 +60,7 @@ export default function AppointmentMessage({
       onClick={onViewAppointment}
       className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
     >
-      {t.viewAppointment}
+      {viewAppointmentLabel}
     </button>
   ) : null;
 
@@ -73,7 +68,6 @@ export default function AppointmentMessage({
     <AppointmentCard
       appointmentData={appointmentData}
       status={status}
-      language={language}
       statusPosition="top"
       extraContent={extraContent}
     />

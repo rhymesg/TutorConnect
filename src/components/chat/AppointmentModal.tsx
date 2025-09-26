@@ -2,17 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Calendar, Clock } from 'lucide-react';
-import { Language } from '@/lib/translations';
-
-interface AppointmentModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSubmit: (appointment: AppointmentData) => void;
-  language: Language;
-  chatId: string;
-  error?: string | null;
-  isSubmitting?: boolean;
-}
+import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 
 export interface AppointmentData {
   date: string;
@@ -21,61 +11,88 @@ export interface AppointmentData {
   location: string;
 }
 
+interface AppointmentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (appointment: AppointmentData) => void;
+  chatId: string;
+  error?: string | null;
+  isSubmitting?: boolean;
+}
+
 export default function AppointmentModal({
   isOpen,
   onClose,
   onSubmit,
-  language,
   chatId,
   error,
-  isSubmitting = false
+  isSubmitting = false,
 }: AppointmentModalProps) {
-  const t = language === 'no' ? {
-    title: 'Avtale time',
-    date: 'Dato',
-    startTime: 'Fra',
-    endTime: 'Til',
-    location: 'Sted',
-    submit: 'Send forespørsel',
-    cancel: 'Avbryt'
-  } : {
-    title: 'Schedule Time',
-    date: 'Date',
-    startTime: 'From',
-    endTime: 'To',
-    location: 'Location',
-    submit: 'Send Request',
-    cancel: 'Cancel'
+  const { language } = useLanguage();
+  const translate = useLanguageText();
+
+  const labels = {
+    title: translate('Avtale time', 'Schedule Time'),
+    date: translate('Dato', 'Date'),
+    start: translate('Fra', 'From'),
+    end: translate('Til', 'To'),
+    location: translate('Sted', 'Location'),
+    optional: translate('Valgfritt', 'Optional'),
+    submit: translate('Send forespørsel', 'Send Request'),
+    cancel: translate('Avbryt', 'Cancel'),
+    checking: translate('Sjekker dato...', 'Checking date...'),
+    available: translate('Datoen er tilgjengelig.', 'Date is available.'),
+    existing: translate('Det finnes allerede en avtale for denne datoen.', 'An appointment already exists on this date.'),
+    sending: translate('Sender...', 'Sending...'),
+    checkingShort: translate('Sjekker...', 'Checking...'),
+    locationPlaceholder: translate('F.eks. Deichman bibliotek, Adresse', 'E.g. Deichman library, Address'),
+    errors: {
+      startPast: translate('Starttid må være etter nåværende tid', 'Start time must be after current time'),
+      endBefore: translate('Sluttid må være etter starttid', 'End time must be after start time'),
+    },
   };
 
   const [formData, setFormData] = useState<AppointmentData>({
     date: '',
     startTime: '',
     endTime: '',
-    location: ''
+    location: '',
   });
-
   const [hasExistingAppointment, setHasExistingAppointment] = useState(false);
   const [isCheckingDate, setIsCheckingDate] = useState(false);
   const [timeError, setTimeError] = useState<string | null>(null);
 
-  // Check for existing appointments when date changes
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    setFormData({ date: '', startTime: '', endTime: '', location: '' });
+    setHasExistingAppointment(false);
+    setIsCheckingDate(false);
+    setTimeError(null);
+  }, [isOpen]);
+
   useEffect(() => {
     const checkAppointment = async () => {
-      if (!formData.date || !chatId) return;
-      
+      if (!formData.date || !chatId) {
+        return;
+      }
+
       setIsCheckingDate(true);
       try {
         const response = await fetch(`/api/chat/${chatId}/appointments/check?date=${formData.date}`, {
           headers: {
-            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+            Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
           },
         });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setHasExistingAppointment(data.data.hasAppointment);
+
+        if (!response.ok) {
+          return;
         }
+
+        const data = await response.json();
+        setHasExistingAppointment(Boolean(data?.data?.hasAppointment));
       } catch (error) {
         console.error('Failed to check appointment:', error);
       } finally {
@@ -86,57 +103,36 @@ export default function AppointmentModal({
     checkAppointment();
   }, [formData.date, chatId]);
 
-  // Reset form when modal opens/closes
   useEffect(() => {
-    if (isOpen) {
-      setFormData({
-        date: '',
-        startTime: '',
-        endTime: '',
-        location: ''
-      });
-      setHasExistingAppointment(false);
-      setIsCheckingDate(false);
-      setTimeError(null);
-    }
-  }, [isOpen]);
+    let validationError: string | null = null;
 
-  // Validate times when they change
-  useEffect(() => {
-    let error = null;
-    
     if (formData.startTime || formData.endTime) {
       const now = new Date();
       const today = now.toISOString().split('T')[0];
-      const currentTime = now.toTimeString().slice(0, 5); // HH:MM format
-      
-      // Check if start time is in the past (only for today)
+      const currentTime = now.toTimeString().slice(0, 5);
+
       if (formData.date === today && formData.startTime && formData.startTime <= currentTime) {
-        error = language === 'no' ? 'Starttid må være etter nåværende tid' : 'Start time must be after current time';
-      }
-      // Check if end time is after start time
-      else if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
-        error = language === 'no' ? 'Sluttid må være etter starttid' : 'End time must be after start time';
+        validationError = labels.errors.startPast;
+      } else if (formData.startTime && formData.endTime && formData.endTime <= formData.startTime) {
+        validationError = labels.errors.endBefore;
       }
     }
-    
-    setTimeError(error);
-  }, [formData.startTime, formData.endTime, formData.date, language]);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+    setTimeError(validationError);
+  }, [formData.startTime, formData.endTime, formData.date, labels.errors.endBefore, labels.errors.startPast]);
+
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+
     if (!formData.date || !formData.startTime || !formData.endTime || !formData.location) {
       return;
     }
-    
-    // Check validation errors
+
     if (timeError || hasExistingAppointment) {
       return;
     }
-    
+
     onSubmit(formData);
-    // Don't close here - let the parent handle closing on success
   };
 
   if (!isOpen) {
@@ -144,11 +140,10 @@ export default function AppointmentModal({
   }
 
   return (
-    <div 
-      className="fixed inset-0 bg-black bg-opacity-50 z-[9999] flex items-center justify-center p-4"
-      style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
+    <div
+      className="fixed inset-0 bg-black/50 z-[9999] flex items-center justify-center p-4"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
           onClose();
         }
       }}
@@ -156,99 +151,76 @@ export default function AppointmentModal({
       <div className="bg-white rounded-lg max-w-sm w-full">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">{t.title}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-500 hover:text-gray-700"
-            >
+            <h2 className="text-xl font-semibold">{labels.title}</h2>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <X className="h-5 w-5" />
             </button>
           </div>
-          
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                <Calendar className="inline h-4 w-4 mr-1" />
-                {t.date}
+              <label className="block text-sm font-medium text-gray-700">
+                {labels.date}
               </label>
               <input
                 type="date"
                 value={formData.date}
-                onChange={(e) => {
-                  setFormData({ ...formData, date: e.target.value });
-                  setHasExistingAppointment(false); // Reset check
-                }}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(event) => {
+                  setFormData({ ...formData, date: event.target.value });
+                  setHasExistingAppointment(false);
+                }}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
-              
-              {/* Show appointment check result */}
               {formData.date && (
-                <div className="mt-2">
+                <div className="mt-2 text-sm">
                   {isCheckingDate ? (
-                    <div className="text-sm text-gray-500">Sjekker dato...</div>
+                    <span className="text-gray-500">{labels.checking}</span>
                   ) : hasExistingAppointment ? (
-                    <div className="text-sm text-red-600">
-                      Det finnes allerede en avtale for denne datoen.
-                    </div>
-                  ) : formData.date ? (
-                    <div className="text-sm text-green-600">
-                      Datoen er tilgjengelig.
-                    </div>
-                  ) : null}
+                    <span className="text-red-600">{labels.existing}</span>
+                  ) : (
+                    <span className="text-green-600">{labels.available}</span>
+                  )}
                 </div>
               )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Clock className="inline h-4 w-4 mr-1" />
-                  {t.startTime}
-                </label>
+                <label className="block text-sm font-medium text-gray-700">{labels.start}</label>
                 <input
                   type="time"
                   value={formData.startTime}
-                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  onChange={(event) => setFormData({ ...formData, startTime: event.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  <Clock className="inline h-4 w-4 mr-1" />
-                  {t.endTime}
-                </label>
+                <label className="block text-sm font-medium text-gray-700">{labels.end}</label>
                 <input
                   type="time"
                   value={formData.endTime}
-                  onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  onChange={(event) => setFormData({ ...formData, endTime: event.target.value })}
+                  className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
             </div>
 
-            {/* Show time validation error */}
-            {timeError && (
-              <div className="text-sm text-red-600 mt-1">
-                {timeError}
-              </div>
-            )}
+            {timeError && <p className="text-sm text-red-600">{timeError}</p>}
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                {t.location}
+              <label className="block text-sm font-medium text-gray-700">
+                {labels.location} <span className="text-gray-400 text-xs">({labels.optional})</span>
               </label>
               <input
                 type="text"
                 value={formData.location}
-                onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder={language === 'no' ? 'F.eks. Deichman bibliotek, Adresse' : 'E.g. Deichman library, Address'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={(event) => setFormData({ ...formData, location: event.target.value })}
+                placeholder={labels.locationPlaceholder}
+                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 required
               />
             </div>
@@ -265,11 +237,11 @@ export default function AppointmentModal({
                 onClick={onClose}
                 className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
               >
-                {t.cancel}
+                {labels.cancel}
               </button>
               <button
                 type="submit"
-                disabled={hasExistingAppointment || isCheckingDate || !!timeError || isSubmitting}
+                disabled={hasExistingAppointment || isCheckingDate || Boolean(timeError) || isSubmitting}
                 className={`flex-1 px-4 py-2 rounded-lg transition-colors flex items-center justify-center gap-2 ${
                   hasExistingAppointment || isCheckingDate || timeError || isSubmitting
                     ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
@@ -279,12 +251,12 @@ export default function AppointmentModal({
                 {isSubmitting ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    {language === 'no' ? 'Sender...' : 'Sending...'}
+                    {labels.sending}
                   </>
                 ) : isCheckingDate ? (
-                  'Sjekker...'
+                  labels.checkingShort
                 ) : (
-                  t.submit
+                  labels.submit
                 )}
               </button>
             </div>
