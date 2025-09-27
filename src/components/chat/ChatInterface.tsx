@@ -467,7 +467,7 @@ export default function ChatInterface({
   };
 
   return (
-    <div className={`flex flex-1 bg-gray-50 ${className} h-full min-h-0 relative z-0`}>
+    <div className={`flex flex-1 bg-gray-50 ${className} h-full min-h-0 relative z-0 md:pt-0`}>
       {/* Chat List Sidebar */}
       <div className={`${
         isMobile 
@@ -507,7 +507,7 @@ export default function ChatInterface({
             <ChatLoadingSkeleton />
           ) : chat ? (
             <div className="grid h-full min-h-0 grid-rows-[auto,1fr,auto]">
-              <div className="z-20 bg-white border-b border-gray-200">
+              <div className="z-20 bg-white border-b border-gray-200 md:sticky md:top-0">
                 {(chatError || messageError || appointmentResponseError) && (
                   <div className="px-4 py-2 text-sm flex items-center justify-center gap-2 bg-red-50 text-red-700 border-b border-red-200">
                     <span>{chatError || messageError || appointmentResponseError}</span>
