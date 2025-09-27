@@ -208,7 +208,7 @@ export default function MessageComposer({
   const canSend = (message.trim() || attachments.length > 0) && !isSending && !disabled;
 
   return (
-    <div className="border-t border-gray-200 p-4 pb-8 md:pb-4 bg-white">
+    <div className="border-t border-gray-200 bg-white px-4 py-3 md:py-3">
       {/* Attachments Preview */}
       {attachments.length > 0 && (
         <div className="mb-3">

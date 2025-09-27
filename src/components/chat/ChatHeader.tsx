@@ -38,8 +38,8 @@ export default function ChatHeader({
   const { language } = useLanguage();
   const translate = useLanguageText();
   const labels = {
-    viewListing: translate('Se annonse', 'View listing'),
-    viewAppointments: translate('Se timer', 'View appointments'),
+    viewListing: translate('Se annonse', 'View ads'),
+    viewAppointments: translate('Se timer', 'Appointments'),
     scheduleLesson: translate('Avtale time', 'Schedule lesson'),
     teacherBadge: translate('Lærer', 'Teacher'),
     studentBadge: translate('Student', 'Student'),
