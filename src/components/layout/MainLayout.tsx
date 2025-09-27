@@ -56,7 +56,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
 
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col">
+    <div className={`${isChatPage ? 'h-screen min-h-screen' : 'min-h-screen'} bg-neutral-50 flex flex-col`}>
       {/* Skip to main content link for accessibility */}
       <a
         href="#main-content"
@@ -89,7 +89,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <main 
           id="main-content"
           className={`
-            flex-1 min-h-0 ${isChatPage ? 'overflow-hidden' : 'overflow-y-auto'}
+            flex-1 min-h-0 ${isChatPage ? 'flex flex-col overflow-hidden' : 'overflow-y-auto'}
             ${showDesktopSidebar ? 'lg:ml-64' : ''}
             ${showMobileNav ? 'pb-15 md:pb-0' : ''}
             pb-[env(safe-area-inset-bottom)]
@@ -100,7 +100,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
           role="main"
           aria-label="Hovedinnhold"
         >
-          <div className={isChatPage ? 'flex h-full flex-col' : 'min-h-full'}>
+          <div className={isChatPage ? 'flex h-full min-h-0 flex-col' : 'min-h-full'}>
             {children}
             {/* Footer - show on all public pages */}
             {isPublicPage && <Footer />}

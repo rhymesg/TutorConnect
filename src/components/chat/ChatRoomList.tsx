@@ -164,7 +164,7 @@ export default function ChatRoomList({
   }
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full min-h-0 overflow-hidden bg-white">
       {/* Header */}
       <div className="px-4 pt-4 pb-2 md:pb-4 border-b border-gray-200">
         <h2 className="text-lg font-semibold text-gray-900 mb-3">
@@ -186,7 +186,7 @@ export default function ChatRoomList({
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {isLoading && chats.length === 0 ? (
           <div className="flex items-center justify-center p-8">
             <LoadingSpinner />
