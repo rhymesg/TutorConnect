@@ -8,6 +8,8 @@ import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import { useLanguageText } from '@/contexts/LanguageContext';
 import { User } from '@prisma/client';
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 
 interface PublicProfileData extends User {
   lastActive: Date | null;
@@ -56,6 +58,7 @@ export function PublicProfileContainer({ userId }: Props) {
   const t = useLanguageText();
   const { execute: fetchProfile, data: profileData, isLoading: loading, error } = useApiCall<PublicProfileData>();
   const [initialLoad, setInitialLoad] = useState(true);
+  const [isMobileAd, setIsMobileAd] = useState(false);
 
   // Check if this is the current user's own profile
   const isOwnProfile = currentUser?.id === userId;
@@ -73,6 +76,19 @@ export function PublicProfileContainer({ userId }: Props) {
       });
     }
   }, [userId, fetchProfile]);
+
+  useEffect(() => {
+    const updateAdBreakpoint = () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      setIsMobileAd(window.innerWidth < 768);
+    };
+
+    updateAdBreakpoint();
+    window.addEventListener('resize', updateAdBreakpoint);
+    return () => window.removeEventListener('resize', updateAdBreakpoint);
+  }, []);
 
   console.log('Debug - loading:', loading, 'error:', error, 'profileData:', profileData); // Debug log
 
@@ -145,12 +161,23 @@ export function PublicProfileContainer({ userId }: Props) {
       
       {/* Profile content */}
       <div className="flex items-center justify-center p-4">
-        <div className="w-full max-w-4xl">
+        <div className="w-full max-w-4xl space-y-6">
           <div className="bg-white rounded-lg shadow-sm">
             <InlineProfileView 
               profile={profileData}
               onProfileUpdate={() => {}} // No update functionality for public view
               isPublicView={true}
+            />
+          </div>
+
+          <div className="flex justify-center overflow-x-auto pb-6">
+            <AdsterraBanner
+              placement={
+                isMobileAd
+                  ? adPlacementIds.horizontalMobile320x50
+                  : adPlacementIds.horizontal728x90
+              }
+              className="mx-auto"
             />
           </div>
         </div>

@@ -146,16 +146,12 @@ export function ProfileContainer() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white rounded-lg shadow-sm">
-          <InlineProfileView 
-            profile={profileData} 
-            onProfileUpdate={setProfileData}
-            isPublicView={false}
-          />
-        </div>
-      </div>
+    <div className="bg-white rounded-lg shadow-sm">
+      <InlineProfileView 
+        profile={profileData} 
+        onProfileUpdate={setProfileData}
+        isPublicView={false}
+      />
     </div>
   );
 }
