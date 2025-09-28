@@ -24,6 +24,7 @@ export default function MyPostsPageClient() {
   const [posts, setPosts] = useState<PostWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isMobileAd, setIsMobileAd] = useState(false);
 
   const dateFormatter = useMemo(
     () =>
@@ -60,6 +61,16 @@ export default function MyPostsPageClient() {
 
     fetchMyPosts();
   }, [user?.id]);
+
+  useEffect(() => {
+    const updateAdBreakpoint = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobileAd(window.innerWidth < 768);
+    };
+    updateAdBreakpoint();
+    window.addEventListener('resize', updateAdBreakpoint);
+    return () => window.removeEventListener('resize', updateAdBreakpoint);
+  }, []);
 
   if (loading) {
     return <PostListLoading />;
@@ -235,9 +246,9 @@ export default function MyPostsPageClient() {
 
       <div className="flex justify-center overflow-x-auto pb-6">
         <AdsterraBanner
-          placementKey="f518bfdff1cb8fbf49eb32474cb013ca"
-          width={728}
-          height={90}
+          placementKey={isMobileAd ? '76d0f267be29a5359c9156029262c853' : 'f518bfdff1cb8fbf49eb32474cb013ca'}
+          width={isMobileAd ? 320 : 728}
+          height={isMobileAd ? 50 : 90}
           className="mx-auto"
         />
       </div>

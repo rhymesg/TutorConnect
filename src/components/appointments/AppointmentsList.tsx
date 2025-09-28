@@ -60,6 +60,7 @@ export default function AppointmentsList({
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [appointmentError, setAppointmentError] = useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const [isMobileAd, setIsMobileAd] = useState(false);
 
   const acceptAppointmentError = t('Kunne ikke godta avtalen', 'Could not accept the appointment');
   const rejectAppointmentError = t('Kunne ikke avslå avtalen', 'Could not decline the appointment');
@@ -111,6 +112,16 @@ export default function AppointmentsList({
 
   useEffect(() => {
     setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    const updateAdBreakpoint = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobileAd(window.innerWidth < 768);
+    };
+    updateAdBreakpoint();
+    window.addEventListener('resize', updateAdBreakpoint);
+    return () => window.removeEventListener('resize', updateAdBreakpoint);
   }, []);
 
   const fetchAppointments = async () => {
@@ -581,14 +592,14 @@ export default function AppointmentsList({
           </div>
         </div>
 
-      <div className="flex justify-center overflow-x-auto pb-6">
-        <AdsterraBanner
-          placementKey="f518bfdff1cb8fbf49eb32474cb013ca"
-          width={728}
-          height={90}
-          className="mx-auto"
-        />
-      </div>
+        <div className="flex justify-center overflow-x-auto pb-6">
+          <AdsterraBanner
+            placementKey={isMobileAd ? '76d0f267be29a5359c9156029262c853' : 'f518bfdff1cb8fbf49eb32474cb013ca'}
+            width={isMobileAd ? 320 : 728}
+            height={isMobileAd ? 50 : 90}
+            className="mx-auto"
+          />
+        </div>
       </div>
 
       {showAppointmentModal && selectedAppointment && (
