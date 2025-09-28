@@ -24,6 +24,8 @@ import { getRegionLabel } from '@/constants/regions';
 import { getTeacherBadge, getStudentBadge } from '@/lib/badges';
 import { useAuth } from '@/contexts/AuthContext';
 import { getPostStatusLabelByLanguage, getPostStatusColor } from '@/constants/postStatus';
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 
 interface PostDetailClientProps {
   post: PostWithDetails;
@@ -38,6 +40,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [backUrl, setBackUrl] = useState('/posts');
+  const [isMobileAd, setIsMobileAd] = useState(false);
 
   const isTutorPost = post.type === 'TEACHER';
   const subjectName = getSubjectLabelByLanguage(language, post.subject);
@@ -49,6 +52,19 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
       setBackUrl(`/chat?id=${chatId}`);
     }
   }, [searchParams]);
+
+  useEffect(() => {
+    const updateAdBreakpoint = () => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+      setIsMobileAd(window.innerWidth < 768);
+    };
+
+    updateAdBreakpoint();
+    window.addEventListener('resize', updateAdBreakpoint);
+    return () => window.removeEventListener('resize', updateAdBreakpoint);
+  }, []);
 
   const formatDate = (value: string | Date) => {
     const date = value instanceof Date ? value : new Date(value);
@@ -262,10 +278,10 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
         </div>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-5 gap-8">
+      <div className="container mx-auto px-4 pt-8 pb-4">
+        <div className="grid gap-8 lg:grid-cols-6">
           {/* Main Content */}
-          <div className="lg:col-span-3 space-y-6">
+          <div className="space-y-6 lg:col-span-3">
             {/* Title and Subject */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <div className="flex justify-between items-start mb-4">
@@ -275,9 +291,9 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
                 {isOwner && (
                   <Link
                     href={`/posts/${post.id}/edit`}
-                    className="inline-flex items-center px-4 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
+                    className="inline-flex items-center px-3 py-2 border border-neutral-300 rounded-md shadow-sm text-sm font-medium text-neutral-700 bg-white hover:bg-neutral-50 transition-colors"
                   >
-                    <PencilIcon className="h-4 w-4 mr-2" />
+                    <PencilIcon className="h-4 w-4 mr-1.5" />
                     {editLabel}
                   </Link>
                 )}
@@ -367,7 +383,7 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
           </div>
 
           {/* Sidebar */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="space-y-6 lg:col-span-2">
             {/* Pricing */}
             <div className="bg-white rounded-xl shadow-sm p-6">
               <h3 className="text-lg font-semibold text-neutral-900 mb-4 flex items-center">
@@ -497,7 +513,27 @@ export default function PostDetailClient({ post }: PostDetailClientProps) {
               </div>
             </div>
           </div>
+
+          {/* Advertisement Column */}
+          <div className="hidden lg:flex lg:col-span-1 lg:justify-center">
+            <AdsterraBanner
+              placement="vertical160x600"
+              className="w-[160px]"
+              style={{ minHeight: 600 }}
+            />
+          </div>
         </div>
+      </div>
+
+      <div className="mt-2 flex justify-center overflow-x-auto pb-2">
+        <AdsterraBanner
+          placement={
+            isMobileAd
+              ? adPlacementIds.horizontalMobile320x50
+              : adPlacementIds.horizontal728x90
+          }
+          className="mx-auto"
+        />
       </div>
     </div>
   );
