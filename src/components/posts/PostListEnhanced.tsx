@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Grid, List, ArrowUpDown, Loader2, AlertCircle, Eye, EyeOff, RefreshCw, WifiOff } from 'lucide-react';
 
 import PostCard, { PostCardSkeleton } from './PostCard';
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
 import SearchAndFiltersEnhanced from './SearchAndFiltersEnhanced';
 import ActiveFiltersEnhanced from './ActiveFiltersEnhanced';
 import { PostWithDetails, PostFilters, PaginatedPosts } from '@/types/database';
@@ -541,8 +542,8 @@ export default function PostListEnhanced({
             <div className={`
               ${viewMode === 'grid' 
                 ? `grid gap-4 ${compactMode 
-                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5' 
-                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                  : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
                 }`
                 : 'space-y-4'
               }
@@ -577,10 +578,20 @@ export default function PostListEnhanced({
 
             {/* End of results indicator */}
             {!pagination?.hasNext && (posts?.length || 0) > 0 && !isLoading && (
-              <div className="text-center py-8 border-t border-neutral-200 mt-8">
-                <p className="text-neutral-500">
-                  {labels.endOfResults.replace('{count}', String(posts?.length || 0))}
-                </p>
+              <div className="mt-8">
+                <div className="flex justify-center overflow-x-auto pb-6">
+                  <AdsterraBanner
+                    placementKey="f518bfdff1cb8fbf49eb32474cb013ca"
+                    width={728}
+                    height={90}
+                    className="mx-auto"
+                  />
+                </div>
+                <div className="text-center py-8 border-t border-neutral-200">
+                  <p className="text-neutral-500">
+                    {labels.endOfResults.replace('{count}', String(posts?.length || 0))}
+                  </p>
+                </div>
               </div>
             )}
           </>
@@ -591,8 +602,8 @@ export default function PostListEnhanced({
           <div className={`
             ${viewMode === 'grid' 
               ? `grid gap-4 ${compactMode 
-                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5' 
-                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4' 
+                : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3'
               }`
               : 'space-y-4'
             }
