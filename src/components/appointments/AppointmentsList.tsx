@@ -11,6 +11,7 @@ import AppointmentResponseModal from '@/components/chat/AppointmentResponseModal
 import { Message } from '@/types/chat';
 import { createOsloFormatter } from '@/lib/datetime';
 import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 
 interface Appointment {
   id: string;
@@ -594,9 +595,11 @@ export default function AppointmentsList({
 
         <div className="flex justify-center overflow-x-auto pb-6">
           <AdsterraBanner
-            placementKey={isMobileAd ? '76d0f267be29a5359c9156029262c853' : 'f518bfdff1cb8fbf49eb32474cb013ca'}
-            width={isMobileAd ? 320 : 728}
-            height={isMobileAd ? 50 : 90}
+            placement={
+              isMobileAd
+                ? adPlacementIds.horizontalMobile320x50
+                : adPlacementIds.horizontal728x90
+            }
             className="mx-auto"
           />
         </div>

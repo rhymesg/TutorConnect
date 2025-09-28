@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { useLanguage, useLanguageText } from '@/contexts/LanguageContext';
 import AppointmentsList from '@/components/appointments/AppointmentsList';
 import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 
 export default function ChatAppointmentsPage() {
   const params = useParams();
@@ -27,11 +28,7 @@ export default function ChatAppointmentsPage() {
             />
           </div>
           <div className="hidden xl:flex xl:justify-start">
-            <AdsterraBanner
-              placementKey="a5659616e7810115e1f11798ce145254"
-              width={160}
-              height={600}
-            />
+            <AdsterraBanner placement={adPlacementIds.vertical160x600} />
           </div>
         </div>
       </div>

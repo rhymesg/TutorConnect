@@ -12,6 +12,7 @@ import ChatHeader from './ChatHeader';
 import MessageList from './MessageList';
 import MessageComposer from './MessageComposer';
 import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 import AppointmentModal, { AppointmentData } from './AppointmentModal';
 import AppointmentResponseModal from './AppointmentResponseModal';
 import ChatLoadingSkeleton from './ChatLoadingSkeleton';
@@ -565,9 +566,11 @@ export default function ChatInterface({
               <div className="px-4 pb-1">
                 <div className="flex justify-center overflow-x-auto">
                   <AdsterraBanner
-                    placementKey={isMobile ? '76d0f267be29a5359c9156029262c853' : 'f518bfdff1cb8fbf49eb32474cb013ca'}
-                    width={isMobile ? 320 : 728}
-                    height={isMobile ? 50 : 90}
+                    placement={
+                      isMobile
+                        ? adPlacementIds.horizontalMobile320x50
+                        : adPlacementIds.horizontal728x90
+                    }
                     className="mx-auto"
                   />
                 </div>

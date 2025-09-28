@@ -202,9 +202,7 @@ export default async function TeachersPage({ searchParams }: TeachersPageProps) 
         }}
         rightSlot={
           <AdsterraBanner
-            placementKey="a5659616e7810115e1f11798ce145254"
-            width={160}
-            height={600}
+            placement="vertical160x600"
             className="w-full max-w-[160px] xl:w-[160px]"
           />
         }

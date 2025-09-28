@@ -5,6 +5,7 @@ import { useActivityTracking } from '@/hooks/useActivityTracking';
 import AppointmentsList from '@/components/appointments/AppointmentsList';
 import AuthGuard from '@/components/auth/AuthGuard';
 import AdsterraBanner from '@/components/ads/AdsterraBanner';
+import { adPlacementIds } from '@/constants/adPlacements';
 
 export default function AppointmentsPage() {
   useActivityTracking();
@@ -22,11 +23,7 @@ export default function AppointmentsPage() {
             </div>
 
             <div className="hidden xl:flex xl:justify-start">
-              <AdsterraBanner
-                placementKey="a5659616e7810115e1f11798ce145254"
-                width={160}
-                height={600}
-              />
+              <AdsterraBanner placement={adPlacementIds.vertical160x600} />
             </div>
           </div>
         </div>
