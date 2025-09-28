@@ -10,6 +10,7 @@ import LoadingSpinner from '@/components/ui/LoadingSpinner';
 import AppointmentResponseModal from '@/components/chat/AppointmentResponseModal';
 import { Message } from '@/types/chat';
 import { createOsloFormatter } from '@/lib/datetime';
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
 
 interface Appointment {
   id: string;
@@ -437,19 +438,110 @@ export default function AppointmentsList({
 
   if (!isClient || isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-[300px] items-center justify-center bg-neutral-50">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
+  let content: React.ReactNode;
+
+  if (error) {
+    content = (
+      <div className="text-center">
+        <div className="mb-4 text-red-600">{error}</div>
+        <button
+          onClick={fetchAppointments}
+          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+        >
+          {t('Prøv igjen', 'Retry')}
+        </button>
+      </div>
+    );
+  } else if (filteredAndSortedAppointments.length === 0) {
+    content = (
+      <div className="text-center py-8">
+        <Calendar className="mx-auto mb-4 h-16 w-16 text-gray-300" />
+        <h3 className="text-lg font-medium text-gray-900">
+          {translations.noAppointments}
+        </h3>
+        <p className="mt-2 text-sm text-gray-500">
+          {translations.noAppointmentsDesc}
+        </p>
+      </div>
+    );
+  } else {
+    content = (
+      <div className="space-y-4">
+        {filteredAndSortedAppointments.map(appointment => (
+          <div
+            key={appointment.id}
+            onClick={() => handleAppointmentClick(appointment)}
+            className="cursor-pointer rounded-lg border border-gray-200 bg-white p-6 transition-shadow hover:shadow-md"
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <div className="mb-2 flex items-center gap-2">
+                  <Calendar className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium text-gray-900">
+                    {formatDateTime(appointment.dateTime)}
+                  </span>
+                  <Clock className="ml-2 h-4 w-4 text-gray-400" />
+                  <span className="text-sm text-gray-600">
+                    {appointment.duration} {translations.duration}
+                  </span>
+                </div>
+
+                {appointment.otherUser && (
+                  <div className="mb-2 flex items-center gap-2">
+                    <User className="h-4 w-4 text-gray-400" />
+                    <span className="text-gray-700">
+                      {translations.with} {appointment.otherUser.name}
+                    </span>
+                  </div>
+                )}
+
+                {appointment.relatedPost && (
+                  <div className="mb-2 text-sm text-gray-600">
+                    <span className="font-medium">{translations.subject}:</span> {getSubjectLabel(appointment.relatedPost.subject)}
+                  </div>
+                )}
+
+                {appointment.location && (
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-600">{appointment.location}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex min-h-[80px] flex-col justify-between">
+                <span
+                  className={`self-end rounded-full border px-3 py-1 text-xs font-medium ${statusColors[appointment.status]}`}
+                >
+                  {translations[appointment.status.toLowerCase() as keyof typeof translations]}
+                </span>
+                <button
+                  onClick={(e) => handleGoToChat(e, appointment)}
+                  className="mt-4 self-end flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700"
+                >
+                  <MessageCircle className="h-4 w-4" />
+                  {translations.goToChat}
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-8">
+    <>
+      <div className="space-y-8">
+        <div className="bg-white border-b border-neutral-200 px-4 py-12 sm:py-16 text-center">
           {showBackButton && (
-            <div className="flex items-center gap-4 mb-4">
+            <div className="mb-4 flex items-center gap-2">
               <button
                 onClick={handleBackClick}
                 className="flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium transition-colors"
@@ -459,140 +551,64 @@ export default function AppointmentsList({
               </button>
             </div>
           )}
-          
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+
+          <h1 className="text-3xl font-bold tracking-tight text-neutral-900 sm:text-4xl">
             {translations.title}
           </h1>
-          
-          {/* Filter tabs */}
-          <div className="flex flex-wrap gap-2">
+
+          <p className="mx-auto mt-4 max-w-3xl text-lg text-neutral-600">
+            {t('Administrer alle dine avtaler og følg opp statusen for hver time.', 'Manage and follow up on all your tutoring appointments.')}
+          </p>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-2">
             {availableFilters.map(status => (
               <button
                 key={status}
                 onClick={() => setFilter(status)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                   filter === status
                     ? 'bg-blue-600 text-white'
-                    : 'bg-white text-gray-600 hover:text-gray-900 border border-gray-200'
+                    : 'border border-gray-200 bg-white text-gray-600 hover:text-gray-900'
                 }`}
               >
                 {translations[status.toLowerCase() as keyof typeof translations] || status}
               </button>
             ))}
           </div>
+
+          <div className="mt-6">
+            {content}
+          </div>
         </div>
 
-        {error ? (
-          <div className="text-center py-8">
-            <div className="text-red-600 mb-4">{error}</div>
-            <button 
-              onClick={fetchAppointments}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              {t('Prøv igjen', 'Retry')}
-            </button>
-          </div>
-        ) : filteredAndSortedAppointments.length === 0 ? (
-          <div className="text-center py-12">
-            <Calendar className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              {translations.noAppointments}
-            </h3>
-            <p className="text-gray-500">
-              {translations.noAppointmentsDesc}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filteredAndSortedAppointments.map(appointment => (
-              <div
-                key={appointment.id}
-                onClick={() => handleAppointmentClick(appointment)}
-                className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    {/* Date and time */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <Calendar className="h-5 w-5 text-blue-600" />
-                      <span className="font-medium text-gray-900">
-                        {formatDateTime(appointment.dateTime)}
-                      </span>
-                      <Clock className="h-4 w-4 text-gray-400 ml-2" />
-                      <span className="text-sm text-gray-600">
-                        {appointment.duration} {translations.duration}
-                      </span>
-                    </div>
-
-                    {/* Other user */}
-                    {appointment.otherUser && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <User className="h-4 w-4 text-gray-400" />
-                        <span className="text-gray-700">
-                          {translations.with} {appointment.otherUser.name}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Subject */}
-                    {appointment.relatedPost && (
-                      <div className="text-sm text-gray-600 mb-2">
-                        <span className="font-medium">{translations.subject}:</span> {getSubjectLabel(appointment.relatedPost.subject)}
-                      </div>
-                    )}
-
-                    {/* Location */}
-                    {appointment.location && (
-                      <div className="flex items-center gap-2">
-                        <MapPin className="h-4 w-4 text-gray-400" />
-                        <span className="text-sm text-gray-600">
-                          {appointment.location}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex flex-col justify-between h-full min-h-[80px]">
-                    {/* Status */}
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium border ${statusColors[appointment.status]} self-end`}>
-                      {translations[appointment.status.toLowerCase() as keyof typeof translations]}
-                    </span>
-
-                    {/* Go to chat button - pushed to bottom */}
-                    <button 
-                      onClick={(e) => handleGoToChat(e, appointment)}
-                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700 text-sm font-medium self-end mt-4"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                      {translations.goToChat}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Appointment Response Modal */}
-        {showAppointmentModal && selectedAppointment && (
-          <AppointmentResponseModal
-            isOpen={showAppointmentModal}
-            onClose={() => {
-              setShowAppointmentModal(false);
-              setSelectedAppointment(null);
-              setAppointmentError(null);
-            }}
-            message={convertAppointmentToMessage(selectedAppointment)}
-            language={language}
-            onAccept={handleAcceptAppointment}
-            onReject={handleRejectAppointment}
-            onCompleted={handleCompletedAppointment}
-            onNotCompleted={handleNotCompletedAppointment}
-            onDelete={handleDeleteAppointment}
-            error={appointmentError}
-          />
-        )}
+      <div className="flex justify-center overflow-x-auto pb-6">
+        <AdsterraBanner
+          placementKey="f518bfdff1cb8fbf49eb32474cb013ca"
+          width={728}
+          height={90}
+          className="mx-auto"
+        />
       </div>
-    </div>
+      </div>
+
+      {showAppointmentModal && selectedAppointment && (
+        <AppointmentResponseModal
+          isOpen={showAppointmentModal}
+          onClose={() => {
+            setShowAppointmentModal(false);
+            setSelectedAppointment(null);
+            setAppointmentError(null);
+          }}
+          message={convertAppointmentToMessage(selectedAppointment)}
+          language={language}
+          onAccept={handleAcceptAppointment}
+          onReject={handleRejectAppointment}
+          onCompleted={handleCompletedAppointment}
+          onNotCompleted={handleNotCompletedAppointment}
+          onDelete={handleDeleteAppointment}
+          error={appointmentError}
+        />
+      )}
+    </>
   );
 }
