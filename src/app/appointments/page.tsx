@@ -21,12 +21,11 @@ export default function AppointmentsPage() {
               <AppointmentsList title={title} />
             </div>
 
-            <div className="w-full xl:w-auto flex justify-center xl:justify-start">
+            <div className="hidden xl:flex xl:justify-start">
               <AdsterraBanner
                 placementKey="a5659616e7810115e1f11798ce145254"
                 width={160}
                 height={600}
-                className="w-full max-w-[160px] xl:w-[160px]"
               />
             </div>
           </div>

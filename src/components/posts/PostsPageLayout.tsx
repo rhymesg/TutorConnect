@@ -94,7 +94,7 @@ export default function PostsPageLayout({
               </div>
             </div>
 
-            <div className="w-full xl:w-auto flex justify-center xl:justify-start">
+            <div className="hidden xl:flex xl:w-auto xl:justify-start">
               {rightSlot}
             </div>
           </div>

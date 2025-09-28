@@ -74,6 +74,7 @@ export default function PostListEnhanced({
   const [compactMode, setCompactMode] = useState(false);
   const [showDesktopFilters, setShowDesktopFilters] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [isMobileAd, setIsMobileAd] = useState(false);
   
   const observer = useRef<IntersectionObserver>();
   const retryTimeoutRef = useRef<NodeJS.Timeout>();
@@ -131,6 +132,16 @@ export default function PostListEnhanced({
       }
     }
   }, [showSearchHistory]);
+
+  useEffect(() => {
+    const updateAdBreakpoint = () => {
+      if (typeof window === 'undefined') return;
+      setIsMobileAd(window.innerWidth < 768);
+    };
+    updateAdBreakpoint();
+    window.addEventListener('resize', updateAdBreakpoint);
+    return () => window.removeEventListener('resize', updateAdBreakpoint);
+  }, []);
 
   // Online/offline detection
   useEffect(() => {
@@ -581,9 +592,9 @@ export default function PostListEnhanced({
               <div className="mt-8">
                 <div className="flex justify-center overflow-x-auto pb-6">
                   <AdsterraBanner
-                    placementKey="f518bfdff1cb8fbf49eb32474cb013ca"
-                    width={728}
-                    height={90}
+                    placementKey={isMobileAd ? '76d0f267be29a5359c9156029262c853' : 'f518bfdff1cb8fbf49eb32474cb013ca'}
+                    width={isMobileAd ? 320 : 728}
+                    height={isMobileAd ? 50 : 90}
                     className="mx-auto"
                   />
                 </div>
