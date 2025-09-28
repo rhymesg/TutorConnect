@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import { NorwegianRegion, PostType, Subject } from '@prisma/client';
 import PostsPageLayout from '@/components/posts/PostsPageLayout';
+import AdsterraBanner from '@/components/ads/AdsterraBanner';
 import { generateBreadcrumbs } from '@/lib/breadcrumbs';
 import { fetchPostsForFilters } from '@/lib/actions/posts';
 
@@ -199,6 +200,14 @@ export default async function TeachersPage({ searchParams }: TeachersPageProps) 
           subject: subjectFilter,
           location: locationFilter,
         }}
+        rightSlot={
+          <AdsterraBanner
+            placementKey="a5659616e7810115e1f11798ce145254"
+            width={160}
+            height={600}
+            className="w-full max-w-[160px] xl:w-[160px]"
+          />
+        }
       />
     </>
   );
