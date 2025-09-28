@@ -43,9 +43,7 @@ export default async function MyPostsPage() {
 
             <div className="hidden xl:flex xl:justify-start">
               <AdsterraBanner
-                placementKey="a5659616e7810115e1f11798ce145254"
-                width={160}
-                height={600}
+                placement="vertical160x600"
               />
             </div>
           </div>

@@ -2,19 +2,34 @@
 
 import { useEffect, useId } from 'react';
 
+import { adPlacementConfig, adPlacementIds, AdPlacementId } from '@/constants/adPlacements';
+
+const AD_SCRIPT_HOST = '//www.highperformanceformat.com';
+
 interface AdsterraBannerProps {
-  placementKey: string;
-  width: number;
-  height: number;
+  placement?: AdPlacementId;
   className?: string;
 }
 
-export default function AdsterraBanner({
-  placementKey,
-  width,
-  height,
-  className = '',
-}: AdsterraBannerProps) {
+export function getAdPlacementConfig(placement: AdPlacementId) {
+  const config = adPlacementConfig[placement];
+
+  if (!config) {
+    console.error('[AdsterraBanner] Unknown placement provided:', placement);
+    return null;
+  }
+
+  return config;
+}
+
+export default function AdsterraBanner({ placement = adPlacementIds.horizontal728x90, className = '' }: AdsterraBannerProps) {
+  const config = getAdPlacementConfig(placement);
+
+  if (!config) {
+    return null;
+  }
+
+  const { key: placementKey, width, height } = config;
   const autoId = useId().replace(/:/g, '_');
   const containerId = `adsterra-slot-${autoId}`;
 
@@ -40,10 +55,7 @@ export default function AdsterraBanner({
 
     const loaderScript = document.createElement('script');
     loaderScript.type = 'text/javascript';
-    loaderScript.src = 
-      placementKey === 'f518bfdff1cb8fbf49eb32474cb013ca'
-        ? `//www.highperformanceformat.com/${placementKey}/invoke.js`
-        : `//www.highperformanceformat.com/${placementKey}/invoke.js`;
+    loaderScript.src = `${AD_SCRIPT_HOST}/${placementKey}/invoke.js`;
     loaderScript.async = true;
 
     container.appendChild(optionsScript);

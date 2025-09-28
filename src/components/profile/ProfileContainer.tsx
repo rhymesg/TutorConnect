@@ -7,7 +7,6 @@ import { useApiCall } from '@/hooks/useApiCall';
 import { useActivityTracking } from '@/hooks/useActivityTracking';
 import { InlineProfileView } from './InlineProfileView';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { ErrorMessage } from '@/components/ui/ErrorMessage';
 import AuthError from '@/components/auth/AuthError';
 import { User } from '@prisma/client';
 
