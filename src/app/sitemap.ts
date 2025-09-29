@@ -85,68 +85,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   ];
 
-  // Subject-based landing pages (based on SEO strategy)
-  const subjects = [
-    'matematikk', 'engelsk', 'norsk', 'naturfag', 'programmering', 
-    'tennis', 'ski', 'musik', 'kunst'
-  ];
-  
-  const subjectPages = subjects.map(subject => ({
-    url: `${baseUrl}/posts?subject=${subject}`,
-    lastModified: new Date(),
-    changeFrequency: 'daily' as const,
-    priority: 0.8,
-  }));
-
-  // Location-based landing pages (based on SEO strategy)
-  const locations = [
-    'Oslo', 'Bergen', 'Trondheim', 'Stavanger', 'Kristiansand', 
-    'Drammen', 'Fredrikstad', 'Sandnes', 'Tromsø'
-  ];
-  
-  const locationPages = locations.map(location => ({
-    url: `${baseUrl}/posts?location=${location}`,
-    lastModified: new Date(),
-    changeFrequency: 'daily' as const,
-    priority: 0.8,
-  }));
-
-  // Target group landing pages (based on SEO strategy)
-  const targetPages = [
-    {
-      url: `${baseUrl}/posts?target=asian_families`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/posts?target=adult_learning`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    },
-    {
-      url: `${baseUrl}/posts?target=part_time`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.7,
-    }
-  ];
-
-  // Popular subject+location combinations (based on SEO strategy examples)
-  const popularCombinations = [
-    'matematikk-Oslo', 'engelsk-Bergen', 'norsk-Trondheim', 'programmering-Oslo',
-    'tennis-Oslo', 'ski-Trondheim', 'engelsk-konversasjon-Stavanger'
-  ].map(combo => {
-    const [subject, location] = combo.split('-');
-    return {
-      url: `${baseUrl}/posts?subject=${subject}&amp;location=${location}`,
-      lastModified: new Date(),
-      changeFrequency: 'daily' as const,
-      priority: 0.8,
-    };
-  });
-
   // Blog pages (Norwegian and English versions)
   const blogPages = [
     // Norwegian blog posts
@@ -216,10 +154,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Return comprehensive sitemap including all sections
   return [
     ...staticPages,
-    ...subjectPages,
-    ...locationPages,
-    ...targetPages,
-    ...popularCombinations,
     ...blogPages,
   ];
 }
