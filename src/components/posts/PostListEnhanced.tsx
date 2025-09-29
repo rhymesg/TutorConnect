@@ -463,26 +463,9 @@ export default function PostListEnhanced({
               {compactMode ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             </button>
 
-            {/* Sort dropdown */}
-            <div className="relative">
-              <select
-                value={`${filters.sortBy}-${filters.sortOrder}`}
-                onChange={(e) => {
-                  const [sortBy, sortOrder] = e.target.value.split('-') as [SortOption, SortOrder];
-                  handleSortChange(sortBy, sortOrder);
-                }}
-                className="appearance-none bg-white border border-neutral-300 rounded-lg px-3 py-2 pr-8 text-sm text-neutral-700 focus:ring-2 focus:ring-brand-500 focus:border-brand-500"
-              >
-                {sortOptions.map(option => [
-                  <option key={`${option.value}-desc`} value={`${option.value}-desc`}>
-                    {option.label} ({sortOrderSuffix.desc})
-                  </option>,
-                  <option key={`${option.value}-asc`} value={`${option.value}-asc`}>
-                    {option.label} ({sortOrderSuffix.asc})
-                  </option>
-                ])}
-              </select>
-              <ArrowUpDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-neutral-400 pointer-events-none" />
+            {/* Sort indicator */}
+            <div className="text-sm text-neutral-600">
+              Sort: Recently updated
             </div>
 
             {/* View mode toggle (desktop only) */}
