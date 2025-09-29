@@ -15,6 +15,9 @@ export default function Footer() {
             <a href="/terms" className="hover:text-white transition-colors">
               {t('Vilkår og betingelser', 'Terms & Conditions')}
             </a>
+            <a href="/blog" className="hover:text-white transition-colors">
+              {t('Blog', 'Blog')}
+            </a>
             <a href="/om-oss#kontakt" className="hover:text-white transition-colors">
               {t('Kontakt', 'Contact')}
             </a>
