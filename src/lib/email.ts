@@ -148,34 +148,50 @@ const createTransporter = () => {
 function createVerificationEmailTemplate(name: string, verificationToken: string): EmailTemplate {
   const verificationUrl = `${EMAIL_CONFIG.baseUrl}/auth/verify-email?token=${verificationToken}`;
   
-  const greeting = `<h2 style="color: #1f2937; margin-top: 0;">Hei ${name}!</h2>`;
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${name}! ✨</h2>`;
   
   const mainContent = `
-    <p style="color: #374151; line-height: 1.6;">
-      Takk for at du registrerte deg på TutorConnect! For å fullføre registreringen din, må du bekrefte e-postadressen din.
+    <div style="background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%); border: 1px solid #7dd3fc; padding: 20px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #0369a1; font-weight: 600; font-size: 18px;">
+        🎯 Siste steg: Bekreft e-postadressen din
+      </p>
+      <p style="margin: 12px 0 0 0; color: #0c4a6e; font-size: 15px; line-height: 1.6;">
+        Takk for at du registrerte deg på TutorConnect! Bare ett klikk igjen.
+      </p>
+    </div>
+    
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      For å fullføre registreringen din og få tilgang til alle funksjoner på TutorConnect, må du bekrefte at denne e-postadressen tilhører deg.
     </p>
     
-    <div style="text-align: center; margin: 32px 0;">
+    <div style="text-align: center; margin: 40px 0;">
       <a href="${verificationUrl}" 
-         style="background-color: #2563eb; color: white; padding: 14px 28px; text-decoration: none; border-radius: 8px; display: inline-block; font-weight: 500;">
+         style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transition: all 0.2s; font-size: 15px;">
         Bekreft e-postadresse
       </a>
     </div>
     
-    <p style="color: #374151; line-height: 1.6;">
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 14px;">
       Hvis knappen ikke fungerer, kan du kopiere og lime inn denne lenken i nettleseren din:
     </p>
-    <p style="word-break: break-all; color: #6b7280; font-size: 14px;">${verificationUrl}</p>
+    <p style="word-break: break-all; color: #6b7280; font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 8px; margin: 16px 0;">${verificationUrl}</p>
+    
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #f59e0b;">
+      <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+        ⏰ <strong>Viktig:</strong> Denne lenken utløper om 24 timer. Hvis du ikke ba om denne e-posten, kan du trygt ignorere den.
+      </p>
+    </div>
   `;
   
   const baseTemplate = createBaseEmailTemplate({
     greeting,
     mainContent,
-    footerText: 'Denne lenken utløper om 24 timer. Hvis du ikke ba om denne e-posten, kan du ignorere den.'
+    settingsUrl: `${EMAIL_CONFIG.baseUrl}/settings`,
+    footerText: undefined
   });
   
   return {
-    subject: 'Bekreft din e-postadresse',
+    subject: 'Bekreft din e-postadresse - TutorConnect',
     html: baseTemplate.html,
     text: baseTemplate.text,
   };
@@ -187,66 +203,57 @@ function createVerificationEmailTemplate(name: string, verificationToken: string
 function createPasswordResetEmailTemplate(name: string, resetToken: string): EmailTemplate {
   const resetUrl = `${EMAIL_CONFIG.baseUrl}/auth/reset-password?token=${resetToken}`;
   
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Hei ${name}! 🔐</h2>`;
+  
+  const mainContent = `
+    <div style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border: 1px solid #fca5a5; padding: 20px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #dc2626; font-weight: 600; font-size: 18px;">
+        🔑 Tilbakestilling av passord forespurt
+      </p>
+      <p style="margin: 12px 0 0 0; color: #7f1d1d; font-size: 15px; line-height: 1.6;">
+        Du har bedt om å tilbakestille passordet ditt for TutorConnect-kontoen din.
+      </p>
+    </div>
+    
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      Klikk på knappen nedenfor for å opprette et nytt passord. Denne lenken utløper om 1 time av sikkerhetsgrunner.
+    </p>
+    
+    <div style="text-align: center; margin: 40px 0;">
+      <a href="${resetUrl}" 
+         style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3); transition: all 0.2s; font-size: 15px;">
+        Tilbakestill passord
+      </a>
+    </div>
+    
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 14px;">
+      Hvis knappen ikke fungerer, kan du kopiere og lime inn denne lenken i nettleseren din:
+    </p>
+    <p style="word-break: break-all; color: #6b7280; font-size: 14px; background: #f8fafc; padding: 12px; border-radius: 8px; margin: 16px 0;">${resetUrl}</p>
+    
+    <div style="background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #f59e0b;">
+      <p style="margin: 0 0 12px 0; color: #92400e; font-size: 15px; line-height: 1.6;">
+        <strong>⚠️ Sikkerhetsinformasjon</strong>
+      </p>
+      <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">
+        • Denne lenken utløper om 1 time<br>
+        • Hvis du ikke ba om denne tilbakestillingen, kan du ignorere denne e-posten<br>
+        • Passordet ditt endres ikke før du klikker på lenken og oppretter et nytt passord
+      </p>
+    </div>
+  `;
+  
+  const baseTemplate = createBaseEmailTemplate({
+    greeting,
+    mainContent,
+    settingsUrl: `${EMAIL_CONFIG.baseUrl}/settings`,
+    footerText: undefined
+  });
+  
   return {
     subject: 'Tilbakestill passordet ditt',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Tilbakestill passordet ditt</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2563eb;">TutorConnect</h1>
-        </div>
-        
-        <h2>Hei ${name}!</h2>
-        
-        <p>Du har bedt om å tilbakestille passordet ditt for TutorConnect-kontoen din.</p>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${resetUrl}" 
-             style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            Tilbakestill passord
-          </a>
-        </div>
-        
-        <p>Hvis knappen ikke fungerer, kan du kopiere og lime inn denne lenken i nettleseren din:</p>
-        <p style="word-break: break-all; color: #666;">${resetUrl}</p>
-        
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-        
-        <p style="color: #666; font-size: 14px;">
-          <strong>Sikkerhetsinformasjon:</strong><br>
-          • Denne lenken utløper om 1 time<br>
-          • Hvis du ikke ba om denne tilbakestillingen, kan du ignorere denne e-posten<br>
-          • Passordet ditt endres ikke før du klikker på lenken og oppretter et nytt passord
-        </p>
-        
-        <p style="color: #666; font-size: 14px;">
-          Med vennlig hilsen,<br>
-          TutorConnect
-        </p>
-      </body>
-      </html>
-    `,
-    text: `
-      Hei ${name}!
-
-      Du har bedt om å tilbakestille passordet ditt for TutorConnect-kontoen din.
-
-      Klikk på denne lenken for å tilbakestille: ${resetUrl}
-
-      Sikkerhetsinformasjon:
-      • Denne lenken utløper om 1 time
-      • Hvis du ikke ba om denne tilbakestillingen, kan du ignorere denne e-posten
-      • Passordet ditt endres ikke før du klikker på lenken og oppretter et nytt passord
-
-      Med vennlig hilsen,
-      TutorConnect
-    `
+    html: baseTemplate.html,
+    text: baseTemplate.text,
   };
 }
 
@@ -315,67 +322,69 @@ export async function sendPasswordResetEmail(
  * Send welcome email (optional)
  */
 export async function sendWelcomeEmail(email: string, name: string): Promise<void> {
+  const greeting = `<h2 style="color: #0f172a; margin: 0 0 24px 0; font-size: 24px; font-weight: 600;">Velkommen, ${name}! 🎉</h2>`;
+  
+  const mainContent = `
+    <div style="background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 1px solid #a7f3d0; padding: 20px; margin: 24px 0; border-radius: 12px; text-align: center;">
+      <p style="margin: 0; color: #065f46; font-weight: 600; font-size: 18px;">
+        🌟 Gratulerer med å bli medlem av TutorConnect!
+      </p>
+      <p style="margin: 12px 0 0 0; color: #047857; font-size: 15px; line-height: 1.6;">
+        Norges førende plattform for å koble sammen lærere og studenter.
+      </p>
+    </div>
+    
+    <p style="color: #475569; line-height: 1.7; margin: 24px 0; font-size: 16px;">
+      Du er nå klar til å begynne din læringsreise! Her er hva du kan gjøre som neste steg:
+    </p>
+    
+    <div style="background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%); padding: 24px; border-radius: 12px; margin: 24px 0; border: 1px solid #cbd5e1;">
+      <h3 style="margin: 0 0 16px 0; color: #1e293b; font-size: 18px; font-weight: 600;">🚀 Kom i gang</h3>
+      <ul style="margin: 0; padding: 0; list-style: none;">
+        <li style="margin: 0 0 12px 0; color: #475569; line-height: 1.6; font-size: 15px;">
+          <strong style="color: #1e293b;">📝 Opprett ditt første innlegg</strong> - Del hva du kan lære bort eller hva du trenger hjelp med
+        </li>
+        <li style="margin: 0 0 12px 0; color: #475569; line-height: 1.6; font-size: 15px;">
+          <strong style="color: #1e293b;">🔍 Utforsk innlegg</strong> - Se hva andre tilbyr eller søker etter
+        </li>
+        <li style="margin: 0 0 12px 0; color: #475569; line-height: 1.6; font-size: 15px;">
+          <strong style="color: #1e293b;">💬 Start samtaler</strong> - Ta kontakt med andre medlemmer
+        </li>
+        <li style="margin: 0; color: #475569; line-height: 1.6; font-size: 15px;">
+          <strong style="color: #1e293b;">👤 Fullfør profilen din</strong> - Legg til mer informasjon for å øke tilliten
+        </li>
+      </ul>
+    </div>
+    
+    <div style="text-align: center; margin: 40px 0;">
+      <a href="${EMAIL_CONFIG.baseUrl}/posts" 
+         style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; margin: 0 8px 8px 0; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3); transition: all 0.2s; font-size: 15px;">
+        Utforsk innlegg
+      </a>
+      <a href="${EMAIL_CONFIG.baseUrl}/profile" 
+         style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 12px; display: inline-block; font-weight: 600; margin: 0 8px 8px 0; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); transition: all 0.2s; font-size: 15px;">
+        Fullfør profilen
+      </a>
+    </div>
+    
+    <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); padding: 20px; border-radius: 12px; margin: 24px 0; border: 1px solid #93c5fd;">
+      <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+        💡 <strong>Trenger du hjelp?</strong> Ta gjerne kontakt med oss på <a href="mailto:contact@tutorconnect.no" style="color: #1d4ed8; font-weight: 600; text-decoration: none;">contact@tutorconnect.no</a>
+      </p>
+    </div>
+  `;
+  
+  const baseTemplate = createBaseEmailTemplate({
+    greeting,
+    mainContent,
+    settingsUrl: `${EMAIL_CONFIG.baseUrl}/settings`,
+    footerText: undefined
+  });
+  
   const template: EmailTemplate = {
     subject: 'Velkommen til TutorConnect!',
-    html: `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Velkommen til TutorConnect!</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2563eb;">TutorConnect</h1>
-        </div>
-        
-        <h2>Velkommen, ${name}! 🎉</h2>
-        
-        <p>Gratulerer med å bli medlem av TutorConnect - Norges førende plattform for å koble sammen lærere og studenter!</p>
-        
-        <h3>Hva kan du gjøre nå?</h3>
-        <ul>
-          <li><strong>Opprett ditt første innlegg</strong> - Del hva du kan lære bort eller hva du trenger hjelp med</li>
-          <li><strong>Utforsk innlegg</strong> - Se hva andre tilbyr eller søker etter</li>
-          <li><strong>Start samtaler</strong> - Ta kontakt med andre medlemmer</li>
-          <li><strong>Fullfør profilen din</strong> - Legg til mer informasjon for å øke tilliten</li>
-        </ul>
-        
-        <div style="text-align: center; margin: 30px 0;">
-          <a href="${EMAIL_CONFIG.baseUrl}/dashboard" 
-             style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-            Gå til dashbordet
-          </a>
-        </div>
-        
-        <p>Har du spørsmål? Ta gjerne kontakt med oss på <a href="mailto:contact@tutorconnect.no">contact@tutorconnect.no</a></p>
-        
-        <p style="color: #666; font-size: 14px;">
-          Med vennlig hilsen,<br>
-          TutorConnect
-        </p>
-      </body>
-      </html>
-    `,
-    text: `
-      Velkommen, ${name}! 🎉
-
-      Gratulerer med å bli medlem av TutorConnect - Norges førende plattform for å koble sammen lærere og studenter!
-
-      Hva kan du gjøre nå?
-      • Opprett ditt første innlegg - Del hva du kan lære bort eller hva du trenger hjelp med
-      • Utforsk innlegg - Se hva andre tilbyr eller søker etter
-      • Start samtaler - Ta kontakt med andre medlemmer
-      • Fullfør profilen din - Legg til mer informasjon for å øke tilliten
-
-      Besøk dashbordet ditt: ${EMAIL_CONFIG.baseUrl}/dashboard
-
-      Har du spørsmål? Ta gjerne kontakt med oss på contact@tutorconnect.no
-
-      Med vennlig hilsen,
-      TutorConnect
-    `
+    html: baseTemplate.html,
+    text: baseTemplate.text,
   };
 
   await sendEmail(email, template);
