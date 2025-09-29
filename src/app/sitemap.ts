@@ -140,7 +140,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ].map(combo => {
     const [subject, location] = combo.split('-');
     return {
-      url: `${baseUrl}/posts?subject=${subject}&location=${location}`,
+      url: `${baseUrl}/posts?subject=${subject}&amp;location=${location}`,
       lastModified: new Date(),
       changeFrequency: 'daily' as const,
       priority: 0.8,
