@@ -33,7 +33,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Determine if current page should show navigation
   const isPublicPage = pathname === '/' || 
                       pathname.startsWith('/auth') || 
-                      pathname === '/om-oss';
+                      pathname === '/om-oss' ||
+                      pathname.startsWith('/blog');
   
   // Hide navigation for public profile pages (viewing other users' profiles)
   // Only hide for user profile pages like /profile/[userId], not for own profile pages
