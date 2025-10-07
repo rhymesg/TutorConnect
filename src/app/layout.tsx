@@ -96,6 +96,7 @@ export default function RootLayout({
         <meta name="msapplication-TileColor" content="#0ea5e9" />
         <meta name="msapplication-tap-highlight" content="no" />
         <meta name="theme-color" content="#0ea5e9" />
+        <meta name="admaven-placement" content="Bqja7rHU8" />
 
         {/* Favicons */}
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
